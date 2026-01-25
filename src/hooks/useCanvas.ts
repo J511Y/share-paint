@@ -1,0 +1,212 @@
+'use client';
+
+import { useRef, useEffect, useCallback } from 'react';
+import { useCanvasStore } from '@/stores/canvasStore';
+
+interface UseCanvasOptions {
+  width: number;
+  height: number;
+  backgroundColor?: string;
+}
+
+export function useCanvas({ width, height, backgroundColor = '#FFFFFF' }: UseCanvasOptions) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const contextRef = useRef<CanvasRenderingContext2D | null>(null);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+
+  const {
+    tool,
+    brush,
+    isDrawing,
+    setIsDrawing,
+    addToHistory,
+    undo: storeUndo,
+    redo: storeRedo,
+    canUndo,
+    canRedo,
+  } = useCanvasStore();
+
+  // 캔버스 초기화
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    // 배경색 설정
+    context.fillStyle = backgroundColor;
+    context.fillRect(0, 0, width, height);
+
+    // 기본 설정
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+
+    contextRef.current = context;
+
+    // 초기 상태 히스토리에 추가
+    addToHistory(canvas.toDataURL());
+  }, [width, height, backgroundColor, addToHistory]);
+
+  // 브러시 설정 업데이트
+  useEffect(() => {
+    const context = contextRef.current;
+    if (!context) return;
+
+    if (tool === 'eraser') {
+      context.globalCompositeOperation = 'destination-out';
+      context.strokeStyle = 'rgba(0,0,0,1)';
+    } else {
+      context.globalCompositeOperation = 'source-over';
+      context.strokeStyle = brush.color;
+    }
+
+    context.lineWidth = brush.size;
+    context.globalAlpha = brush.opacity;
+  }, [tool, brush]);
+
+  // 좌표 계산 (터치/마우스)
+  const getCoordinates = useCallback(
+    (event: MouseEvent | TouchEvent): { x: number; y: number } | null => {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      if ('touches' in event) {
+        const touch = event.touches[0];
+        if (!touch) return null;
+        return {
+          x: (touch.clientX - rect.left) * scaleX,
+          y: (touch.clientY - rect.top) * scaleY,
+        };
+      }
+
+      return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY,
+      };
+    },
+    []
+  );
+
+  // 드로잉 시작
+  const startDrawing = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      const coords = getCoordinates(event);
+      if (!coords || !contextRef.current) return;
+
+      contextRef.current.beginPath();
+      contextRef.current.moveTo(coords.x, coords.y);
+      lastPointRef.current = coords;
+      setIsDrawing(true);
+    },
+    [getCoordinates, setIsDrawing]
+  );
+
+  // 드로잉 중
+  const draw = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      if (!isDrawing || !contextRef.current || !lastPointRef.current) return;
+
+      const coords = getCoordinates(event);
+      if (!coords) return;
+
+      contextRef.current.lineTo(coords.x, coords.y);
+      contextRef.current.stroke();
+      lastPointRef.current = coords;
+    },
+    [isDrawing, getCoordinates]
+  );
+
+  // 드로잉 종료
+  const stopDrawing = useCallback(() => {
+    if (!isDrawing) return;
+
+    const canvas = canvasRef.current;
+    if (canvas) {
+      addToHistory(canvas.toDataURL());
+    }
+
+    contextRef.current?.closePath();
+    lastPointRef.current = null;
+    setIsDrawing(false);
+  }, [isDrawing, setIsDrawing, addToHistory]);
+
+  // 캔버스 클리어
+  const clearCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    const context = contextRef.current;
+    if (!canvas || !context) return;
+
+    context.fillStyle = backgroundColor;
+    context.fillRect(0, 0, width, height);
+    addToHistory(canvas.toDataURL());
+  }, [width, height, backgroundColor, addToHistory]);
+
+  // Undo
+  const undo = useCallback(() => {
+    const dataUrl = storeUndo();
+    if (!dataUrl || !contextRef.current || !canvasRef.current) return;
+
+    const img = new Image();
+    img.onload = () => {
+      contextRef.current?.clearRect(0, 0, width, height);
+      contextRef.current?.drawImage(img, 0, 0);
+    };
+    img.src = dataUrl;
+  }, [storeUndo, width, height]);
+
+  // Redo
+  const redo = useCallback(() => {
+    const dataUrl = storeRedo();
+    if (!dataUrl || !contextRef.current || !canvasRef.current) return;
+
+    const img = new Image();
+    img.onload = () => {
+      contextRef.current?.clearRect(0, 0, width, height);
+      contextRef.current?.drawImage(img, 0, 0);
+    };
+    img.src = dataUrl;
+  }, [storeRedo, width, height]);
+
+  // Data URL 가져오기
+  const getDataUrl = useCallback((): string | null => {
+    return canvasRef.current?.toDataURL() || null;
+  }, []);
+
+  // 이미지 로드
+  const loadImage = useCallback(
+    (dataUrl: string) => {
+      const context = contextRef.current;
+      if (!context || !canvasRef.current) return;
+
+      const img = new Image();
+      img.onload = () => {
+        context.clearRect(0, 0, width, height);
+        context.drawImage(img, 0, 0);
+      };
+      img.src = dataUrl;
+    },
+    [width, height]
+  );
+
+  return {
+    canvasRef,
+    startDrawing,
+    draw,
+    stopDrawing,
+    clearCanvas,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    getDataUrl,
+    loadImage,
+  };
+}
