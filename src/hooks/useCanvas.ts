@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback } from 'react';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { floodFillCanvas } from '@/lib/canvas/floodFill';
 
 interface UseCanvasOptions {
   width: number;
@@ -196,6 +197,19 @@ export function useCanvas({ width, height, backgroundColor = '#FFFFFF' }: UseCan
     [width, height]
   );
 
+  // Flood Fill (채우기 도구)
+  const fill = useCallback(
+    (x: number, y: number, tolerance: number = 0) => {
+      const context = contextRef.current;
+      const canvas = canvasRef.current;
+      if (!context || !canvas) return;
+
+      floodFillCanvas(context, x, y, brush.color, tolerance);
+      addToHistory(canvas.toDataURL());
+    },
+    [brush.color, addToHistory]
+  );
+
   return {
     canvasRef,
     startDrawing,
@@ -208,5 +222,6 @@ export function useCanvas({ width, height, backgroundColor = '#FFFFFF' }: UseCan
     canRedo,
     getDataUrl,
     loadImage,
+    fill,
   };
 }

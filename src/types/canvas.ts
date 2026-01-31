@@ -13,22 +13,3 @@ export interface CanvasState {
   history: string[]; // Data URLs for undo/redo
   historyIndex: number;
 }
-
-export interface DrawingData {
-  imageData: string; // Base64 encoded image
-  topic: string;
-  timeLimit: number;
-  actualTime: number;
-}
-
-export interface CanvasSize {
-  width: number;
-  height: number;
-}
-
-// WebSocket 실시간 캔버스 데이터
-export interface RealtimeCanvasData {
-  userId: string;
-  imageData: string;
-  timestamp: number;
-}

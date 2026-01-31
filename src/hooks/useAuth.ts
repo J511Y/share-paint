@@ -69,14 +69,21 @@ export function useAuth() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting login for:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase signIn error:', error);
+        throw error;
+      }
+
+      console.log('Login successful:', data);
       router.push('/feed');
     } catch (error) {
+      console.error('Login exception:', error);
       throw error;
     } finally {
       setLoading(false);
