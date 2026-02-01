@@ -170,12 +170,31 @@ io.on('connection', (socket) => {
         throw new Error('Battle not found');
       }
 
+      // 주제가 없으면 랜덤 주제 선정
+      let currentTopic = battle.topic;
+      if (!currentTopic) {
+         try {
+           // 랜덤 주제 가져오기 (Fallback 방식)
+           const { data: topics } = await supabase.from('topics').select('content').limit(100);
+           if (topics && topics.length > 0) {
+              const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+              currentTopic = randomTopic.content;
+           } else {
+              currentTopic = "자유 주제";
+           }
+         } catch (e) {
+           console.error("Error fetching random topic:", e);
+           currentTopic = "자유 주제";
+         }
+      }
+
       // 2. DB 상태 업데이트
       await supabase
         .from('battles')
         .update({ 
           status: 'in_progress', 
-          started_at: new Date().toISOString() 
+          started_at: new Date().toISOString(),
+          topic: currentTopic
         })
         .eq('id', battleId);
 
@@ -189,7 +208,7 @@ io.on('connection', (socket) => {
       io.to(battleId).emit('battle_event', {
         type: 'start',
         payload: { 
-          topic: battle.topic, // 랜덤 주제라면 여기서 생성 로직 필요
+          topic: currentTopic,
           startedAt: new Date().toISOString(),
           duration: battle.time_limit
         }

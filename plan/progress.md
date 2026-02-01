@@ -10,102 +10,62 @@
 
 ## 완료된 작업
 
-### 2026-02-01 세션
+### 2026-02-01 세션 (완료)
 
-#### 1. 캔버스 드로잉 툴 Phase 4 ✅ (캔버스 드로잉 툴 완성!)
-**커밋**: `feat: Phase 4 캔버스 드로잉 툴 - 반응형/터치 최적화`
+#### 4. SNS 기능 (Phase 3) ✅
+**커밋**: `feat: SNS 핵심 기능 구현 (피드, 좋아요, 댓글, 팔로우)`
 
-| 파일 | 상태 | 테스트 | 커버리지 |
-|------|------|--------|----------|
-| useResponsiveCanvas.ts | ✅ | 14개 | 100% |
-| Canvas.tsx (터치 최적화) | ✅ | 22개 | 96% |
-| DrawingCanvas.tsx (반응형) | ✅ | 23개 | 100% |
-
-**테스트 결과**: 158개 테스트 통과 (25개 추가)
-
-#### 2. 캔버스 드로잉 툴 Phase 3 ✅
-**커밋**: `feat: Phase 3 캔버스 드로잉 툴 - 페이지 통합`
-
-| 파일 | 상태 | 테스트 | 커버리지 |
-|------|------|--------|----------|
-| draw/page.tsx | ✅ | - | - |
-| draw/DrawingCanvas.tsx | ✅ | 20개 | 100% |
-
-**테스트 결과**: 133개 테스트 통과 (20개 추가)
-
-#### 3. 캔버스 드로잉 툴 Phase 2 ✅
-**커밋**: `feat: Phase 2 캔버스 드로잉 툴 - UI 컴포넌트`
-
-| 컴포넌트 | 상태 | 테스트 | 커버리지 |
-|----------|------|--------|----------|
-| Canvas.tsx | ✅ | 14개 | 90% |
-| CanvasToolbar.tsx | ✅ | 8개 | 100% |
-| ColorPicker.tsx | ✅ | 7개 | 100% |
-| BrushSizeSlider.tsx | ✅ | 9개 | 100% |
-| CanvasActions.tsx | ✅ | 12개 | 100% |
-| index.ts | ✅ | - | - |
-
-**테스트 결과**: 113개 테스트 통과 (50개 컴포넌트 테스트 추가)
-
-#### 3. 캔버스 드로잉 툴 Phase 1 ✅
-**커밋**: `348bad4 feat: Phase 1 캔버스 드로잉 툴 - 핵심 유틸리티 및 정리`
-
-| 작업 | 상태 | 파일 |
+| 작업 | 상태 | 설명 |
 |------|------|------|
-| Flood Fill 알고리즘 | ✅ | `src/lib/canvas/floodFill.ts` |
-| useCanvas 훅 fill() 추가 | ✅ | `src/hooks/useCanvas.ts` |
-| Vitest 테스트 환경 설정 | ✅ | `vitest.config.ts`, `vitest.setup.ts` |
-| floodFill 테스트 | ✅ | `src/lib/canvas/floodFill.test.ts` |
-| canvasStore 테스트 | ✅ | `src/stores/canvasStore.test.ts` (100% 커버리지) |
-| useCanvas 테스트 | ✅ | `src/hooks/useCanvas.test.ts` |
+| 그림 저장 | ✅ | Storage 업로드, DB 저장, DrawingCanvas 통합 |
+| 프로필 페이지 | ✅ | 유저 정보, 팔로우/팔로잉, 갤러리(그리드) |
+| 피드 | ✅ | 최신 그림 목록, 무한 스크롤(기본) |
+| 상호작용 | ✅ | 좋아요, 팔로우, 댓글 (Optimistic UI 적용) |
 
-**테스트 결과**: 63개 테스트 통과
+#### 5. 랜덤 주제 시스템 ✅
+**커밋**: `feat: 랜덤 주제 생성 시스템 구현`
 
-#### 2. 코드 정리 ✅
-| 항목 | 제거된 내용 |
-|------|-------------|
-| npm 패키지 | socket.io-client, @types/jest (-45개) |
-| 상수 | TIME_LIMITS, COLOR_PALETTE 등 미사용 상수 |
-| 유틸 함수 | debounce, throttle 등 미사용 함수 |
-| 타입 | DrawingData, CanvasSize 등 미사용 타입 |
+| 작업 | 상태 | 설명 |
+|------|------|------|
+| 데이터 시딩 | ✅ | 80개 주제(Easy/Normal/Hard) 시딩 완료 |
+| API | ✅ | 랜덤 주제 조회 (`/api/topics/random`) |
+| UI | ✅ | `RandomTopicSelector`, 드로잉 페이지 통합 |
+| 대결 연동 | ✅ | 대결 시작 시 주제 없으면 랜덤 할당 (Socket) |
 
-**문서**: `.reports/dead-code-analysis.md`, `docs/DELETION_LOG.md`
+#### 6. 실시간 대결방 (Phase 4) ✅
+**커밋**: `feat: 대결방 게임 로직 및 투표 시스템 구현`
+
+| 작업 | 상태 | 설명 |
+|------|------|------|
+| Socket 서버 | ✅ | 룸 관리, 타이머 동기화, 게임 상태 관리, 랜덤 주제 자동 할당 |
+| 실시간 캔버스 | ✅ | DataURL 기반 스트리밍 (userId 포함) |
+| 투표 시스템 | ✅ | 게임 종료 후 투표 및 결과 집계 |
+| 결과 화면 | ✅ | 우승자 발표, 내 그림 저장 기능 |
 
 ---
 
 ## 진행 중인 작업
 
-### 타이머 시스템 🔄
+### 마무리 점검 🔄
 
-다음 작업:
-
-| 파일 | 상태 | 설명 |
+| 항목 | 상태 | 설명 |
 |------|------|------|
-| `src/hooks/useTimer.ts` | ⏳ 대기 | 타이머 훅 구현 완성 |
-| `src/components/timer/Timer.tsx` | ⏳ 대기 | 타이머 UI 컴포넌트 |
-| DrawingCanvas 통합 | ⏳ 대기 | 타이머와 캔버스 연동 |
-
-**TDD 방식으로 진행**: 테스트 먼저 작성 후 구현
+| 문서 업데이트 | ✅ 완료 | AGENTS.md, progress.md 최신화 |
+| 최종 테스트 | ⏳ 대기 | 전체 흐름 시나리오 테스트 |
 
 ---
 
-## 예정된 작업
+## 완료된 마일스톤
 
-### 캔버스 드로잉 툴 Phase 3 (페이지 통합)
-- `src/app/(main)/draw/page.tsx`
-- `src/app/(main)/draw/DrawingCanvas.tsx`
+- **Phase 1**: 기본 구조 및 인증 ✅
+- **Phase 2**: 캔버스 드로잉 툴 ✅
+- **Phase 3**: SNS 기능 (피드, 프로필, 저장) ✅
+- **Phase 4**: 실시간 대결방 (Socket.io) ✅
 
-### 캔버스 드로잉 툴 Phase 4 (반응형/터치)
-- `src/hooks/useResponsiveCanvas.ts`
-- 터치 이벤트 최적화
-
-### 타이머 시스템
-- useTimer 훅 구현 완성
-- 타이머 UI 컴포넌트
-
-### 그림 저장 & 업로드
-- Supabase Storage 연동
-- 그림 메타데이터 저장
+## 향후 계획 (Phase 5)
+- UI/UX 폴리싱 (애니메이션, 반응형 디테일)
+- 성능 최적화 (이미지 리사이징, 캔버스 렌더링 최적화)
+- 배포 파이프라인 구축
 
 ---
 

@@ -1,8 +1,9 @@
 'use client';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useFollow } from '@/hooks/useFollow';
 import { Button } from '@/components/ui/Button';
-import { Settings, UserPlus, UserMinus } from 'lucide-react';
+import { Settings, UserPlus, UserMinus, Loader2 } from 'lucide-react';
 import type { Profile } from '@/types/database';
 
 interface ProfileHeaderProps {
@@ -15,6 +16,8 @@ interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
+  const { isFollowing, toggleFollow, isLoading } = useFollow(profile.id, profile.isFollowing);
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
       <div className="flex flex-col md:flex-row items-center gap-6">
@@ -66,13 +69,11 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
             </Button>
           ) : (
             <Button 
-              variant={isFollowing ? "outline" : "primary"} 
+              variant={profile.isFollowing ? "outline" : "primary"} 
               size="sm"
-              onClick={toggleFollow}
-              disabled={isLoading}
-              leftIcon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />)}
+              leftIcon={profile.isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
             >
-              {isFollowing ? '팔로잉' : '팔로우'}
+              {profile.isFollowing ? '팔로잉' : '팔로우'}
             </Button>
           )}
         </div>
