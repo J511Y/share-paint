@@ -11,6 +11,7 @@ interface CanvasProps {
   height?: number;
   className?: string;
   backgroundColor?: string;
+  onDrawEnd?: (dataUrl: string) => void;
 }
 
 export interface CanvasHandle {

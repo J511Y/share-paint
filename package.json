@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:socket": "cd socket-server && npm run dev",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:socket\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -37,6 +39,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.0.18",
+    "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
     "jsdom": "^27.4.0",

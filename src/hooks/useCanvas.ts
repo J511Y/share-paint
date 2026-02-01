@@ -8,9 +8,10 @@ interface UseCanvasOptions {
   width: number;
   height: number;
   backgroundColor?: string;
+  onDrawEnd?: (dataUrl: string) => void;
 }
 
-export function useCanvas({ width, height, backgroundColor = '#FFFFFF' }: UseCanvasOptions) {
+export function useCanvas({ width, height, backgroundColor = '#FFFFFF', onDrawEnd }: UseCanvasOptions) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -131,7 +132,9 @@ export function useCanvas({ width, height, backgroundColor = '#FFFFFF' }: UseCan
 
     const canvas = canvasRef.current;
     if (canvas) {
-      addToHistory(canvas.toDataURL());
+      const dataUrl = canvas.toDataURL();
+      addToHistory(dataUrl);
+      onDrawEnd?.(dataUrl);
     }
 
     contextRef.current?.closePath();
