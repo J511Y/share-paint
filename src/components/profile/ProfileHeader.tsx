@@ -66,11 +66,13 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
             </Button>
           ) : (
             <Button 
-              variant={profile.isFollowing ? "outline" : "primary"} 
+              variant={isFollowing ? "outline" : "primary"} 
               size="sm"
-              leftIcon={profile.isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+              onClick={toggleFollow}
+              disabled={isLoading}
+              leftIcon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />)}
             >
-              {profile.isFollowing ? '팔로잉' : '팔로우'}
+              {isFollowing ? '팔로잉' : '팔로우'}
             </Button>
           )}
         </div>

@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Heart, MessageCircle } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+import { PaintingCard } from '@/components/feed/PaintingCard';
 import type { Painting } from '@/types/database';
 
 interface PaintingGridProps {
@@ -11,7 +9,7 @@ interface PaintingGridProps {
 }
 
 export function PaintingGrid({ userId }: PaintingGridProps) {
-  const [paintings, setPaintings] = useState<Painting[]>([]);
+  const [paintings, setPaintings] = useState<any[]>([]); // any for compatibility with PaintingCard props
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,25 +51,9 @@ export function PaintingGrid({ userId }: PaintingGridProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {paintings.map((painting) => (
-        <Card key={painting.id} className="group cursor-pointer overflow-hidden hover:shadow-md transition-all">
-          <div className="aspect-[4/3] bg-gray-100 relative">
-            <img 
-              src={painting.image_url} 
-              alt={painting.topic}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-            />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end justify-between p-3 opacity-0 group-hover:opacity-100">
-              <div className="flex items-center gap-1 text-white text-xs font-medium">
-                <Heart className="w-3.5 h-3.5 fill-current" />
-                {painting.likes_count}
-              </div>
-              <div className="flex items-center gap-1 text-white text-xs font-medium">
-                <MessageCircle className="w-3.5 h-3.5" />
-                {painting.comments_count}
-              </div>
-            </div>
-          </div>
-        </Card>
+        <div key={painting.id} className="h-full">
+          <PaintingCard painting={painting} />
+        </div>
       ))}
     </div>
   );
