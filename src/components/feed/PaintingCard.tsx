@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Heart, MessageCircle, Clock } from 'lucide-react';
 import { Card } from '@/components/ui';
 import { formatRelativeTime, formatTime } from '@/lib/utils';
@@ -28,10 +29,12 @@ export function PaintingCard({ painting }: PaintingCardProps) {
     <Card className="overflow-hidden transition-shadow hover:shadow-md h-full flex flex-col">
       {/* 이미지 - 클릭 시 상세 페이지(모달)로 이동 가능하도록 Link 래핑 고려 */}
       <Link href={`/painting/${painting.id}`} className="block relative aspect-square bg-gray-100 overflow-hidden group">
-        <img
+        <Image
           src={painting.image_url}
           alt={painting.topic}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
         {/* 오버레이 (옵션) */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
@@ -56,9 +59,15 @@ export function PaintingCard({ painting }: PaintingCardProps) {
             href={`/profile/${painting.profile.username}`}
             className="mb-3 flex items-center gap-2 hover:opacity-80 w-fit"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-xs font-medium text-purple-600 overflow-hidden">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-xs font-medium text-purple-600 overflow-hidden relative">
               {painting.profile.avatar_url ? (
-                <img src={painting.profile.avatar_url} alt={painting.profile.username} className="w-full h-full object-cover" />
+                <Image 
+                  src={painting.profile.avatar_url} 
+                  alt={painting.profile.username} 
+                  fill
+                  className="object-cover" 
+                  sizes="24px"
+                />
               ) : (
                 painting.profile.display_name?.[0] || painting.profile.username[0].toUpperCase()
               )}

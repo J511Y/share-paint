@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, formatDuration } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { useTimer } from '@/hooks/useTimer';
 import { Play, Pause, RotateCcw } from 'lucide-react';
@@ -16,15 +16,6 @@ interface TimerProps {
   onComplete?: () => void;
   onTimeUpdate?: (timeLeft: number) => void;
   className?: string;
-}
-
-/**
- * 시간을 MM:SS 형식으로 포맷
- */
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
 /**
@@ -193,7 +184,7 @@ export function Timer({
               isWarning ? 'text-red-500' : 'text-gray-900'
             )}
           >
-            {formatTime(timeLeft)}
+            {formatDuration(timeLeft)}
           </div>
         </div>
       )}
@@ -208,7 +199,7 @@ export function Timer({
               isWarning ? 'text-red-500' : 'text-gray-900'
             )}
           >
-            {formatTime(timeLeft)}
+            {formatDuration(timeLeft)}
           </div>
           <LinearProgress progress={progress} isWarning={isWarning} />
         </>

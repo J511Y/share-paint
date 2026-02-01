@@ -6,9 +6,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// 시간 포맷팅 (초 -> MM:SS)
+// 시간 포맷팅 (초 -> MM:SS) - UI 표시용 (0초일 때 '무제한')
 export function formatTime(seconds: number): string {
   if (seconds === 0) return '무제한';
+  return formatDuration(seconds);
+}
+
+// 순수 시간 포맷팅 (초 -> MM:SS) - 타이머용
+export function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;

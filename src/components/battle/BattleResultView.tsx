@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Trophy, ThumbsUp, CheckCircle2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { SavePaintingModal } from '@/components/canvas/SavePaintingModal';
-import type { BattleResult, BattlePainting } from '@/types/battle';
+import type { BattleResult } from '@/types/battle';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -46,12 +47,14 @@ export function BattleResultView({ result, onVote, hasVoted }: BattleResultProps
         <div className="flex justify-center mb-12">
           <Card className="max-w-md w-full overflow-hidden border-2 border-yellow-400 shadow-xl transform hover:scale-105 transition-transform duration-300">
             <div className="aspect-[4/3] bg-gray-100 relative">
-              <img 
+              <Image 
                 src={result.winner.imageUrl} 
                 alt={`Winner ${result.winner.username}`}
-                className="w-full h-full object-contain"
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, 500px"
               />
-              <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full font-bold shadow-sm flex items-center gap-1">
+              <div className="absolute top-4 right-4 bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full font-bold shadow-sm flex items-center gap-1 z-10">
                 <Trophy className="w-4 h-4" />
                 1등
               </div>
@@ -95,18 +98,20 @@ export function BattleResultView({ result, onVote, hasVoted }: BattleResultProps
               )}
             >
               <div className="aspect-[4/3] bg-gray-100 relative">
-                <img 
+                <Image 
                   src={painting.imageUrl} 
                   alt={painting.username}
-                  className="w-full h-full object-contain"
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
                 {isMe && (
-                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
+                  <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none z-10">
                     <span className="bg-black/50 text-white px-2 py-1 rounded text-xs">내 그림</span>
                   </div>
                 )}
                 {isSelected && (
-                  <div className="absolute top-2 right-2 bg-primary-500 text-white p-1 rounded-full shadow-lg animate-in zoom-in">
+                  <div className="absolute top-2 right-2 bg-primary-500 text-white p-1 rounded-full shadow-lg animate-in zoom-in z-10">
                     <CheckCircle2 className="w-5 h-5" />
                   </div>
                 )}
