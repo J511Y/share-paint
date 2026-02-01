@@ -55,6 +55,8 @@ export interface Battle {
   time_limit: number;
   max_participants: number;
   status: 'waiting' | 'in_progress' | 'finished';
+  is_private: boolean;
+  password?: string | null;
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
@@ -120,6 +122,8 @@ export type BattleInsert = {
   topic?: string | null;
   time_limit: number;
   max_participants?: number;
+  is_private?: boolean;
+  password?: string | null;
 };
 
 export type BattleParticipantInsert = {
