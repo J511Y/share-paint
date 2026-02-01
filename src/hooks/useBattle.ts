@@ -25,7 +25,10 @@ export function useBattle(battleId: string) {
     reset,
     setIsHost,
     setIsReady,
-    setBattleResult
+    setBattleResult,
+    timeLeft,
+    setTimeLeft,
+    decrementTime
   } = useBattleStore();
 
   // 타이머 로직
@@ -57,7 +60,22 @@ export function useBattle(battleId: string) {
 
     const socket = connectSocket();
 
-    // ... (기존 연결 로직)
+    // 소켓 이벤트 핸들러 정의
+    const onConnect = () => {
+      setConnected(true);
+      setError(null);
+      // 소켓 연결 시 배틀 참가 시도
+      socket.emit('join_battle', { battleId, user });
+    };
+
+    const onDisconnect = () => {
+      setConnected(false);
+    };
+
+    const onConnectError = (err: Error) => {
+      setConnected(false);
+      setError(`소켓 연결 오류: ${err.message}`);
+    };
 
     // 서버로부터의 이벤트 처리
     const onBattleEvent = (event: BattleSocketEvent) => {
@@ -107,10 +125,6 @@ export function useBattle(battleId: string) {
           break;
       }
     };
-
-
-    // 초기 방 정보 수신 (join_success 같은 이벤트가 필요할 수 있음)
-    // 현재는 API로 먼저 방 정보를 가져왔다고 가정하거나, 소켓 연결 후 받아옴
 
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);

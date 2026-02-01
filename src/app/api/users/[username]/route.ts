@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import type { Profile } from '@/types/database';
 
 export async function GET(
   request: NextRequest,
@@ -9,14 +10,16 @@ export async function GET(
   const supabase = await createClient();
 
   // 프로필 정보 조회
-  const { data: profile, error } = await supabase
+  const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('username', username)
     .single();
 
-  if (error) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  const profile = data as Profile | null;
+
+  if (error || !profile) {
+    return NextResponse.json({ error: '사용자를 찾을 수 없습니다.' }, { status: 404 });
   }
 
   // 팔로워/팔로잉 수 조회

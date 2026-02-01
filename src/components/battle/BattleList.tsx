@@ -8,12 +8,20 @@ import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 import type { Battle } from '@/types/database';
 
+interface ParticipantCount {
+  count: number;
+}
+
+interface BattleWithCount extends Battle {
+  participants: ParticipantCount[] | { id: string }[];
+}
+
 interface BattleListProps {
   initialBattles?: Battle[];
 }
 
 export function BattleList({ initialBattles = [] }: BattleListProps) {
-  const [battles, setBattles] = useState<Battle[]>(initialBattles);
+  const [battles, setBattles] = useState<BattleWithCount[]>(initialBattles as BattleWithCount[]);
   const [loading, setLoading] = useState(!initialBattles.length);
 
   const fetchBattles = async () => {
@@ -24,8 +32,8 @@ export function BattleList({ initialBattles = [] }: BattleListProps) {
         const data = await res.json();
         setBattles(data);
       }
-    } catch (error) {
-      console.error('Failed to fetch battles', error);
+    } catch {
+      // 에러 발생 시 조용히 실패 (폴링 중 일시적 오류 가능)
     } finally {
       setLoading(false);
     }
@@ -82,8 +90,11 @@ export function BattleList({ initialBattles = [] }: BattleListProps) {
               <div className="flex items-center gap-1 text-sm text-gray-500">
                 <Users className="w-4 h-4" />
                 <span>
-                  {/* @ts-ignore: participants count from join */}
-                  {battle.participants?.[0]?.count || 1} / {battle.max_participants}
+                  {Array.isArray(battle.participants) && battle.participants[0] && 'count' in battle.participants[0]
+                    ? (battle.participants[0] as ParticipantCount).count
+                    : (battle.participants?.length || 1)}
+                  {' / '}
+                  {battle.max_participants}
                 </span>
               </div>
               <Link href={`/battle/${battle.id}`}>

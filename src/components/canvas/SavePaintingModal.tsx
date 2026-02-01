@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { X, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useToast } from '@/components/ui/Toast';
 import { uploadImage } from '@/lib/supabase/storage';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -25,6 +27,7 @@ export function SavePaintingModal({
   initialTopic = '',
 }: SavePaintingModalProps) {
   const { user } = useAuth();
+  const toast = useToast();
   const [topic, setTopic] = useState(initialTopic);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -39,13 +42,13 @@ export function SavePaintingModal({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) {
-      alert('로그인이 필요합니다.');
+      toast.error('로그인이 필요합니다.');
       return;
     }
 
     const dataUrl = getDataUrl();
     if (!dataUrl) {
-      alert('저장할 그림이 없습니다.');
+      toast.error('저장할 그림이 없습니다.');
       return;
     }
 
@@ -75,12 +78,10 @@ export function SavePaintingModal({
         throw new Error('데이터베이스 저장 실패');
       }
 
-      alert('그림이 성공적으로 저장되었습니다!');
+      toast.success('그림이 성공적으로 저장되었습니다!');
       onClose();
-      // TODO: 마이페이지나 피드로 이동?
-    } catch (error) {
-      console.error(error);
-      alert('저장 중 오류가 발생했습니다.');
+    } catch {
+      toast.error('저장 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -100,13 +101,23 @@ export function SavePaintingModal({
         </div>
 
         <form onSubmit={handleSave} className="p-4 space-y-4">
-          <div className="flex justify-center bg-gray-100 rounded-lg p-4 mb-4">
+          <div className="flex justify-center bg-gray-100 rounded-lg p-4 mb-4 relative min-h-[200px]">
             {/* 썸네일 미리보기 */}
-            <img 
-              src={getDataUrl() || ''} 
-              alt="Preview" 
-              className="max-h-48 object-contain shadow-sm bg-white" 
-            />
+            {getDataUrl() ? (
+              <div className="relative w-full h-48">
+                <Image 
+                  src={getDataUrl()!} 
+                  alt="Preview" 
+                  fill
+                  className="object-contain shadow-sm"
+                  unoptimized // Data URL 사용 시 unoptimized 필요할 수 있음 (또는 next.config.js 설정 필요없음)
+                />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center w-full h-48 text-gray-400">
+                미리보기 없음
+              </div>
+            )}
           </div>
 
           <div>

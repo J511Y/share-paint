@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import type { FollowInsert } from '@/types/database';
 
 export async function POST(
   request: NextRequest,
@@ -10,26 +11,27 @@ export async function POST(
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
   if (user.id === targetUserId) {
-    return NextResponse.json({ error: 'Cannot follow yourself' }, { status: 400 });
+    return NextResponse.json({ error: '자신을 팔로우할 수 없습니다.' }, { status: 400 });
   }
+
+  const insertData: FollowInsert = {
+    follower_id: user.id,
+    following_id: targetUserId,
+  };
 
   const { error } = await supabase
     .from('follows')
-    .insert({
-      follower_id: user.id,
-      following_id: targetUserId,
-    });
+    .insert(insertData);
 
   if (error) {
-    // 이미 팔로우 중인 경우 (Unique constraint)
     if (error.code === '23505') {
-      return NextResponse.json({ message: 'Already following' }, { status: 200 });
+      return NextResponse.json({ message: '이미 팔로우 중입니다.' }, { status: 200 });
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: '팔로우에 실패했습니다.' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
@@ -44,7 +46,7 @@ export async function DELETE(
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
   }
 
   const { error } = await supabase
@@ -54,7 +56,7 @@ export async function DELETE(
     .eq('following_id', targetUserId);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: '언팔로우에 실패했습니다.' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

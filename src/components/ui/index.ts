@@ -8,3 +8,4 @@ export {
   CardContent,
   CardFooter,
 } from './Card';
+export { ToastProvider, useToast } from './Toast';

@@ -1,36 +1,45 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
+import Image from 'next/image';
+import { Loader2, Check, Users, MessageSquare } from 'lucide-react';
+
 import { useBattle } from '@/hooks/useBattle';
 import { useBattleStore } from '@/stores/battleStore';
 import { BattleCanvas, BattleResultView } from '@/components/battle';
-import { Timer } from '@/components/timer/Timer';
+import { Button } from '@/components/ui/Button';
+import { formatDuration } from '@/lib/utils';
 
 export default function BattleRoomPage() {
   const params = useParams();
-  const router = useRouter();
   const battleId = params.id as string;
   const { sendChat, toggleReady, updateCanvas, startBattle, vote } = useBattle(battleId);
-  const { 
-    participants, 
-    messages, 
-    myState, 
-    isConnected, 
+  const {
+    participants,
+    messages,
+    isConnected,
     error,
     room,
     timeLeft,
-    battleResult
+    battleResult,
+    isReady
   } = useBattleStore();
   
   const [chatInput, setChatInput] = useState('');
   const [hasVoted, setHasVoted] = useState(false);
 
-  // ... (기존 useEffect 등 유지)
-
   const handleVote = (paintingUserId: string) => {
     vote(paintingUserId);
     setHasVoted(true);
+  };
+
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    
+    sendChat(chatInput);
+    setChatInput('');
   };
 
   if (!room) {
@@ -54,13 +63,6 @@ export default function BattleRoomPage() {
     );
   }
 
-  // 시간 포맷팅 헬퍼
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row overflow-hidden bg-gray-100">
       {/* 메인 캔버스 영역 */}
@@ -71,12 +73,12 @@ export default function BattleRoomPage() {
               {room.title}
               {room.status === 'in_progress' && (
                 <span className="text-red-500 font-mono text-xl bg-red-50 px-2 py-0.5 rounded">
-                  {formatTime(timeLeft)}
+                  {formatDuration(timeLeft)}
                 </span>
               )}
             </h1>
             <div className="text-sm text-gray-500">
-              {room.topic || '랜덤 주제'} • {Math.floor(room.time_limit / 60)}분 제한
+              {room.topic || '랜덤 주제'} • {Math.floor(room.timeLimit / 60)}분 제한
             </div>
           </div>
           
@@ -86,16 +88,13 @@ export default function BattleRoomPage() {
                 <Loader2 className="w-3 h-3 animate-spin" /> 연결 중...
               </span>
             )}
-            
-            {/* 임시: user id 비교 로직 필요 */}
-            {/* room.host_id === myState.isHost ? ... */}
-             <Button 
-                variant={myState.isReady ? "primary" : "outline"}
-                onClick={() => toggleReady(!myState.isReady)}
+            <Button 
+                variant={isReady ? "primary" : "outline"}
+                onClick={() => toggleReady(!isReady)}
                 disabled={!isConnected}
               >
                 <Check className="w-4 h-4 mr-1" /> 
-                {myState.isReady ? '준비 완료' : '준비하기'}
+                {isReady ? '준비 완료' : '준비하기'}
               </Button>
           </div>
         </div>
@@ -111,14 +110,22 @@ export default function BattleRoomPage() {
         {/* 참가자 목록 */}
         <div className="flex-1 overflow-y-auto p-4 border-b border-gray-200">
           <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-1">
-            <Users className="w-4 h-4" /> 참가자 ({participants.length}/{room.max_participants})
+            <Users className="w-4 h-4" /> 참가자 ({participants.length}/{room.maxParticipants})
           </h3>
           <div className="space-y-4">
             {participants.map((p) => (
               <div key={p.id} className="flex flex-col gap-2 p-2 rounded-lg hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                    {p.avatarUrl && <img src={p.avatarUrl} alt={p.displayName || p.username} />}
+                  <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden shrink-0 relative">
+                    {p.avatarUrl && (
+                      <Image
+                        src={p.avatarUrl}
+                        alt={p.displayName || p.username}
+                        fill
+                        className="object-cover"
+                        sizes="32px"
+                      />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-sm truncate">
@@ -131,13 +138,20 @@ export default function BattleRoomPage() {
                 
                 {/* 실시간 캔버스 미리보기 */}
                 <div className="aspect-[4/3] bg-white border border-gray-200 rounded overflow-hidden relative">
-                   {p.canvasData ? (
-                     <img src={p.canvasData} alt={`${p.username}'s canvas`} className="w-full h-full object-contain" />
-                   ) : (
-                     <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 bg-gray-50">
-                       대기 중...
-                     </div>
-                   )}
+                  {p.canvasData ? (
+                    <Image
+                      src={p.canvasData}
+                      alt={`${p.username}'s canvas`}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 1024px) 100vw, 256px"
+                      unoptimized
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 bg-gray-50">
+                      대기 중...
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

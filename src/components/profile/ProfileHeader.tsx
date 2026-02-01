@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useAuth } from '@/hooks/useAuth';
 import { useFollow } from '@/hooks/useFollow';
 import { Button } from '@/components/ui/Button';
@@ -22,12 +23,14 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
     <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
       <div className="flex flex-col md:flex-row items-center gap-6">
         {/* 아바타 */}
-        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gray-200 overflow-hidden shrink-0 border-4 border-white shadow-md">
+        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gray-200 overflow-hidden shrink-0 border-4 border-white shadow-md relative">
           {profile.avatar_url ? (
-            <img 
+            <Image 
               src={profile.avatar_url} 
               alt={profile.username}
-              className="w-full h-full object-cover" 
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 96px, 128px"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl font-bold bg-gray-100">
@@ -68,12 +71,14 @@ export function ProfileHeader({ profile, isOwnProfile }: ProfileHeaderProps) {
               프로필 편집
             </Button>
           ) : (
-            <Button 
-              variant={profile.isFollowing ? "outline" : "primary"} 
+            <Button
+              variant={isFollowing ? "outline" : "primary"}
               size="sm"
-              leftIcon={profile.isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+              onClick={toggleFollow}
+              disabled={isLoading}
+              leftIcon={isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />)}
             >
-              {profile.isFollowing ? '팔로잉' : '팔로우'}
+              {isFollowing ? '팔로잉' : '팔로우'}
             </Button>
           )}
         </div>

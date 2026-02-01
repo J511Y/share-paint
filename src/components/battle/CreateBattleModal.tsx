@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { X, Lock, Users, Clock, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { cn } from '@/lib/utils';
-import { TOPICS } from '@/constants/topics';
+import { useToast } from '@/components/ui/Toast';
 
 interface CreateBattleModalProps {
   isOpen: boolean;
@@ -15,6 +14,7 @@ interface CreateBattleModalProps {
 
 export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
   const router = useRouter();
+  const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -42,9 +42,8 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
 
       const battle = await res.json();
       router.push(`/battle/${battle.id}`);
-    } catch (error) {
-      console.error(error);
-      alert('대결방 생성에 실패했습니다.');
+    } catch {
+      toast.error('대결방 생성에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }

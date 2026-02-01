@@ -3,15 +3,18 @@
 import { useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/hooks/useAuth';
+import type { Comment } from '@/types/database';
 
 interface CommentFormProps {
   paintingId: string;
-  onCommentAdded: (comment: any) => void;
+  onCommentAdded: (comment: Comment) => void;
 }
 
 export function CommentForm({ paintingId, onCommentAdded }: CommentFormProps) {
   const { user } = useAuth();
+  const toast = useToast();
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,9 +35,8 @@ export function CommentForm({ paintingId, onCommentAdded }: CommentFormProps) {
       const newComment = await res.json();
       onCommentAdded(newComment);
       setContent('');
-    } catch (error) {
-      console.error(error);
-      alert('댓글 작성에 실패했습니다.');
+    } catch {
+      toast.error('댓글 작성에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
