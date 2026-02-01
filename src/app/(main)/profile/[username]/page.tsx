@@ -2,31 +2,37 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+
 import { useAuth } from '@/hooks/useAuth';
 import { ProfileHeader, PaintingGrid } from '@/components/profile';
-import { Loader2 } from 'lucide-react';
+import type { Profile } from '@/types/database';
 
 export default function ProfilePage() {
   const params = useParams();
   const username = params.username as string;
   const { user } = useAuth();
   
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`/api/users/${username}`);
+        const res = await fetch(`/api/users/by-username/${username}`);
         if (!res.ok) {
           if (res.status === 404) throw new Error('사용자를 찾을 수 없습니다.');
           throw new Error('프로필을 불러오는데 실패했습니다.');
         }
         const data = await res.json();
         setProfile(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError('알 수 없는 오류가 발생했습니다.');
+        }
       } finally {
         setLoading(false);
       }
