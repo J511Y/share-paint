@@ -4,25 +4,34 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useBattle } from '@/hooks/useBattle';
 import { useBattleStore } from '@/stores/battleStore';
-import { BattleCanvas } from '@/components/battle';
+import { BattleCanvas, BattleResultView } from '@/components/battle';
+import { Timer } from '@/components/timer/Timer';
 
 export default function BattleRoomPage() {
   const params = useParams();
   const router = useRouter();
   const battleId = params.id as string;
-  const { sendChat, toggleReady, updateCanvas, startBattle } = useBattle(battleId);
+  const { sendChat, toggleReady, updateCanvas, startBattle, vote } = useBattle(battleId);
   const { 
     participants, 
     messages, 
     myState, 
     isConnected, 
     error,
-    room 
+    room,
+    timeLeft,
+    battleResult
   } = useBattleStore();
   
   const [chatInput, setChatInput] = useState('');
+  const [hasVoted, setHasVoted] = useState(false);
 
   // ... (기존 useEffect 등 유지)
+
+  const handleVote = (paintingUserId: string) => {
+    vote(paintingUserId);
+    setHasVoted(true);
+  };
 
   if (!room) {
     return (
@@ -32,13 +41,40 @@ export default function BattleRoomPage() {
     );
   }
 
+  // 게임 종료 시 결과 화면 표시
+  if (room.status === 'finished' && battleResult) {
+    return (
+      <div className="h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
+        <BattleResultView 
+          result={battleResult} 
+          onVote={handleVote} 
+          hasVoted={hasVoted} 
+        />
+      </div>
+    );
+  }
+
+  // 시간 포맷팅 헬퍼
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row overflow-hidden bg-gray-100">
       {/* 메인 캔버스 영역 */}
       <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm shrink-0">
           <div>
-            <h1 className="font-bold text-lg">{room.title}</h1>
+            <h1 className="font-bold text-lg flex items-center gap-2">
+              {room.title}
+              {room.status === 'in_progress' && (
+                <span className="text-red-500 font-mono text-xl bg-red-50 px-2 py-0.5 rounded">
+                  {formatTime(timeLeft)}
+                </span>
+              )}
+            </h1>
             <div className="text-sm text-gray-500">
               {room.topic || '랜덤 주제'} • {Math.floor(room.time_limit / 60)}분 제한
             </div>

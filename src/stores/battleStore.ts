@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import type { BattleRoom, BattleUser, ChatMessage } from '@/types/battle';
+import type { BattleRoom, BattleUser, ChatMessage, BattleResult } from '@/types/battle';
 
 interface BattleState {
   // 현재 대결방 상태
   room: BattleRoom | null;
   participants: BattleUser[];
   messages: ChatMessage[];
+  battleResult: BattleResult | null;
 
   // 내 상태
   isHost: boolean;
@@ -16,12 +17,20 @@ interface BattleState {
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
+
+  // 타이머 상태
+  timeLeft: number;
 }
 
 interface BattleActions {
   // 방 관련
   setRoom: (room: BattleRoom | null) => void;
   updateRoomStatus: (status: BattleRoom['status']) => void;
+  setBattleResult: (result: BattleResult | null) => void;
+
+  // 타이머 관련
+  setTimeLeft: (time: number) => void;
+  decrementTime: () => void;
 
   // 참가자 관련
   setParticipants: (participants: BattleUser[]) => void;
@@ -60,16 +69,27 @@ const initialState: BattleState = {
   isConnected: false,
   isLoading: false,
   error: null,
+  timeLeft: 0,
+  battleResult: null,
 };
 
 export const useBattleStore = create<BattleStore>((set) => ({
   ...initialState,
 
-  setRoom: (room) => set({ room }),
+  setRoom: (room) => set({ room, timeLeft: room ? room.timeLimit : 0, battleResult: null }),
 
   updateRoomStatus: (status) =>
     set((state) => ({
       room: state.room ? { ...state.room, status } : null,
+    })),
+
+  setBattleResult: (battleResult) => set({ battleResult }),
+
+  setTimeLeft: (timeLeft) => set({ timeLeft }),
+
+  decrementTime: () =>
+    set((state) => ({
+      timeLeft: Math.max(0, state.timeLeft - 1),
     })),
 
   setParticipants: (participants) => set({ participants }),

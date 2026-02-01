@@ -51,7 +51,8 @@ export type BattleSocketEvent =
   | { type: 'join'; payload: { user: BattleUser } }
   | { type: 'leave'; payload: { userId: string } }
   | { type: 'ready'; payload: { userId: string; isReady: boolean } }
-  | { type: 'start'; payload: { topic: string; startedAt: string } }
+  | { type: 'start'; payload: { topic: string; startedAt: string; duration: number } }
+  | { type: 'timer_sync'; payload: { timeLeft: number } }
   | { type: 'canvas_update'; payload: { userId: string; imageData: string } }
   | { type: 'chat'; payload: ChatMessage }
   | { type: 'finish'; payload: BattleResult }

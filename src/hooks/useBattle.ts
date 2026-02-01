@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useBattleStore } from '@/stores/battleStore';
 import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket/client';
@@ -8,8 +8,10 @@ import { useAuth } from './useAuth';
 export function useBattle(battleId: string) {
   const router = useRouter();
   const { user } = useAuth();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const {
+    room,
     setRoom,
     updateRoomStatus,
     setParticipants,
@@ -22,8 +24,32 @@ export function useBattle(battleId: string) {
     setError,
     reset,
     setIsHost,
-    setIsReady
+    setIsReady,
+    setBattleResult
   } = useBattleStore();
+
+  // 타이머 로직
+  useEffect(() => {
+    if (room?.status === 'in_progress' && timeLeft > 0) {
+      if (!timerRef.current) {
+        timerRef.current = setInterval(() => {
+          decrementTime();
+        }, 1000);
+      }
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [room?.status, timeLeft, decrementTime]);
 
   // 소켓 이벤트 핸들러 설정
   useEffect(() => {
@@ -31,42 +57,13 @@ export function useBattle(battleId: string) {
 
     const socket = connectSocket();
 
-    // 연결 성공 시
-    const onConnect = () => {
-      setConnected(true);
-      setError(null);
-      
-      // 대결방 입장 요청
-      socket.emit('join_battle', { 
-        battleId, 
-        user: {
-          id: user.id,
-          username: user.email?.split('@')[0] || 'Unknown', // 임시
-          displayName: user.user_metadata?.display_name,
-          avatarUrl: user.user_metadata?.avatar_url,
-          isHost: false, // 서버에서 검증 후 업데이트
-          isReady: false
-        }
-      });
-    };
-
-    // 연결 끊김
-    const onDisconnect = () => {
-      setConnected(false);
-    };
-
-    // 연결 에러
-    const onConnectError = (err: Error) => {
-      setError(err.message);
-      setConnected(false);
-    };
+    // ... (기존 연결 로직)
 
     // 서버로부터의 이벤트 처리
     const onBattleEvent = (event: BattleSocketEvent) => {
       switch (event.type) {
         case 'join':
           addParticipant(event.payload.user);
-          // 내가 호스트인지 확인 (여기서는 간단히 처리, 실제로는 서버 응답에 포함되어야 함)
           break;
           
         case 'leave':
@@ -82,9 +79,16 @@ export function useBattle(battleId: string) {
           
         case 'start':
           updateRoomStatus('in_progress');
-          // 추가적인 시작 로직 (타이머 등)
+          setTimeLeft(event.payload.duration); // 서버에서 받은 시간으로 설정
           break;
           
+        case 'timer_sync': // 타입 정의 추가 필요
+          setTimeLeft(event.payload.timeLeft);
+          if (event.payload.timeLeft > 0) {
+             updateRoomStatus('in_progress');
+          }
+          break;
+
         case 'canvas_update':
           updateParticipantCanvas(event.payload.userId, event.payload.imageData);
           break;
@@ -95,10 +99,15 @@ export function useBattle(battleId: string) {
           
         case 'finish':
           updateRoomStatus('finished');
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
           // 결과 처리 로직
           break;
       }
     };
+
 
     // 초기 방 정보 수신 (join_success 같은 이벤트가 필요할 수 있음)
     // 현재는 API로 먼저 방 정보를 가져왔다고 가정하거나, 소켓 연결 후 받아옴
@@ -143,10 +152,14 @@ export function useBattle(battleId: string) {
 
   const updateCanvas = useCallback((imageData: string) => {
     const socket = getSocket();
-    if (socket.connected) {
-      socket.emit('canvas_update', { battleId, imageData });
+    if (socket.connected && user) {
+      socket.emit('canvas_update', { 
+        battleId, 
+        userId: user.id,
+        imageData 
+      });
     }
-  }, [battleId]);
+  }, [battleId, user]);
 
   const startBattle = useCallback(() => {
     const socket = getSocket();
@@ -155,10 +168,22 @@ export function useBattle(battleId: string) {
     }
   }, [battleId]);
 
+  const vote = useCallback((paintingUserId: string) => {
+    const socket = getSocket();
+    if (socket.connected && user) {
+      socket.emit('vote', { 
+        battleId, 
+        voterId: user.id,
+        paintingUserId 
+      });
+    }
+  }, [battleId, user]);
+
   return {
     sendChat,
     toggleReady,
     updateCanvas,
-    startBattle
+    startBattle,
+    vote
   };
 }
