@@ -1,6 +1,8 @@
 export { Canvas } from './Canvas';
 export type { CanvasHandle } from './Canvas';
-export { CanvasToolbar } from './CanvasToolbar';
-export { ColorPicker } from './ColorPicker';
-export { BrushSizeSlider } from './BrushSizeSlider';
-export { CanvasActions } from './CanvasActions';
+export * from './Canvas';
+export * from './CanvasToolbar';
+export * from './ColorPicker';
+export * from './BrushSizeSlider';
+export * from './CanvasActions';
+export * from './SavePaintingModal';

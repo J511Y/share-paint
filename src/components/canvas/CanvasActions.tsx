@@ -1,6 +1,6 @@
 'use client';
 
-import { Undo2, Redo2, Trash2, Download } from 'lucide-react';
+import { Undo2, Redo2, Trash2, Download, Save } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
@@ -9,6 +9,7 @@ interface CanvasActionsProps {
   onRedo: () => void;
   onClear: () => void;
   onExport: () => void;
+  onSave?: () => void;
   canUndo: boolean;
   canRedo: boolean;
   className?: string;
@@ -28,6 +29,7 @@ export function CanvasActions({
   onRedo,
   onClear,
   onExport,
+  onSave,
   canUndo,
   canRedo,
   className,
@@ -59,11 +61,21 @@ export function CanvasActions({
     {
       id: 'export',
       icon: Download,
-      label: '내보내기',
+      label: '다운로드',
       onClick: onExport,
-      variant: 'primary',
+      variant: 'outline',
     },
   ];
+
+  if (onSave) {
+    actions.push({
+      id: 'save',
+      icon: Save,
+      label: '저장',
+      onClick: onSave,
+      variant: 'primary',
+    });
+  }
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
