@@ -13,6 +13,7 @@ export default defineConfig({
         'src/lib/**/*.ts',
         'src/stores/**/*.ts',
         'src/hooks/**/*.ts',
+        'src/components/canvas/**/*.tsx',
       ],
       exclude: [
         'node_modules/**',
@@ -34,6 +35,36 @@ export default defineConfig({
         },
         'src/stores/canvasStore.ts': {
           branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/components/canvas/BrushSizeSlider.tsx': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/components/canvas/CanvasActions.tsx': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/components/canvas/CanvasToolbar.tsx': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/components/canvas/ColorPicker.tsx': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/components/canvas/Canvas.tsx': {
+          branches: 60,
           functions: 80,
           lines: 80,
           statements: 80,
