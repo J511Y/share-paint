@@ -47,95 +47,38 @@ PaintShare의 핵심 기능인 HTML5 Canvas 기반 드로잉 툴 구현 계획�
 
 ---
 
-## Phase 2: UI 컴포넌트 🔄 진행 예정
+## Phase 2: UI 컴포넌트 ✅ 완료
 
-### 2.1 Canvas.tsx
-**경로**: `src/components/canvas/Canvas.tsx`
+### 구현된 파일
 
-```typescript
-interface CanvasProps {
-  width?: number;
-  height?: number;
-  className?: string;
-}
-```
+| 파일 | 설명 | 커버리지 |
+|------|------|----------|
+| `src/components/canvas/Canvas.tsx` | 캔버스 렌더링 및 이벤트 바인딩 | 90%+ |
+| `src/components/canvas/CanvasToolbar.tsx` | 펜, 지우개, 채우기 도구 버튼 | 100% |
+| `src/components/canvas/ColorPicker.tsx` | 12색 프리셋 + 커스텀 색상 | 100% |
+| `src/components/canvas/BrushSizeSlider.tsx` | 브러시 크기 조절 (1-50px) | 100% |
+| `src/components/canvas/CanvasActions.tsx` | Undo, Redo, Clear, Export 버튼 | 100% |
+| `src/components/canvas/index.ts` | 배럴 export | - |
 
-**기능**:
-- 캔버스 렌더링 및 이벤트 바인딩
-- 반응형 크기 지원
-- 터치/마우스 이벤트 통합
+### 테스트 파일
 
-### 2.2 CanvasToolbar.tsx
-**경로**: `src/components/canvas/CanvasToolbar.tsx`
+| 파일 | 테스트 수 |
+|------|----------|
+| `Canvas.test.tsx` | 14개 |
+| `CanvasToolbar.test.tsx` | 8개 |
+| `ColorPicker.test.tsx` | 7개 |
+| `BrushSizeSlider.test.tsx` | 9개 |
+| `CanvasActions.test.tsx` | 12개 |
 
-```typescript
-const tools = [
-  { id: 'pen', icon: Pencil, label: '펜' },
-  { id: 'eraser', icon: Eraser, label: '지우개' },
-  { id: 'fill', icon: PaintBucket, label: '채우기' },
-];
-```
+**총 50개 테스트, 113개 전체 테스트 모두 통과**
 
-**기능**:
-- 도구 선택 버튼
-- 현재 선택 하이라이트
-- lucide-react 아이콘
+### 주요 기능
 
-### 2.3 ColorPicker.tsx
-**경로**: `src/components/canvas/ColorPicker.tsx`
-
-**기능**:
-- 프리셋 색상 버튼 (12색)
-- 커스텀 색상 입력 (`input type="color"`)
-- 현재 선택 색상 표시
-
-### 2.4 BrushSizeSlider.tsx
-**경로**: `src/components/canvas/BrushSizeSlider.tsx`
-
-**기능**:
-- range input (1-50px)
-- 현재 크기 미리보기
-- 숫자 표시
-
-### 2.5 CanvasActions.tsx
-**경로**: `src/components/canvas/CanvasActions.tsx`
-
-```typescript
-interface CanvasActionsProps {
-  onUndo: () => void;
-  onRedo: () => void;
-  onClear: () => void;
-  onExport: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
-}
-```
-
-**기능**:
-- Undo, Redo, Clear, Export 버튼
-- 비활성화 상태 처리
-- lucide-react 아이콘
-
-### 2.6 index.ts
-**경로**: `src/components/canvas/index.ts`
-
-모든 컴포넌트 배럴 export
-
-### TDD 테스트 계획
-
-```
-src/components/canvas/
-├── Canvas.test.tsx
-├── CanvasToolbar.test.tsx
-├── ColorPicker.test.tsx
-├── BrushSizeSlider.test.tsx
-└── CanvasActions.test.tsx
-```
-
-**필요한 패키지**:
-- `@testing-library/react`
-- `@testing-library/user-event`
-- `@testing-library/jest-dom`
+- **Canvas.tsx**: forwardRef 지원, 마우스/터치 이벤트 통합, fill 도구 클릭 처리
+- **CanvasToolbar.tsx**: lucide-react 아이콘, 선택 상태 하이라이트, 가로/세로 레이아웃
+- **ColorPicker.tsx**: 12가지 프리셋 색상, 커스텀 색상 input, 현재 색상 표시
+- **BrushSizeSlider.tsx**: range input, 크기 미리보기 원, 실시간 업데이트
+- **CanvasActions.tsx**: 비활성화 상태 처리, lucide-react 아이콘, Button 컴포넌트 재사용
 
 ---
 

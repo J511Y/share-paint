@@ -14,6 +14,8 @@ export default defineConfig({
         'src/stores/**/*.ts',
         'src/hooks/**/*.ts',
         'src/components/canvas/**/*.tsx',
+        'src/components/timer/**/*.tsx',
+        'src/app/**/draw/**/*.tsx',
       ],
       exclude: [
         'node_modules/**',
@@ -65,6 +67,36 @@ export default defineConfig({
         },
         'src/components/canvas/Canvas.tsx': {
           branches: 60,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/app/**/draw/DrawingCanvas.tsx': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/hooks/useResponsiveCanvas.ts': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/hooks/useTimer.ts': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/components/timer/Timer.tsx': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/components/timer/TimerSelect.tsx': {
+          branches: 80,
           functions: 80,
           lines: 80,
           statements: 80,
