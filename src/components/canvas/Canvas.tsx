@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useCallback, useImperativeHandle } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle } from 'react';
 import { useCanvas } from '@/hooks/useCanvas';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { CANVAS_CONFIG } from '@/constants/config';
@@ -104,31 +104,42 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(
       stopDrawing();
     }, [stopDrawing]);
 
-    // 터치 이벤트 핸들러
-    const handleTouchStart = useCallback(
-      (e: React.TouchEvent<HTMLCanvasElement>) => {
+    // 네이티브 터치 이벤트 핸들러 (passive: false로 등록)
+    useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const handleTouchStart = (e: TouchEvent) => {
+        e.preventDefault();
+        // 멀티터치 방지: 첫 번째 터치만 처리
+        if (e.touches.length > 1) return;
         if (tool === 'fill') return;
-        e.preventDefault();
-        startDrawing(e.nativeEvent);
-      },
-      [tool, startDrawing]
-    );
+        startDrawing(e);
+      };
 
-    const handleTouchMove = useCallback(
-      (e: React.TouchEvent<HTMLCanvasElement>) => {
+      const handleTouchMove = (e: TouchEvent) => {
         e.preventDefault();
-        draw(e.nativeEvent);
-      },
-      [draw]
-    );
+        // 멀티터치 방지
+        if (e.touches.length > 1) return;
+        draw(e);
+      };
 
-    const handleTouchEnd = useCallback(
-      (e: React.TouchEvent<HTMLCanvasElement>) => {
+      const handleTouchEnd = (e: TouchEvent) => {
         e.preventDefault();
         stopDrawing();
-      },
-      [stopDrawing]
-    );
+      };
+
+      // passive: false로 등록하여 스크롤 방지 가능
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+      return () => {
+        canvas.removeEventListener('touchstart', handleTouchStart);
+        canvas.removeEventListener('touchmove', handleTouchMove);
+        canvas.removeEventListener('touchend', handleTouchEnd);
+      };
+    }, [canvasRef, tool, startDrawing, draw, stopDrawing]);
 
     return (
       <canvas
@@ -147,9 +158,6 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       />
     );
   }

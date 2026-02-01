@@ -10,6 +10,7 @@ import {
 } from '@/components/canvas';
 import type { CanvasHandle } from '@/components/canvas';
 import { useCanvasStore } from '@/stores/canvasStore';
+import { useResponsiveCanvas } from '@/hooks/useResponsiveCanvas';
 import { cn } from '@/lib/utils';
 
 interface DrawingCanvasProps {
@@ -19,6 +20,7 @@ interface DrawingCanvasProps {
 export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const canvasRef = useRef<CanvasHandle>(null);
 
+  const { width, height } = useResponsiveCanvas();
   const canUndo = useCanvasStore((state) => state.canUndo());
   const canRedo = useCanvasStore((state) => state.canRedo());
 
@@ -106,6 +108,8 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           <div className="bg-white rounded-lg shadow-sm p-4 flex justify-center">
             <Canvas
               ref={canvasRef}
+              width={width}
+              height={height}
               className="max-w-full"
             />
           </div>

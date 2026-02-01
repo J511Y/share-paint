@@ -10,13 +10,24 @@ const mockRedo = vi.fn();
 const mockGetDataUrl = vi.fn(() => 'data:image/png;base64,test') as ReturnType<typeof vi.fn> & { mockReturnValueOnce: (val: string | null) => void };
 const mockLoadImage = vi.fn();
 
+// useResponsiveCanvas 모킹
+const mockResponsiveCanvas = {
+  width: 800,
+  height: 600,
+  isMobile: false,
+};
+
+vi.mock('@/hooks/useResponsiveCanvas', () => ({
+  useResponsiveCanvas: vi.fn(() => mockResponsiveCanvas),
+}));
+
 // forwardRef를 올바르게 처리하는 Canvas 모킹
 vi.mock('@/components/canvas', async () => {
   const React = await import('react');
   const MockCanvas = React.forwardRef<
     unknown,
-    { className?: string }
-  >(function MockCanvas({ className }, ref) {
+    { className?: string; width?: number; height?: number }
+  >(function MockCanvas({ className, width, height }, ref) {
     // useImperativeHandle를 시뮬레이션
     React.useImperativeHandle(ref, () => ({
       clearCanvas: mockClearCanvas,
@@ -32,6 +43,10 @@ vi.mock('@/components/canvas', async () => {
           <canvas
             data-testid="mock-canvas"
             className={className}
+            width={width}
+            height={height}
+            data-width={width}
+            data-height={height}
             role="img"
             aria-label="Drawing canvas"
           />
@@ -406,5 +421,53 @@ describe('DrawingCanvas - 엣지 케이스', () => {
 
     const main = screen.getByRole('main');
     expect(main).toHaveClass('custom-class');
+  });
+});
+
+describe('DrawingCanvas - 반응형', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // 기본값으로 리셋
+    mockResponsiveCanvas.width = 800;
+    mockResponsiveCanvas.height = 600;
+    mockResponsiveCanvas.isMobile = false;
+  });
+
+  it('데스크톱에서 기본 캔버스 크기를 사용한다', async () => {
+    const { useResponsiveCanvas } = await import('@/hooks/useResponsiveCanvas');
+    vi.mocked(useResponsiveCanvas).mockReturnValue({
+      width: 800,
+      height: 600,
+      isMobile: false,
+    });
+
+    render(<DrawingCanvas />);
+
+    const canvas = screen.getByTestId('mock-canvas');
+    expect(canvas).toHaveAttribute('data-width', '800');
+    expect(canvas).toHaveAttribute('data-height', '600');
+  });
+
+  it('모바일에서 반응형 캔버스 크기를 사용한다', async () => {
+    const { useResponsiveCanvas } = await import('@/hooks/useResponsiveCanvas');
+    vi.mocked(useResponsiveCanvas).mockReturnValue({
+      width: 343,
+      height: 257,
+      isMobile: true,
+    });
+
+    render(<DrawingCanvas />);
+
+    const canvas = screen.getByTestId('mock-canvas');
+    expect(canvas).toHaveAttribute('data-width', '343');
+    expect(canvas).toHaveAttribute('data-height', '257');
+  });
+
+  it('useResponsiveCanvas 훅을 사용한다', async () => {
+    const { useResponsiveCanvas } = await import('@/hooks/useResponsiveCanvas');
+
+    render(<DrawingCanvas />);
+
+    expect(useResponsiveCanvas).toHaveBeenCalled();
   });
 });
