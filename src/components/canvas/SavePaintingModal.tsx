@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -13,6 +13,7 @@ interface SavePaintingModalProps {
   getDataUrl: () => string | null;
   timeLimit?: number;
   actualTime?: number;
+  initialTopic?: string;
 }
 
 export function SavePaintingModal({
@@ -21,10 +22,17 @@ export function SavePaintingModal({
   getDataUrl,
   timeLimit = 0,
   actualTime = 0,
+  initialTopic = '',
 }: SavePaintingModalProps) {
   const { user } = useAuth();
-  const [topic, setTopic] = useState('');
+  const [topic, setTopic] = useState(initialTopic);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTopic(initialTopic);
+    }
+  }, [isOpen, initialTopic]);
 
   if (!isOpen) return null;
 

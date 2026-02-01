@@ -7,11 +7,14 @@ import {
   ColorPicker,
   BrushSizeSlider,
   CanvasActions,
+  SavePaintingModal,
 } from '@/components/canvas';
+import { RandomTopicSelector } from '@/components/topic';
 import type { CanvasHandle } from '@/components/canvas';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useResponsiveCanvas } from '@/hooks/useResponsiveCanvas';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DrawingCanvasProps {
   className?: string;
@@ -19,6 +22,9 @@ interface DrawingCanvasProps {
 
 export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const canvasRef = useRef<CanvasHandle>(null);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState('');
+  const { user } = useAuth();
 
   const { width, height } = useResponsiveCanvas();
   const canUndo = useCanvasStore((state) => state.canUndo());
@@ -44,6 +50,18 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     link.href = dataUrl;
     link.download = `drawing-${Date.now()}.png`;
     link.click();
+  }, []);
+
+  const handleSave = useCallback(() => {
+    if (!user) {
+      alert('로그인 후 저장할 수 있습니다.');
+      return;
+    }
+    setIsSaveModalOpen(true);
+  }, [user]);
+
+  const getCanvasData = useCallback(() => {
+    return canvasRef.current?.getDataUrl() || null;
   }, []);
 
   return (
@@ -99,6 +117,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               onRedo={handleRedo}
               onClear={handleClear}
               onExport={handleExport}
+              onSave={handleSave}
               canUndo={canUndo}
               canRedo={canRedo}
             />
@@ -115,6 +134,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           </div>
         </div>
       </div>
+
+      <SavePaintingModal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        getDataUrl={getCanvasData}
+      />
     </main>
   );
 }
