@@ -1,3 +1,5 @@
+> 📌 단일 진실 소스(SSOT) 로드맵: [ROADMAP.md](../ROADMAP.md)
+
 # PaintShare 프로젝트 계획
 
 ## 프로젝트 개요
