@@ -12,37 +12,125 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
-    methods: ["GET", "POST"]
-  }
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+  },
 });
 
 // Supabase Admin Client
-const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = (supabaseUrl && supabaseKey) 
-  ? createClient(supabaseUrl, supabaseKey) 
-  : null;
 
-// 인메모리 배틀 상태 관리
+if (!supabaseUrl || !supabaseKey) {
+  console.error('[Socket] Missing Supabase env vars: SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// In-memory battle state for realtime coordination.
 const battles = {};
+const socketToUser = new Map();
+
 // battles[battleId] = {
 //   timer: NodeJS.Timeout,
 //   timeLeft: number,
 //   status: 'waiting' | 'in_progress' | 'finished',
 //   participants: Set<string>,
-//   hostId: string
+//   hostId: string,
+//   participantData: { userId: { username, imageData, votes } },
+//   votes: { voterId: targetUserId },
 // }
 
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake?.auth?.token;
+    if (!token) {
+      return next(new Error('Unauthorized: missing access token'));
+    }
+
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) {
+      return next(new Error('Unauthorized: invalid access token'));
+    }
+
+    socket.data.user = {
+      id: data.user.id,
+      email: data.user.email || null,
+    };
+
+    return next();
+  } catch (err) {
+    return next(new Error('Unauthorized'));
+  }
+});
+
+function getUserId(socket) {
+  return socketToUser.get(socket.id);
+}
+
+function isBattleParticipant(socket, battleId) {
+  return typeof battleId === 'string' && socket.rooms.has(battleId);
+}
+
+function getBattleState(battleId) {
+  if (!battleId || typeof battleId !== 'string') return null;
+  return battles[battleId] || null;
+}
+
+function getSafeUsername(socket, userId) {
+  const email = socket.data.user?.email || '';
+  return email || `user-${userId.slice(0, 6)}`;
+}
+
+function normalizeBattleResult(battle) {
+  const participantData = battle.participantData || {};
+  const votesByTarget = battle.votes || {};
+
+  const paintings = Object.entries(participantData).map(([uid, data]) => {
+    const voteCount = Object.values(votesByTarget).filter((target) => target === uid).length;
+    return {
+      userId: uid,
+      username: data.username || uid,
+      imageUrl: data.imageData || '',
+      votes: voteCount,
+    };
+  });
+
+  let winner;
+  if (paintings.length > 0) {
+    const top = Math.max(...paintings.map((entry) => entry.votes));
+    const leaders = paintings.filter((entry) => entry.votes === top);
+    winner = leaders.length === 1 ? leaders[0] : undefined;
+  }
+
+  return {
+    battleId: battle.id,
+    paintings,
+    winner,
+  };
+}
+
 io.on('connection', (socket) => {
+  const authUser = socket.data.user;
+  socketToUser.set(socket.id, authUser.id);
+
   console.log('User connected:', socket.id);
 
   socket.on('join_battle', (data) => {
-    // data: { battleId, user: { id, ... } }
-    const { battleId, user } = data;
+    const { battleId, user = {} } = data || {};
+    const userId = getUserId(socket);
+
+    if (!battleId || !userId) return;
+
+    const safeUser = {
+      ...user,
+      id: userId,
+      username: user?.username || user?.display_name || user?.displayName || getSafeUsername(socket, userId),
+    };
+
     socket.join(battleId);
-    
-    // 상태 초기화
+
     if (!battles[battleId]) {
       battles[battleId] = {
         timer: null,
@@ -50,233 +138,284 @@ io.on('connection', (socket) => {
         status: 'waiting',
         participants: new Set(),
         participantData: {}, // { userId: { username, imageData, votes } }
-        votes: {} // { voterId: targetUserId }
-      };
-    }
-    battles[battleId].participants.add(socket.id);
-    
-    // 유저 데이터 초기화 (없으면)
-    if (user.id && !battles[battleId].participantData[user.id]) {
-      battles[battleId].participantData[user.id] = {
-        username: user.username,
-        imageData: null,
-        votes: 0
+        votes: {}, // { voterId: targetUserId }
       };
     }
 
-    console.log(`User ${user.username} (${socket.id}) joined battle ${battleId}`);
-    
-    // 다른 참가자에게 알림
-    socket.to(battleId).emit('battle_event', { 
-      type: 'join', 
-      payload: { user } 
+    const battle = battles[battleId];
+    battle.participants.add(socket.id);
+
+    if (userId && !battle.participantData[userId]) {
+      battle.participantData[userId] = {
+        username: safeUser.username,
+        imageData: null,
+        votes: 0,
+      };
+    }
+
+    socket.to(battleId).emit('battle_event', {
+      type: 'join',
+      payload: { user: safeUser },
     });
 
-    // 현재 배틀 상태가 진행 중이라면 시간 정보 전송
-    if (battles[battleId].status === 'in_progress') {
+    if (battle.status === 'in_progress') {
       socket.emit('battle_event', {
         type: 'timer_sync',
-        payload: { timeLeft: battles[battleId].timeLeft }
+        payload: { timeLeft: battle.timeLeft },
       });
     }
   });
 
   socket.on('leave_battle', ({ battleId }) => {
+    const userId = getUserId(socket);
+    if (!isBattleParticipant(socket, battleId) || !userId) return;
+
     socket.leave(battleId);
     if (battles[battleId]) {
       battles[battleId].participants.delete(socket.id);
-      // 참가자가 없으면 방 정리 로직이 필요할 수 있음
     }
-    
-    io.to(battleId).emit('battle_event', { 
-      type: 'leave', 
-      payload: { userId: socket.id } // Note: 실제로는 socket.id가 아니라 user.id를 써야 하는데, 매핑이 필요함. 
-                                     // 여기서는 클라이언트에서 socket.id 대신 user.id를 보내도록 가정하거나,
-                                     // 서버에서 socket.id -> user.id 매핑을 유지해야 함.
-                                     // 간소화를 위해 클라이언트가 보낸 userId를 사용하도록 수정 필요.
-                                     // 지금은 일단 socket.id로 둠 (수정 필요할 수 있음)
+
+    io.to(battleId).emit('battle_event', {
+      type: 'leave',
+      payload: { userId },
     });
   });
 
-  // userId를 포함한 leave 처리를 위해 수정
+  // Keep compatibility while preventing user spoofing.
   socket.on('leave_battle_user', ({ battleId, userId }) => {
-     socket.leave(battleId);
-     io.to(battleId).emit('battle_event', {
-        type: 'leave',
-        payload: { userId }
-     });
+    const requesterId = getUserId(socket);
+    if (!requesterId || requesterId !== userId) return;
+    if (!isBattleParticipant(socket, battleId)) return;
+
+    socket.leave(battleId);
+    io.to(battleId).emit('battle_event', {
+      type: 'leave',
+      payload: { userId },
+    });
   });
 
   socket.on('ready_status', ({ battleId, isReady }) => {
-    // userId 식별 필요. 여기서는 socket.handshake.auth 등을 쓰거나 클라이언트가 보낸 데이터 사용
-    // 편의상 클라이언트 구현에 의존하지 않고 socket.data에 저장이 이상적
-    // 일단 broadcast
-    // 클라이언트 쪽에서 누가 보냈는지 알 수 있도록 userId를 payload에 포함해서 보내는게 좋음
-    // 여기서는 단순 중계
-  });
-  
-  // ready_status 개선: 클라이언트가 userId를 보내도록 함
-  socket.on('ready_update', ({ battleId, userId, isReady }) => {
-     io.to(battleId).emit('battle_event', {
-        type: 'ready',
-        payload: { userId, isReady }
-     });
-  });
+    const userId = getUserId(socket);
+    if (!isBattleParticipant(socket, battleId) || !userId) return;
 
-  socket.on('chat_message', (data) => {
-    // data: { battleId, userId, content, ... }
-    io.to(data.battleId).emit('battle_event', {
-      type: 'chat',
-      payload: data
+    io.to(battleId).emit('battle_event', {
+      type: 'ready',
+      payload: { userId, isReady: !!isReady },
     });
   });
 
-  socket.on('draw_event', (data) => {
-    socket.to(data.battleId).emit('draw_event', data);
+  socket.on('ready_update', ({ battleId, isReady }) => {
+    const userId = getUserId(socket);
+    if (!isBattleParticipant(socket, battleId) || !userId) return;
+
+    io.to(battleId).emit('battle_event', {
+      type: 'ready',
+      payload: { userId, isReady: !!isReady },
+    });
   });
-  
-  socket.on('canvas_update', ({ battleId, userId, imageData }) => {
-    // userId가 없으면 socket.id로 대체하거나 무시할 수 있음
-    const senderId = userId || socket.id; // 임시 처방
-    
-    // 서버 메모리에 최신 캔버스 데이터 저장
-    if (battles[battleId] && battles[battleId].participantData && battles[battleId].participantData[senderId]) {
-      battles[battleId].participantData[senderId].imageData = imageData;
+
+  socket.on('chat_message', (data = {}) => {
+    const { battleId, content = '', type = 'message' } = data;
+    const userId = getUserId(socket);
+    if (!isBattleParticipant(socket, battleId) || !userId) return;
+
+    io.to(battleId).emit('battle_event', {
+      type: 'chat',
+      payload: {
+        battleId,
+        userId,
+        username: getSafeUsername(socket, userId),
+        content,
+        type,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  });
+
+  socket.on('draw_event', (data = {}) => {
+    const { battleId, event } = data;
+    const userId = getUserId(socket);
+    if (!isBattleParticipant(socket, battleId) || !userId) return;
+
+    socket.to(battleId).emit('draw_event', {
+      battleId,
+      userId,
+      event,
+    });
+  });
+
+  socket.on('canvas_update', ({ battleId, imageData }) => {
+    const senderId = getUserId(socket);
+    if (!isBattleParticipant(socket, battleId) || !senderId) return;
+
+    const battle = getBattleState(battleId);
+    if (!battle) return;
+
+    if (!battle.participantData[senderId]) {
+      battle.participantData[senderId] = {
+        username: getSafeUsername(socket, senderId),
+        imageData: null,
+        votes: 0,
+      };
     }
-    
+
+    battle.participantData[senderId].imageData = imageData || null;
+
     socket.to(battleId).emit('battle_event', {
       type: 'canvas_update',
-      payload: { userId: senderId, imageData }
+      payload: { userId: senderId, imageData },
+    });
+  });
+
+  socket.on('vote', ({ battleId, paintingUserId }) => {
+    const voterId = getUserId(socket);
+    if (!isBattleParticipant(socket, battleId) || !voterId) return;
+    if (!battleId || !paintingUserId || voterId === paintingUserId) return;
+
+    const battle = getBattleState(battleId);
+    if (!battle || battle.status !== 'finished') return;
+    if (!battle.participantData || !battle.participantData[paintingUserId]) return;
+
+    battle.votes = battle.votes || {};
+    battle.votes[voterId] = paintingUserId;
+
+    const voteResult = normalizeBattleResult(battle);
+    io.to(battleId).emit('battle_event', {
+      type: 'vote',
+      payload: {
+        voterId,
+        paintingUserId,
+      },
+    });
+    io.to(battleId).emit('battle_event', {
+      type: 'finish',
+      payload: voteResult,
     });
   });
 
   socket.on('start_battle', async ({ battleId }) => {
+    if (!battleId) return;
     console.log(`Starting battle ${battleId}`);
-    
-    if (!supabase) {
-      console.error('Supabase client not initialized');
-      return;
-    }
 
     try {
-      // 1. DB에서 배틀 정보 가져오기
       const { data: battle, error } = await supabase
         .from('battles')
         .select('*')
         .eq('id', battleId)
         .single();
-        
+
       if (error || !battle) {
         throw new Error('Battle not found');
       }
-
-      // 주제가 없으면 랜덤 주제 선정
-      let currentTopic = battle.topic;
-      if (!currentTopic) {
-         try {
-           // 랜덤 주제 가져오기 (Fallback 방식)
-           const { data: topics } = await supabase.from('topics').select('content').limit(100);
-           if (topics && topics.length > 0) {
-              const randomTopic = topics[Math.floor(Math.random() * topics.length)];
-              currentTopic = randomTopic.content;
-           } else {
-              currentTopic = "자유 주제";
-           }
-         } catch (e) {
-           console.error("Error fetching random topic:", e);
-           currentTopic = "자유 주제";
-         }
+      if (battle.host_id !== authUser.id) {
+        throw new Error('Forbidden: only host can start battle');
       }
 
-      // 2. DB 상태 업데이트
+      let currentTopic = battle.topic;
+      if (!currentTopic) {
+        try {
+          const { data: topics } = await supabase.from('topics').select('content').limit(100);
+          if (topics && topics.length > 0) {
+            const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+            currentTopic = randomTopic.content;
+          } else {
+            currentTopic = '무작위 주제';
+          }
+        } catch (e) {
+          console.error('Error fetching random topic:', e);
+          currentTopic = '무작위 주제';
+        }
+      }
+
       await supabase
         .from('battles')
-        .update({ 
-          status: 'in_progress', 
+        .update({
+          status: 'in_progress',
           started_at: new Date().toISOString(),
-          topic: currentTopic
+          topic: currentTopic,
         })
         .eq('id', battleId);
 
-      // 3. 인메모리 상태 설정
-      if (!battles[battleId]) battles[battleId] = { participants: new Set() };
-      
+      if (!battles[battleId]) {
+        battles[battleId] = {
+          participants: new Set(),
+          participantData: {},
+          votes: {},
+        };
+      }
+
+      battles[battleId].id = battleId;
       battles[battleId].status = 'in_progress';
       battles[battleId].timeLeft = battle.time_limit;
 
-      // 4. 시작 이벤트 전송
       io.to(battleId).emit('battle_event', {
         type: 'start',
-        payload: { 
+        payload: {
           topic: currentTopic,
           startedAt: new Date().toISOString(),
-          duration: battle.time_limit
-        }
+          duration: battle.time_limit,
+        },
       });
 
-      // 5. 타이머 시작
       if (battles[battleId].timer) clearInterval(battles[battleId].timer);
-      
       battles[battleId].timer = setInterval(async () => {
-        if (!battles[battleId]) return;
+        const current = getBattleState(battleId);
+        if (!current) return;
 
-        battles[battleId].timeLeft--;
+        current.timeLeft -= 1;
 
-        // 1초마다 동기화는 너무 잦을 수 있으므로 5초마다 또는 중요 시점에만?
-        // 아니면 그냥 1초마다 보냄 (단순하게)
-        // io.to(battleId).emit('battle_event', {
-        //   type: 'timer_update',
-        //   payload: { timeLeft: battles[battleId].timeLeft }
-        // });
-        
-        // 종료 체크
-        if (battles[battleId].timeLeft <= 0) {
-          clearInterval(battles[battleId].timer);
-          battles[battleId].status = 'finished';
-          
-          // DB 업데이트
+        if (current.timeLeft <= 0) {
+          clearInterval(current.timer);
+          current.status = 'finished';
+
           await supabase
             .from('battles')
-            .update({ 
-              status: 'finished', 
-              ended_at: new Date().toISOString() 
+            .update({
+              status: 'finished',
+              ended_at: new Date().toISOString(),
             })
             .eq('id', battleId);
-            
+
           io.to(battleId).emit('battle_event', {
             type: 'finish',
-            payload: { battleId }
+            payload: { battleId },
           });
-          
-          // 초기 결과 집계 및 전송 (0표 상태)
-          const paintings = Object.entries(battles[battleId].participantData || {}).map(([uid, data]) => ({
-            userId: uid,
-            username: data.username,
-            imageUrl: data.imageData || '',
-            votes: 0
-          }));
-          
-          const battleResult = {
-            battleId,
-            paintings,
-            winner: undefined
-          };
-          
+
+          const battleResult = normalizeBattleResult(current);
+
           io.to(battleId).emit('battle_event', {
             type: 'finish',
-            payload: battleResult
+            payload: battleResult,
           });
         }
       }, 1000);
-
     } catch (err) {
       console.error('Failed to start battle:', err);
     }
   });
 
   socket.on('disconnect', () => {
+    const userId = getUserId(socket);
     console.log('User disconnected:', socket.id);
-    // 모든 방에서 제거 및 매핑 제거 로직 필요
+
+    socketToUser.delete(socket.id);
+
+    for (const roomId of socket.rooms) {
+      if (roomId === socket.id) continue;
+      const battle = battles[roomId];
+      if (!battle) continue;
+
+      if (battle.participants.has(socket.id)) {
+        battle.participants.delete(socket.id);
+      }
+
+      if (!userId) continue;
+      io.to(roomId).emit('battle_event', {
+        type: 'leave',
+        payload: { userId },
+      });
+    }
+
   });
 });
 

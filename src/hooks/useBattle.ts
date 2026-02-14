@@ -1,12 +1,11 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { useBattleStore } from '@/stores/battleStore';
-import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket/client';
+import { connectSocket, getSocket } from '@/lib/socket/client';
 import type { BattleSocketEvent, BattleUser } from '@/types/battle';
 import { useAuth } from './useAuth';
+import { createClient } from '@/lib/supabase/client';
 
 export function useBattle(battleId: string) {
-  const router = useRouter();
   const { user } = useAuth();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -58,14 +57,13 @@ export function useBattle(battleId: string) {
   useEffect(() => {
     if (!battleId || !user) return;
 
-    const socket = connectSocket();
+    let socket: ReturnType<typeof getSocket> | null = null;
+    let isDisposed = false;
 
-    // 소켓 이벤트 핸들러 정의
     const onConnect = () => {
       setConnected(true);
       setError(null);
-      // 소켓 연결 시 배틀 참가 시도
-      socket.emit('join_battle', { battleId, user });
+      socket?.emit('join_battle', { battleId, user });
     };
 
     const onDisconnect = () => {
@@ -126,12 +124,34 @@ export function useBattle(battleId: string) {
       }
     };
 
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-    socket.on('connect_error', onConnectError);
-    socket.on('battle_event', onBattleEvent);
+    const setupSocket = async () => {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (isDisposed) return;
+      if (!session?.access_token) {
+        setError('인증 세션이 없어 대결방에 연결할 수 없습니다.');
+        return;
+      }
+
+      socket = connectSocket({
+        token: session.access_token,
+      });
+
+      socket.on('connect', onConnect);
+      socket.on('disconnect', onDisconnect);
+      socket.on('connect_error', onConnectError);
+      socket.on('battle_event', onBattleEvent);
+    };
+
+    setupSocket();
 
     return () => {
+      isDisposed = true;
+      if (!socket) return;
+
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
       socket.off('connect_error', onConnectError);
