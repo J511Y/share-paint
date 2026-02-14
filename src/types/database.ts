@@ -1,4 +1,4 @@
-export interface Profile {
+﻿export interface Profile {
   id: string;
   username: string;
   display_name: string | null;
@@ -13,13 +13,12 @@ export interface Painting {
   user_id: string;
   image_url: string;
   topic: string;
-  time_limit: number; // 초 단위, 0 = 무제한
+  time_limit: number;
   actual_time: number | null;
   likes_count: number;
   comments_count: number;
   battle_id: string | null;
   created_at: string;
-  // Relations
   profile?: Profile;
 }
 
@@ -36,7 +35,6 @@ export interface Comment {
   painting_id: string;
   content: string;
   created_at: string;
-  // Relations
   profile?: Profile;
 }
 
@@ -57,10 +55,10 @@ export interface Battle {
   status: 'waiting' | 'in_progress' | 'finished';
   is_private: boolean;
   password?: string | null;
+  password_hash?: string | null;
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
-  // Relations
   host?: Profile;
   participants?: BattleParticipant[];
 }
@@ -70,7 +68,6 @@ export interface BattleParticipant {
   battle_id: string;
   user_id: string;
   joined_at: string;
-  // Relations
   profile?: Profile;
 }
 
@@ -82,7 +79,41 @@ export interface Topic {
   created_at: string;
 }
 
-// Insert 타입 정의
+export interface ApiLog {
+  id: string;
+  created_at: string;
+  level: 'debug' | 'info' | 'warn' | 'error';
+  message: string;
+  context: Record<string, unknown>;
+  error_message: string | null;
+  error_stack: string | null;
+  request_id: string | null;
+  user_id: string | null;
+  path: string | null;
+  method: string | null;
+  status_code: number | null;
+  duration_ms: number | null;
+}
+
+type DatabaseJsonValue = Record<string, unknown>;
+type DatabaseRow<T extends object> = T & DatabaseJsonValue;
+type DatabaseInsert<T extends object> = T & DatabaseJsonValue;
+type DatabaseUpdate<T extends object> = T & DatabaseJsonValue;
+
+export type ApiLogInsert = {
+  level: 'debug' | 'info' | 'warn' | 'error';
+  message: string;
+  context?: Record<string, unknown>;
+  error_message?: string | null;
+  error_stack?: string | null;
+  request_id?: string | null;
+  user_id?: string | null;
+  path?: string | null;
+  method?: string | null;
+  status_code?: number | null;
+  duration_ms?: number | null;
+};
+
 export type ProfileInsert = {
   id: string;
   username: string;
@@ -123,7 +154,7 @@ export type BattleInsert = {
   time_limit: number;
   max_participants?: number;
   is_private?: boolean;
-  password?: string | null;
+  password_hash?: string | null;
 };
 
 export type BattleParticipantInsert = {
@@ -137,53 +168,66 @@ export type TopicInsert = {
   difficulty?: 'easy' | 'normal' | 'hard';
 };
 
-// Supabase Database types
 export type Database = {
   public: {
     Tables: {
       profiles: {
-        Row: Profile;
-        Insert: ProfileInsert;
-        Update: Partial<Omit<Profile, 'id' | 'created_at'>>;
+        Row: DatabaseRow<Profile>;
+        Insert: DatabaseInsert<ProfileInsert>;
+        Update: DatabaseUpdate<Partial<Omit<Profile, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       paintings: {
-        Row: Painting;
-        Insert: PaintingInsert;
-        Update: Partial<Omit<Painting, 'id' | 'created_at'>>;
+        Row: DatabaseRow<Painting>;
+        Insert: DatabaseInsert<PaintingInsert>;
+        Update: DatabaseUpdate<Partial<Omit<Painting, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       likes: {
-        Row: Like;
-        Insert: LikeInsert;
-        Update: never;
+        Row: DatabaseRow<Like>;
+        Insert: DatabaseInsert<LikeInsert>;
+        Update: Record<string, never>;
+        Relationships: [];
       };
       comments: {
-        Row: Comment;
-        Insert: CommentInsert;
-        Update: Partial<Omit<Comment, 'id' | 'created_at'>>;
+        Row: DatabaseRow<Comment>;
+        Insert: DatabaseInsert<CommentInsert>;
+        Update: DatabaseUpdate<Partial<Omit<Comment, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       follows: {
-        Row: Follow;
-        Insert: FollowInsert;
-        Update: never;
+        Row: DatabaseRow<Follow>;
+        Insert: DatabaseInsert<FollowInsert>;
+        Update: Record<string, never>;
+        Relationships: [];
       };
       battles: {
-        Row: Battle;
-        Insert: BattleInsert;
-        Update: Partial<Omit<Battle, 'id' | 'created_at'>>;
+        Row: DatabaseRow<Battle>;
+        Insert: DatabaseInsert<BattleInsert>;
+        Update: DatabaseUpdate<Partial<Omit<Battle, 'id' | 'created_at'>>>;
+        Relationships: [];
       };
       battle_participants: {
-        Row: BattleParticipant;
-        Insert: BattleParticipantInsert;
-        Update: never;
+        Row: DatabaseRow<BattleParticipant>;
+        Insert: DatabaseInsert<BattleParticipantInsert>;
+        Update: Record<string, never>;
+        Relationships: [];
       };
       topics: {
-        Row: Topic;
-        Insert: TopicInsert;
-        Update: Partial<Omit<Topic, 'id' | 'created_at'>>;
+        Row: DatabaseRow<Topic>;
+        Insert: DatabaseInsert<TopicInsert>;
+        Update: DatabaseUpdate<Partial<Omit<Topic, 'id' | 'created_at'>>>;
+        Relationships: [];
+      };
+      api_logs: {
+        Row: DatabaseRow<ApiLog>;
+        Insert: DatabaseInsert<ApiLogInsert>;
+        Update: Record<string, never>;
+        Relationships: [];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
+    Views: {};
+    Functions: {};
+    Enums: {};
   };
 };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import type { FollowInsert } from '@/types/database';
+import type { Database } from '@/types/database';
 
 export async function POST(
   request: NextRequest,
@@ -18,7 +18,7 @@ export async function POST(
     return NextResponse.json({ error: '자신을 팔로우할 수 없습니다.' }, { status: 400 });
   }
 
-  const insertData: FollowInsert = {
+  const insertData: Database['public']['Tables']['follows']['Insert'] = {
     follower_id: user.id,
     following_id: targetUserId,
   };

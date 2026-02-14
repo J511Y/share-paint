@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { formatRelativeTime } from '@/lib/utils';
 import { CommentForm } from './CommentForm';
-import type { Comment } from '@/types/database';
+import type { Comment } from '@/types/api-contracts';
+import { ApiCommentArraySchema } from '@/lib/validation/schemas';
+import { parseJsonResponse } from '@/lib/validation/http';
 
 interface CommentListProps {
   paintingId: string;
@@ -19,7 +21,7 @@ export function CommentList({ paintingId }: CommentListProps) {
       try {
         const res = await fetch(`/api/paintings/${paintingId}/comments`);
         if (res.ok) {
-          const data = await res.json();
+          const data = await parseJsonResponse(res, ApiCommentArraySchema);
           setComments(data);
         }
       } catch (error) {

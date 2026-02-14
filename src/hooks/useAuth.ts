@@ -4,7 +4,8 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
-import type { Profile, ProfileInsert } from '@/types/database';
+import { ApiProfileSchema } from '@/lib/validation/schemas';
+import type { Database, Profile } from '@/types/database';
 
 export function useAuth() {
   const router = useRouter();
@@ -14,7 +15,19 @@ export function useAuth() {
   useEffect(() => {
     const supabase = createClient();
 
-    // 초기 세션 확인
+    const getProfile = async (userId: string): Promise<Profile | null> => {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error || !profile) return null;
+
+      const parsedProfile = ApiProfileSchema.safeParse(profile);
+      return parsedProfile.success ? parsedProfile.data : null;
+    };
+
     const initAuth = async () => {
       try {
         const {
@@ -22,14 +35,8 @@ export function useAuth() {
         } = await supabase.auth.getUser();
 
         if (authUser) {
-          // 프로필 정보 가져오기
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', authUser.id)
-            .single();
-
-          setUser(profile as Profile | null);
+          const profile = await getProfile(authUser.id);
+          setUser(profile);
         } else {
           setUser(null);
         }
@@ -41,23 +48,20 @@ export function useAuth() {
 
     initAuth();
 
-    // 인증 상태 변경 리스너
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        setUser(profile as Profile | null);
-      } else if (event === 'SIGNED_OUT') {
-        logout();
-        router.push('/login');
+    } = supabase.auth.onAuthStateChange(
+      async (event: string, session: { user?: { id: string } } | null) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const profile = await getProfile(session.user.id);
+          setUser(profile);
+        } else if (event === 'SIGNED_OUT') {
+          logout();
+          router.push('/login');
+        }
       }
-    });
+    );
+
 
     return () => {
       subscription.unsubscribe();
@@ -69,7 +73,6 @@ export function useAuth() {
     setLoading(true);
 
     try {
-      console.log('Attempting login for:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -107,9 +110,8 @@ export function useAuth() {
 
       if (error) throw error;
 
-      // 프로필 생성
       if (data.user) {
-        const profileData: ProfileInsert = {
+        const profileData: Database['public']['Tables']['profiles']['Insert'] = {
           id: data.user.id,
           username,
           display_name: displayName || username,
@@ -117,7 +119,7 @@ export function useAuth() {
 
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert(profileData as never);
+          .insert(profileData);
 
         if (profileError) throw profileError;
       }

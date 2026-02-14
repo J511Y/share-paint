@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import type { Database } from '@/types/database';
+import {
+  ApiCommentArraySchema,
+  ApiCommentSchema,
+  CommentCreatePayloadSchema,
+} from '@/lib/validation/schemas';
+import { getUuidParam } from '@/lib/validation/params';
 
-// 댓글 목록 조회
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: paintingId } = await params;
-  const supabase = await createClient();
+  const resolvedParams = await params;
+  const paintingId = getUuidParam(resolvedParams, 'id');
+  if (!paintingId) {
+    return NextResponse.json({ error: 'Invalid painting id.' }, { status: 400 });
+  }
 
+  const supabase = await createClient();
   const { data: comments, error } = await supabase
     .from('comments')
     .select(`
@@ -22,15 +32,24 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(comments);
+  const parsedComments = ApiCommentArraySchema.safeParse(comments ?? []);
+  if (!parsedComments.success) {
+    return NextResponse.json({ error: 'Invalid comments response payload.' }, { status: 500 });
+  }
+
+  return NextResponse.json(parsedComments.data);
 }
 
-// 댓글 작성
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: paintingId } = await params;
+  const resolvedParams = await params;
+  const paintingId = getUuidParam(resolvedParams, 'id');
+  if (!paintingId) {
+    return NextResponse.json({ error: 'Invalid painting id.' }, { status: 400 });
+  }
+
   const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -39,20 +58,21 @@ export async function POST(
   }
 
   try {
-    const body = await request.json();
-    const { content } = body;
-
-    if (!content || !content.trim()) {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
+    const rawBody = await request.json();
+    const parsedBody = CommentCreatePayloadSchema.safeParse(rawBody);
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
     }
+
+    const commentInsert: Database['public']['Tables']['comments']['Insert'] = {
+      user_id: user.id,
+      painting_id: paintingId,
+      content: parsedBody.data.content,
+    };
 
     const { data: comment, error } = await supabase
       .from('comments')
-      .insert({
-        user_id: user.id,
-        painting_id: paintingId,
-        content: content.trim(),
-      })
+      .insert(commentInsert)
       .select(`
         *,
         profile:profiles(*)
@@ -63,8 +83,13 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(comment);
-  } catch (err) {
+    const parsedComment = ApiCommentSchema.safeParse(comment);
+    if (!parsedComment.success) {
+      return NextResponse.json({ error: 'Invalid comment response payload.' }, { status: 500 });
+    }
+
+    return NextResponse.json(parsedComment.data);
+  } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

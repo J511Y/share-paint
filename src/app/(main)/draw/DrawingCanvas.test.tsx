@@ -11,6 +11,14 @@ const mockGetDataUrl = vi.fn(() => 'data:image/png;base64,test') as ReturnType<t
 const mockLoadImage = vi.fn();
 
 // useResponsiveCanvas 모킹
+const createMockAnchorElement = (): HTMLAnchorElement => {
+  const anchor = document.createElement('a');
+  anchor.href = '';
+  anchor.download = '';
+  anchor.click = vi.fn() as HTMLAnchorElement['click'];
+  return anchor;
+};
+
 const mockResponsiveCanvas = {
   width: 800,
   height: 600,
@@ -244,21 +252,13 @@ describe('DrawingCanvas', () => {
       const user = userEvent.setup();
 
       // createElement를 render 전에 모킹
-      const mockLink = {
-        href: '',
-        download: '',
-        click: vi.fn(),
-        style: {},
-        setAttribute: vi.fn(),
-        appendChild: vi.fn(),
-        removeChild: vi.fn(),
-      };
+      const mockLink = createMockAnchorElement();
       const originalCreateElement = document.createElement.bind(document);
       const createElementSpy = vi
         .spyOn(document, 'createElement')
         .mockImplementation((tagName: string) => {
           if (tagName === 'a') {
-            return mockLink as unknown as HTMLAnchorElement;
+            return mockLink;
           }
           return originalCreateElement(tagName);
         });
@@ -384,21 +384,13 @@ describe('DrawingCanvas - 엣지 케이스', () => {
     // 이 테스트에서만 getDataUrl이 null 반환
     mockGetDataUrl.mockReturnValueOnce(null);
 
-    const mockLink = {
-      href: '',
-      download: '',
-      click: vi.fn(),
-      style: {},
-      setAttribute: vi.fn(),
-      appendChild: vi.fn(),
-      removeChild: vi.fn(),
-    };
+    const mockLink = createMockAnchorElement();
     const originalCreateElement = document.createElement.bind(document);
     const createElementSpy = vi
       .spyOn(document, 'createElement')
       .mockImplementation((tagName: string) => {
         if (tagName === 'a') {
-          return mockLink as unknown as HTMLAnchorElement;
+          return mockLink;
         }
         return originalCreateElement(tagName);
       });

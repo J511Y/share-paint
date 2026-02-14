@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
+import { ApiProfileSchema } from '@/lib/validation/schemas';
 import type { Profile } from '@/types/database';
 
 interface AuthProviderProps {
@@ -15,6 +16,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const supabase = createClient();
 
+    const getProfile = async (userId: string): Promise<Profile | null> => {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error || !profile) return null;
+      const parsedProfile = ApiProfileSchema.safeParse(profile);
+      return parsedProfile.success ? parsedProfile.data : null;
+    };
+
     const initAuth = async () => {
       try {
         const {
@@ -22,13 +35,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } = await supabase.auth.getUser();
 
         if (authUser) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', authUser.id)
-            .single();
-
-          setUser(profile as Profile | null);
+          const profile = await getProfile(authUser.id);
+          setUser(profile);
         } else {
           setUser(null);
         }
@@ -42,19 +50,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        setUser(profile as Profile | null);
-      } else if (event === 'SIGNED_OUT') {
-        logout();
+    } = supabase.auth.onAuthStateChange(
+      async (event: string, session: { user?: { id: string } } | null) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const profile = await getProfile(session.user.id);
+          setUser(profile);
+        } else if (event === 'SIGNED_OUT') {
+          logout();
+        }
       }
-    });
+    );
+
 
     return () => {
       subscription.unsubscribe();

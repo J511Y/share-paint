@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import type { LikeInsert } from '@/types/database';
 
 export async function POST(
   request: NextRequest,
@@ -13,12 +14,14 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const likeData: LikeInsert = {
+    user_id: user.id,
+    painting_id: paintingId,
+  };
+
   const { error } = await supabase
     .from('likes')
-    .insert({
-      user_id: user.id,
-      painting_id: paintingId,
-    });
+    .insert(likeData);
 
   if (error) {
     // 이미 좋아요를 누른 경우
@@ -47,18 +50,10 @@ export async function DELETE(
     .from('likes')
     .delete()
     .eq('user_id', user.id)
-    .eq('painting_id: paintingId'); // Typo in original thought, fixing here: .eq('painting_id', paintingId)
-
-  // Wait, I made a typo in the string literal in my thought process? No, I'm writing code now.
-  // Correcting the code:
-  const { error: deleteError } = await supabase
-    .from('likes')
-    .delete()
-    .eq('user_id', user.id)
     .eq('painting_id', paintingId);
 
-  if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

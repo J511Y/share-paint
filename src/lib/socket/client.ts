@@ -33,8 +33,11 @@ export const getSocket = (): Socket => {
   return socket;
 };
 
-export const connectSocket = () => {
+export const connectSocket = (auth?: Record<string, unknown>) => {
   const s = getSocket();
+  if (auth) {
+    s.auth = auth;
+  }
   if (!s.connected) {
     s.connect();
   }

@@ -140,7 +140,7 @@ export function useCanvas({ width, height, backgroundColor = '#FFFFFF', onDrawEn
     contextRef.current?.closePath();
     lastPointRef.current = null;
     setIsDrawing(false);
-  }, [isDrawing, setIsDrawing, addToHistory]);
+  }, [isDrawing, setIsDrawing, addToHistory, onDrawEnd]);
 
   // 캔버스 클리어
   const clearCanvas = useCallback(() => {

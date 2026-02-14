@@ -4,13 +4,8 @@ import { useState } from 'react';
 import { RefreshCw, Lock, Unlock, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-
-interface Topic {
-  id: string;
-  content: string;
-  category: string;
-  difficulty: string;
-}
+import { ApiTopic, ApiTopicSchema } from '@/lib/validation/schemas';
+import { parseJsonResponse } from '@/lib/validation/http';
 
 interface RandomTopicSelectorProps {
   onTopicSelect: (topic: string) => void;
@@ -18,21 +13,21 @@ interface RandomTopicSelectorProps {
 }
 
 export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSelectorProps) {
-  const [currentTopic, setCurrentTopic] = useState<Topic | null>(null);
+  const [currentTopic, setCurrentTopic] = useState<ApiTopic | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
 
   const fetchRandomTopic = async () => {
     if (isLocked) return;
     
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/topics/random');
-      if (res.ok) {
-        const topic = await res.json();
-        setCurrentTopic(topic);
-        onTopicSelect(topic.content);
-      }
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/topics/random');
+        if (res.ok) {
+          const topic = await parseJsonResponse(res, ApiTopicSchema);
+          setCurrentTopic(topic);
+          onTopicSelect(topic.content);
+        }
     } catch (error) {
       console.error('Failed to fetch random topic', error);
     } finally {
