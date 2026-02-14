@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { apiHandler, authApiHandler } from '@/lib/api-handler';
 import { devLogger as logger } from '@/lib/logger';
 import type { Battle, BattleInsert } from '@/types/database';
+import { hashBattlePassword } from '@/lib/security/battle-password';
 
 // 대결방 목록 조회
 export const GET = apiHandler(async ({ req, requestId }) => {
@@ -73,11 +74,14 @@ export const POST = authApiHandler(async ({ req, user, requestId }) => {
     time_limit: time_limit ? parseInt(String(time_limit), 10) : 300,
     max_participants: max_participants ? parseInt(String(max_participants), 10) : 10,
     is_private: !!is_private,
-    password: password ? String(password) : null,
+    password_hash: password ? hashBattlePassword(String(password)) : null,
     topic: topic ? String(topic) : null,
   };
 
-  logger.debug('Battle data prepared', { requestId, battleData: { ...battleData, password: battleData.password ? '[REDACTED]' : null } });
+  logger.debug('Battle data prepared', {
+    requestId,
+    battleData: { ...battleData, password_hash: '[REDACTED]' },
+  });
 
   // 대결방 생성
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,7 +97,7 @@ export const POST = authApiHandler(async ({ req, user, requestId }) => {
     logger.error('Failed to create battle', battleError, {
       requestId,
       userId: user?.id,
-      battleData: { ...battleData, password: '[REDACTED]' },
+      battleData: { ...battleData, password_hash: '[REDACTED]' },
     });
     return NextResponse.json({ error: '대결방 생성에 실패했습니다.', detail: battleError?.message }, { status: 500 });
   }

@@ -57,6 +57,7 @@ export interface Battle {
   status: 'waiting' | 'in_progress' | 'finished';
   is_private: boolean;
   password?: string | null;
+  password_hash?: string | null;
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
@@ -81,6 +82,36 @@ export interface Topic {
   difficulty: 'easy' | 'normal' | 'hard';
   created_at: string;
 }
+
+export interface ApiLog {
+  id: string;
+  created_at: string;
+  level: 'debug' | 'info' | 'warn' | 'error';
+  message: string;
+  context: Record<string, unknown>;
+  error_message: string | null;
+  error_stack: string | null;
+  request_id: string | null;
+  user_id: string | null;
+  path: string | null;
+  method: string | null;
+  status_code: number | null;
+  duration_ms: number | null;
+}
+
+export type ApiLogInsert = {
+  level: 'debug' | 'info' | 'warn' | 'error';
+  message: string;
+  context?: Record<string, unknown>;
+  error_message?: string | null;
+  error_stack?: string | null;
+  request_id?: string | null;
+  user_id?: string | null;
+  path?: string | null;
+  method?: string | null;
+  status_code?: number | null;
+  duration_ms?: number | null;
+};
 
 // Insert 타입 정의
 export type ProfileInsert = {
@@ -123,7 +154,7 @@ export type BattleInsert = {
   time_limit: number;
   max_participants?: number;
   is_private?: boolean;
-  password?: string | null;
+  password_hash?: string | null;
 };
 
 export type BattleParticipantInsert = {
@@ -180,6 +211,11 @@ export type Database = {
         Row: Topic;
         Insert: TopicInsert;
         Update: Partial<Omit<Topic, 'id' | 'created_at'>>;
+      };
+      api_logs: {
+        Row: ApiLog;
+        Insert: ApiLogInsert;
+        Update: never;
       };
     };
     Views: Record<string, never>;
