@@ -2,14 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { PaintingCard } from '@/components/feed/PaintingCard';
-import type { Painting } from '@/types/database';
+import type { PaintingWithProfile } from '@/types/api-contracts';
+import { ApiPaintingArraySchema } from '@/lib/validation/schemas';
+import { parseJsonResponse } from '@/lib/validation/http';
 
 interface PaintingGridProps {
   userId: string;
 }
 
 export function PaintingGrid({ userId }: PaintingGridProps) {
-  const [paintings, setPaintings] = useState<any[]>([]); // any for compatibility with PaintingCard props
+  const [paintings, setPaintings] = useState<PaintingWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,7 +19,7 @@ export function PaintingGrid({ userId }: PaintingGridProps) {
       try {
         const res = await fetch(`/api/paintings?userId=${userId}`);
         if (res.ok) {
-          const data = await res.json();
+          const data = await parseJsonResponse(res, ApiPaintingArraySchema);
           setPaintings(data);
         }
       } catch (error) {

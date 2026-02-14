@@ -5,7 +5,9 @@ import { Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/hooks/useAuth';
-import type { Comment } from '@/types/database';
+import type { Comment } from '@/types/api-contracts';
+import { ApiCommentSchema } from '@/lib/validation/schemas';
+import { parseJsonResponse } from '@/lib/validation/http';
 
 interface CommentFormProps {
   paintingId: string;
@@ -32,7 +34,7 @@ export function CommentForm({ paintingId, onCommentAdded }: CommentFormProps) {
 
       if (!res.ok) throw new Error('Failed to post comment');
 
-      const newComment = await res.json();
+      const newComment = await parseJsonResponse(res, ApiCommentSchema);
       onCommentAdded(newComment);
       setContent('');
     } catch {

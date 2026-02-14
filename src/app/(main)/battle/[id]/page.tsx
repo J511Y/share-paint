@@ -10,10 +10,19 @@ import { useBattleStore } from '@/stores/battleStore';
 import { BattleCanvas, BattleResultView } from '@/components/battle';
 import { Button } from '@/components/ui/Button';
 import { formatDuration } from '@/lib/utils';
+import { getUuidParam } from '@/lib/validation/params';
 
 export default function BattleRoomPage() {
   const params = useParams();
-  const battleId = params.id as string;
+  const battleId = getUuidParam(params, 'id');
+  if (!battleId) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">잘못된 대전 ID</h2>
+        <p className="text-gray-600">유효하지 않은 대전 링크입니다.</p>
+      </div>
+    );
+  }
   const { sendChat, toggleReady, updateCanvas, startBattle, vote } = useBattle(battleId);
   const {
     participants,

@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { authApiHandler } from '@/lib/api-handler';
 import { devLogger as logger } from '@/lib/logger';
-import type { Battle } from '@/types/database';
 import { hashBattlePassword, verifyBattlePassword } from '@/lib/security/battle-password';
+import { BattleJoinPayloadSchema } from '@/lib/validation/schemas';
+import { getUuidParam } from '@/lib/validation/params';
 
 export const POST = authApiHandler(async ({ req, params, user, requestId }) => {
-  const battleId = params?.id;
+  const battleId = getUuidParam(params, 'id');
 
   if (!battleId) {
     logger.warn('Battle ID not provided for join', { requestId });
@@ -17,14 +18,17 @@ export const POST = authApiHandler(async ({ req, params, user, requestId }) => {
 
   logger.info('User attempting to join battle', { requestId, battleId, userId: user?.id });
 
-  let body: { password?: string } = {};
+  let password = '';
   try {
-    body = await req.json();
+    const body = await req.json();
+    const parsedBody = BattleJoinPayloadSchema.safeParse(body);
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+    }
+    password = parsedBody.data.password ?? '';
   } catch {
     // empty body is allowed for public battles
   }
-
-  const password = typeof body.password === 'string' ? body.password : '';
 
   const { data: battleData, error: battleError } = await supabase
     .from('battles')
@@ -32,12 +36,12 @@ export const POST = authApiHandler(async ({ req, params, user, requestId }) => {
     .eq('id', battleId)
     .single();
 
-  const battle = battleData as Battle | null;
-
-  if (battleError || !battle) {
+  if (battleError || !battleData) {
     logger.warn('Battle not found', { requestId, battleId, error: battleError });
     return NextResponse.json({ error: 'Battle not found.' }, { status: 404 });
   }
+
+  const battle = battleData;
 
   logger.debug('Battle found', { requestId, battleId, battleStatus: battle.status, isPrivate: battle.is_private });
 

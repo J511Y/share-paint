@@ -1,15 +1,22 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { apiHandler, authApiHandler } from '@/lib/api-handler';
 import { devLogger as logger } from '@/lib/logger';
-import type { Battle, BattleInsert } from '@/types/database';
+import type { BattleInsert } from '@/types/database';
 import { hashBattlePassword } from '@/lib/security/battle-password';
+import {
+  ApiBattleSchema,
+  BattleArraySchema,
+  BattleCreatePayloadSchema,
+} from '@/lib/validation/schemas';
 
-// 대결방 목록 조회
 export const GET = apiHandler(async ({ req, requestId }) => {
   const supabase = await createClient();
   const searchParams = req.nextUrl.searchParams;
-  const status = searchParams.get('status') || 'waiting';
+  const rawStatus = searchParams.get('status') || 'waiting';
+  const statusResult = z.enum(['waiting', 'in_progress', 'finished']).safeParse(rawStatus);
+  const status = statusResult.success ? statusResult.data : 'waiting';
 
   logger.debug('Fetching battles', { requestId, status });
 
@@ -25,57 +32,59 @@ export const GET = apiHandler(async ({ req, requestId }) => {
 
   if (error) {
     logger.error('Failed to fetch battles', error, { requestId, status });
-    return NextResponse.json({ error: '대결방 목록을 불러오는데 실패했습니다.' }, { status: 500 });
+    return NextResponse.json({ error: '대전 목록 조회 중 오류가 발생했습니다.' }, { status: 500 });
   }
 
-  logger.debug('Battles fetched successfully', { requestId, count: data?.length });
-  return NextResponse.json(data);
+  const parsed = BattleArraySchema.safeParse(data ?? []);
+  if (!parsed.success) {
+    logger.error('Failed to parse battle list response', {
+      requestId,
+      issues: parsed.error.issues,
+      status,
+    });
+    return NextResponse.json({ error: '대전 목록 응답 형식이 올바르지 않습니다.' }, { status: 500 });
+  }
+
+  logger.debug('Battles fetched successfully', { requestId, count: parsed.data.length });
+  return NextResponse.json(parsed.data);
 });
 
-// 대결방 생성
 export const POST = authApiHandler(async ({ req, user, requestId }) => {
   const supabase = await createClient();
 
   logger.info('Creating battle room', { requestId, userId: user?.id });
 
-  let body: Record<string, unknown>;
+  let payload;
   try {
-    body = await req.json();
-    logger.debug('Request body parsed', { requestId, body });
+    const body = await req.json();
+    const parsedBody = BattleCreatePayloadSchema.safeParse(body);
+    if (!parsedBody.success) {
+      logger.warn('Battle creation failed: invalid payload', {
+        requestId,
+        userId: user?.id,
+        issues: parsedBody.error.issues,
+      });
+      return NextResponse.json({ error: '요청 바디가 유효하지 않습니다.' }, { status: 400 });
+    }
+    payload = parsedBody.data;
   } catch (parseError) {
     logger.error('Failed to parse request body', parseError, { requestId });
-    return NextResponse.json({ error: '잘못된 요청 형식입니다.' }, { status: 400 });
+    return NextResponse.json({ error: '요청 형식을 파싱할 수 없습니다.' }, { status: 400 });
   }
 
-  const { title, time_limit, max_participants, is_private, password, topic } = body as {
-    title?: string;
-    time_limit?: string;
-    max_participants?: string;
-    is_private?: boolean;
-    password?: string;
-    topic?: string;
-  };
-
-  // 유효성 검사
-  if (!title) {
-    logger.warn('Battle creation failed: missing title', { requestId, userId: user?.id });
-    return NextResponse.json({ error: '방 제목을 입력해주세요.' }, { status: 400 });
-  }
-
-  if (is_private && !password) {
+  if (payload.is_private && !payload.password) {
     logger.warn('Battle creation failed: missing password for private room', { requestId });
-    return NextResponse.json({ error: '비공개 방은 비밀번호가 필요합니다.' }, { status: 400 });
+    return NextResponse.json({ error: '비공개 방 생성 시 비밀번호가 필요합니다.' }, { status: 400 });
   }
 
-  // 대결방 데이터 준비
   const battleData: BattleInsert = {
     host_id: user!.id,
-    title: String(title),
-    time_limit: time_limit ? parseInt(String(time_limit), 10) : 300,
-    max_participants: max_participants ? parseInt(String(max_participants), 10) : 10,
-    is_private: !!is_private,
-    password_hash: password ? hashBattlePassword(String(password)) : null,
-    topic: topic ? String(topic) : null,
+    title: payload.title,
+    time_limit: payload.time_limit,
+    max_participants: payload.max_participants,
+    is_private: payload.is_private,
+    password_hash: payload.password ? hashBattlePassword(payload.password) : null,
+    topic: payload.topic || null,
   };
 
   logger.debug('Battle data prepared', {
@@ -83,49 +92,63 @@ export const POST = authApiHandler(async ({ req, user, requestId }) => {
     battleData: { ...battleData, password_hash: '[REDACTED]' },
   });
 
-  // 대결방 생성
   const { data: battleResult, error: battleError } = await supabase
     .from('battles')
     .insert(battleData)
     .select()
     .single();
 
-  const battle = battleResult;
-
-  if (battleError || !battle) {
+  if (battleError || !battleResult) {
     logger.error('Failed to create battle', battleError, {
       requestId,
       userId: user?.id,
       battleData: { ...battleData, password_hash: '[REDACTED]' },
     });
-    return NextResponse.json({ error: '대결방 생성에 실패했습니다.', detail: battleError?.message }, { status: 500 });
+    return NextResponse.json(
+      { error: '대전 생성 중 오류가 발생했습니다.', detail: battleError?.message },
+      { status: 500 }
+    );
   }
 
-  logger.info('Battle created', { requestId, battleId: battle.id });
+  const battleParsed = ApiBattleSchema.safeParse(battleResult);
+  if (!battleParsed.success) {
+    logger.error('Failed to parse battle create response', {
+      requestId,
+      issues: battleParsed.error.issues,
+      battleId: battleResult.id,
+    });
+    return NextResponse.json({ error: '생성된 대전 데이터 형식이 유효하지 않습니다.' }, { status: 500 });
+  }
 
-  // 호스트를 참가자로 자동 등록
+  logger.info('Battle created', { requestId, battleId: battleParsed.data.id });
+
   const { error: joinError } = await supabase
     .from('battle_participants')
     .insert({
-      battle_id: battle.id,
+      battle_id: battleParsed.data.id,
       user_id: user!.id,
     });
 
   if (joinError) {
     logger.error('Failed to add host as participant', joinError, {
       requestId,
-      battleId: battle.id,
+      battleId: battleParsed.data.id,
       userId: user?.id,
     });
 
-    // 실패 시 대결방 삭제 (롤백)
-    await supabase.from('battles').delete().eq('id', battle.id);
-    logger.warn('Battle rolled back due to participant join failure', { requestId, battleId: battle.id });
+    await supabase.from('battles').delete().eq('id', battleParsed.data.id);
+    logger.warn('Battle rolled back due to participant join failure', {
+      requestId,
+      battleId: battleParsed.data.id,
+    });
 
-    return NextResponse.json({ error: '대결방 참가 처리에 실패했습니다.', detail: joinError.message }, { status: 500 });
+    return NextResponse.json(
+      { error: '대전 참가자 등록 중 오류가 발생했습니다.', detail: joinError.message },
+      { status: 500 }
+    );
   }
 
-  logger.info('Battle creation completed successfully', { requestId, battleId: battle.id, userId: user?.id });
+  logger.info('Battle creation completed successfully', { requestId, battleId: battleParsed.data.id, userId: user?.id });
 
-  return NextResponse.json(battle);
+  return NextResponse.json(battleParsed.data);
 });

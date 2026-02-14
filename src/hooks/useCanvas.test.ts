@@ -34,21 +34,26 @@ const mockContext = {
   putImageData: vi.fn(),
 }
 
-const mockCanvas = {
-  width: 100,
-  height: 100,
-  getContext: vi.fn(() => mockContext),
-  getBoundingClientRect: vi.fn(() => ({
-    left: 0,
-    top: 0,
+const createMockCanvasElement = (): HTMLCanvasElement => {
+  const canvas = {
     width: 100,
     height: 100,
-  })),
-  toDataURL: vi.fn(() => 'data:image/png;base64,test'),
-}
+    getContext: vi.fn(() => mockContext),
+    getBoundingClientRect: vi.fn(() => ({
+      left: 0,
+      top: 0,
+      width: 100,
+      height: 100,
+    })),
+    toDataURL: vi.fn(() => 'data:image/png;base64,test'),
+  } as HTMLCanvasElement;
 
-// 순환 참조 설정
-mockContext.canvas = mockCanvas as unknown as HTMLCanvasElement
+  mockContext.canvas = canvas;
+
+  return canvas;
+};
+
+const mockCanvas = createMockCanvasElement()
 
 describe('useCanvas', () => {
   beforeEach(() => {

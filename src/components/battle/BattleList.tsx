@@ -6,22 +6,30 @@ import { Users, Clock, Lock, Play } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
-import type { Battle } from '@/types/database';
-
-interface ParticipantCount {
-  count: number;
-}
-
-interface BattleWithCount extends Battle {
-  participants: ParticipantCount[] | { id: string }[];
-}
+import type { BattleListItem } from '@/types/api-contracts';
+import { BattleArraySchema, BattleParticipantCountSchema } from '@/lib/validation/schemas';
+import { parseJsonResponse } from '@/lib/validation/http';
 
 interface BattleListProps {
-  initialBattles?: Battle[];
+  initialBattles?: BattleListItem[];
+}
+
+function getParticipantCount(participants: BattleListItem['participants']): number {
+  if (!participants || participants.length === 0) {
+    return 0;
+  }
+
+  const first = participants[0];
+  const parsed = BattleParticipantCountSchema.safeParse(first);
+  if (parsed.success) {
+    return parsed.data.count;
+  }
+
+  return participants.length;
 }
 
 export function BattleList({ initialBattles = [] }: BattleListProps) {
-  const [battles, setBattles] = useState<BattleWithCount[]>(initialBattles as BattleWithCount[]);
+  const [battles, setBattles] = useState<BattleListItem[]>(initialBattles);
   const [loading, setLoading] = useState(!initialBattles.length);
 
   const fetchBattles = async () => {
@@ -29,7 +37,7 @@ export function BattleList({ initialBattles = [] }: BattleListProps) {
       setLoading(true);
       const res = await fetch('/api/battle?status=waiting');
       if (res.ok) {
-        const data = await res.json();
+        const data = await parseJsonResponse(res, BattleArraySchema);
         setBattles(data);
       }
     } catch {
@@ -91,8 +99,8 @@ export function BattleList({ initialBattles = [] }: BattleListProps) {
                 <Users className="w-4 h-4" />
                 <span>
                   {Array.isArray(battle.participants) && battle.participants[0] && 'count' in battle.participants[0]
-                    ? (battle.participants[0] as ParticipantCount).count
-                    : (battle.participants?.length || 1)}
+                    ? getParticipantCount(battle.participants)
+                    : 1}
                   {' / '}
                   {battle.max_participants}
                 </span>
