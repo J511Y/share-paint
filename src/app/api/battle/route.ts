@@ -9,6 +9,7 @@ import {
   ApiBattleSchema,
   BattleArraySchema,
   BattleCreatePayloadSchema,
+  type ApiBattle,
 } from '@/lib/validation/schemas';
 
 export const GET = apiHandler(async ({ req, requestId }) => {

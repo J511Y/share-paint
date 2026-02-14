@@ -25,7 +25,7 @@ export const ApiPaintingSchema = z.object({
   comments_count: z.coerce.number().int().nonnegative(),
   battle_id: z.string().uuid().nullable(),
   created_at: z.string(),
-  profile: ApiProfileSchema.nullable().optional(),
+  profile: ApiProfileSchema.nullable(),
 });
 
 export type ApiPainting = z.infer<typeof ApiPaintingSchema>;
@@ -110,7 +110,7 @@ export const ApiCommentSchema = z.object({
   painting_id: z.string().uuid(),
   content: z.string().trim().min(1),
   created_at: z.string(),
-  profile: ApiProfileSchema.nullable().optional(),
+  profile: ApiProfileSchema.nullable(),
 });
 
 export type ApiComment = z.infer<typeof ApiCommentSchema>;

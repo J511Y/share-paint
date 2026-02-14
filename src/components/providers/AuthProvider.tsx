@@ -50,14 +50,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const profile = await getProfile(session.user.id);
-        setUser(profile);
-      } else if (event === 'SIGNED_OUT') {
-        logout();
+    } = supabase.auth.onAuthStateChange(
+      async (event: string, session: { user?: { id: string } } | null) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const profile = await getProfile(session.user.id);
+          setUser(profile);
+        } else if (event === 'SIGNED_OUT') {
+          logout();
+        }
       }
-    });
+    );
+
 
     return () => {
       subscription.unsubscribe();

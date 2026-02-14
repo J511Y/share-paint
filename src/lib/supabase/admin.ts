@@ -1,7 +1,9 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
-let adminClient: ReturnType<typeof createSupabaseClient<Database>> | null = null;
+let adminClient: ReturnType<
+  typeof createSupabaseClient<Database, 'public'>
+> | null = null;
 
 export function createAdminClient() {
   if (adminClient) return adminClient;
@@ -13,12 +15,16 @@ export function createAdminClient() {
     throw new Error('Missing SUPABASE admin environment variables');
   }
 
-  adminClient = createSupabaseClient<Database>(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+  adminClient = createSupabaseClient<Database, 'public'>(
+    supabaseUrl,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
 
   return adminClient;
 }

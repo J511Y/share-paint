@@ -9,23 +9,15 @@ import { ProfileHeader, PaintingGrid } from '@/components/profile';
 import { getStringParam } from '@/lib/validation/params';
 import { ProfileWithCountsSchema } from '@/lib/validation/schemas';
 import { parseJsonResponse } from '@/lib/validation/http';
-import type { ProfileResponse } from '@/types/api-contracts';
+import type { ProfileWithCounts } from '@/lib/validation/schemas';
 
 export default function ProfilePage() {
   const params = useParams();
   const username = getStringParam(params, 'username');
-  if (!username) {
-    return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">잘못된 사용자명</h2>
-        <p className="text-gray-600">사용자명이 유효하지 않습니다.</p>
-      </div>
-    );
-  }
 
   const { user } = useAuth();
 
-  const [profile, setProfile] = useState<ProfileResponse | null>(null);
+  const [profile, setProfile] = useState<ProfileWithCounts | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,6 +46,15 @@ export default function ProfilePage() {
     fetchProfile();
   }, [username]);
 
+  if (!username) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">잘못된 사용자명</h2>
+        <p className="text-gray-600">사용자명이 유효하지 않습니다.</p>
+      </div>
+    );
+  }
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-4rem)]">

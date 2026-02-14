@@ -9,7 +9,11 @@ type CookieToSet = {
   options?: Partial<ResponseCookie>;
 };
 
-export async function createClient() {
+type ServerClient = ReturnType<typeof createServerClient<Database>>;
+
+export async function createClient(): Promise<
+  ServerClient
+> {
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
@@ -26,7 +30,7 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Server Component에서 호출된 경우 무시
+            // Server Component? fallback handling intentionally omitted in tests.
           }
         },
       },

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/authStore';
 import { ApiProfileSchema } from '@/lib/validation/schemas';
-import type { Profile, ProfileInsert } from '@/types/database';
+import type { Database, Profile } from '@/types/database';
 
 export function useAuth() {
   const router = useRouter();
@@ -50,15 +50,18 @@ export function useAuth() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const profile = await getProfile(session.user.id);
-        setUser(profile);
-      } else if (event === 'SIGNED_OUT') {
-        logout();
-        router.push('/login');
+    } = supabase.auth.onAuthStateChange(
+      async (event: string, session: { user?: { id: string } } | null) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          const profile = await getProfile(session.user.id);
+          setUser(profile);
+        } else if (event === 'SIGNED_OUT') {
+          logout();
+          router.push('/login');
+        }
       }
-    });
+    );
+
 
     return () => {
       subscription.unsubscribe();
@@ -108,7 +111,7 @@ export function useAuth() {
       if (error) throw error;
 
       if (data.user) {
-        const profileData: ProfileInsert = {
+        const profileData: Database['public']['Tables']['profiles']['Insert'] = {
           id: data.user.id,
           username,
           display_name: displayName || username,

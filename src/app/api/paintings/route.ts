@@ -6,6 +6,7 @@ import {
   ApiPaintingSchema,
   PaintingCreatePayloadSchema,
 } from '@/lib/validation/schemas';
+import type { PaintingInsert } from '@/types/database';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -26,10 +27,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
     }
 
+    const paintingData: PaintingInsert = parsedBody.data;
+
     const { data, error } = await supabase
       .from('paintings')
-      .insert(parsedBody.data)
-      .select()
+      .insert(paintingData)
+      .select(`
+        *,
+        profile:profiles(*)
+      `)
       .single();
 
     if (error) {

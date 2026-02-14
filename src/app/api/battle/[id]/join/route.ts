@@ -63,7 +63,7 @@ export const POST = authApiHandler(async ({ req, params, user, requestId }) => {
           password: null,
         })
         .eq('id', battleId)
-        .then((result) => {
+        .then((result: { error: { message?: string } | null }) => {
           if (result.error) {
             logger.warn('Failed to migrate battle password hash', {
               requestId,

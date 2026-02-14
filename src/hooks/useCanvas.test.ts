@@ -46,7 +46,7 @@ const createMockCanvasElement = (): HTMLCanvasElement => {
       height: 100,
     })),
     toDataURL: vi.fn(() => 'data:image/png;base64,test'),
-  } as HTMLCanvasElement;
+  } as unknown as HTMLCanvasElement;
 
   mockContext.canvas = canvas;
 

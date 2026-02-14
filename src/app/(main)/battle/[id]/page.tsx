@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -15,15 +15,7 @@ import { getUuidParam } from '@/lib/validation/params';
 export default function BattleRoomPage() {
   const params = useParams();
   const battleId = getUuidParam(params, 'id');
-  if (!battleId) {
-    return (
-      <div className="container mx-auto px-4 py-12 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">잘못된 대전 ID</h2>
-        <p className="text-gray-600">유효하지 않은 대전 링크입니다.</p>
-      </div>
-    );
-  }
-  const { sendChat, toggleReady, updateCanvas, startBattle, vote } = useBattle(battleId);
+  const { sendChat, toggleReady, updateCanvas, startBattle, vote } = useBattle(battleId || '');
   const {
     participants,
     messages,
@@ -37,6 +29,15 @@ export default function BattleRoomPage() {
   
   const [chatInput, setChatInput] = useState('');
   const [hasVoted, setHasVoted] = useState(false);
+
+  if (!battleId) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">잘못된 battle ID</h2>
+        <p className="text-gray-600">올바른 대결방 ID를 확인해주세요.</p>
+      </div>
+    );
+  }
 
   const handleVote = (paintingUserId: string) => {
     vote(paintingUserId);
@@ -59,7 +60,7 @@ export default function BattleRoomPage() {
     );
   }
 
-  // 게임 종료 시 결과 화면 표시
+  // 寃뚯엫 醫낅즺 ??寃곌낵 ?붾㈃ ?쒖떆
   if (room.status === 'finished' && battleResult) {
     return (
       <div className="h-[calc(100vh-4rem)] bg-gray-50 overflow-hidden">
@@ -74,7 +75,7 @@ export default function BattleRoomPage() {
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row overflow-hidden bg-gray-100">
-      {/* 메인 캔버스 영역 */}
+      {/* 硫붿씤 罹붾쾭???곸뿭 */}
       <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm shrink-0">
           <div>
@@ -87,14 +88,14 @@ export default function BattleRoomPage() {
               )}
             </h1>
             <div className="text-sm text-gray-500">
-              {room.topic || '랜덤 주제'} • {Math.floor(room.timeLimit / 60)}분 제한
+              {room.topic || '?쒕뜡 二쇱젣'} ??{Math.floor(room.timeLimit / 60)}遺??쒗븳
             </div>
           </div>
           
           <div className="flex items-center gap-2">
             {!isConnected && (
               <span className="text-red-500 text-sm flex items-center gap-1">
-                <Loader2 className="w-3 h-3 animate-spin" /> 연결 중...
+                <Loader2 className="w-3 h-3 animate-spin" /> ?곌껐 以?..
               </span>
             )}
             <Button 
@@ -103,23 +104,23 @@ export default function BattleRoomPage() {
                 disabled={!isConnected}
               >
                 <Check className="w-4 h-4 mr-1" /> 
-                {isReady ? '준비 완료' : '준비하기'}
+                {isReady ? '준비완료' : '준비'}
               </Button>
           </div>
         </div>
 
-        {/* 캔버스 컴포넌트 */}
+        {/* 罹붾쾭??而댄룷?뚰듃 */}
         <div className="flex-1 overflow-hidden">
           <BattleCanvas battleId={battleId} className="h-full" />
         </div>
       </div>
 
-      {/* 사이드바 (참가자 및 채팅) */}
+      {/* ?ъ씠?쒕컮 (李멸???諛?梨꾪똿) */}
       <div className="w-full lg:w-80 flex flex-col bg-white border-l border-gray-200 shrink-0">
-        {/* 참가자 목록 */}
+        {/* 李멸???紐⑸줉 */}
         <div className="flex-1 overflow-y-auto p-4 border-b border-gray-200">
           <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-1">
-            <Users className="w-4 h-4" /> 참가자 ({participants.length}/{room.maxParticipants})
+            <Users className="w-4 h-4" /> 李멸???({participants.length}/{room.maxParticipants})
           </h3>
           <div className="space-y-4">
             {participants.map((p) => (
@@ -140,12 +141,12 @@ export default function BattleRoomPage() {
                     <div className="font-medium text-sm truncate">
                       {p.displayName || p.username}
                     </div>
-                    {p.isHost && <span className="text-xs text-primary-600 font-medium">방장</span>}
+                    {p.isHost && <span className="text-xs text-primary-600 font-medium">諛⑹옣</span>}
                   </div>
                   {p.isReady && <Check className="w-4 h-4 text-green-500" />}
                 </div>
                 
-                {/* 실시간 캔버스 미리보기 */}
+                {/* ?ㅼ떆媛?罹붾쾭??誘몃━蹂닿린 */}
                 <div className="aspect-[4/3] bg-white border border-gray-200 rounded overflow-hidden relative">
                   {p.canvasData ? (
                     <Image
@@ -158,7 +159,7 @@ export default function BattleRoomPage() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 bg-gray-50">
-                      대기 중...
+                      ?湲?以?..
                     </div>
                   )}
                 </div>
@@ -167,11 +168,11 @@ export default function BattleRoomPage() {
           </div>
         </div>
 
-        {/* 채팅창 */}
+        {/* 梨꾪똿李?*/}
         <div className="h-1/3 flex flex-col min-h-[200px]">
           <div className="p-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
             <h3 className="font-semibold text-gray-700 text-sm flex items-center gap-1">
-              <MessageSquare className="w-4 h-4" /> 채팅
+              <MessageSquare className="w-4 h-4" /> 梨꾪똿
             </h3>
           </div>
           
@@ -189,7 +190,7 @@ export default function BattleRoomPage() {
               type="text"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              placeholder="메시지 입력..."
+              placeholder="硫붿떆吏 ?낅젰..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
             />
           </form>
@@ -198,3 +199,5 @@ export default function BattleRoomPage() {
     </div>
   );
 }
+
+

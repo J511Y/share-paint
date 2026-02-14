@@ -41,6 +41,8 @@ export default async function PaintingPage(
     notFound();
   }
 
+  const profile = painting.profile;
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <Link href="/feed" className="inline-flex items-center text-gray-500 hover:text-gray-900 mb-6 transition-colors">
@@ -82,21 +84,21 @@ export default async function PaintingPage(
           {/* 작가 정보 */}
           <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <h3 className="font-semibold text-gray-900 mb-4">작가 정보</h3>
-            <Link href={`/profile/${painting.profile.username}`} className="flex items-center gap-3 group">
+            <Link href={`/profile/${profile?.username ?? ''}`} className="flex items-center gap-3 group">
               <div className="w-12 h-12 rounded-full bg-gray-200 overflow-hidden border border-gray-100">
-                {painting.profile.avatar_url ? (
-                  <img src={painting.profile.avatar_url} alt={painting.profile.username} className="w-full h-full object-cover" />
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold bg-gray-50">
-                    {painting.profile.username[0].toUpperCase()}
+                    {profile?.username?.[0]?.toUpperCase() ?? '?'}
                   </div>
                 )}
               </div>
               <div>
                 <div className="font-medium text-gray-900 group-hover:text-purple-600 transition-colors">
-                  {painting.profile.display_name || painting.profile.username}
+                  {profile?.display_name || profile?.username}
                 </div>
-                <div className="text-sm text-gray-500">@{painting.profile.username}</div>
+                <div className="text-sm text-gray-500">@{profile?.username}</div>
               </div>
             </Link>
           </div>

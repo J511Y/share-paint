@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import type { Database } from '@/types/database';
 import {
   ApiCommentArraySchema,
   ApiCommentSchema,
@@ -63,13 +64,15 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
     }
 
+    const commentInsert: Database['public']['Tables']['comments']['Insert'] = {
+      user_id: user.id,
+      painting_id: paintingId,
+      content: parsedBody.data.content,
+    };
+
     const { data: comment, error } = await supabase
       .from('comments')
-      .insert({
-        user_id: user.id,
-        painting_id: paintingId,
-        content: parsedBody.data.content,
-      })
+      .insert(commentInsert)
       .select(`
         *,
         profile:profiles(*)
