@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -61,7 +61,7 @@ function formatLogForConsole(entry: LogEntry): string {
 
 async function saveToSupabase(entry: LogEntry): Promise<void> {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const logData = {
       level: entry.level,
@@ -77,7 +77,6 @@ async function saveToSupabase(entry: LogEntry): Promise<void> {
       duration_ms: entry.duration,
     };
 
-    // api_logs 테이블은 타입 생성 전이므로 타입 단언 사용
     await (supabase.from('api_logs') as ReturnType<typeof supabase.from>).insert(logData);
   } catch (err) {
     // 로깅 실패 시 콘솔에만 출력 (무한 루프 방지)
