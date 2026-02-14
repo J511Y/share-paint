@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import type { Database } from '@/types/database';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -63,7 +64,7 @@ async function saveToSupabase(entry: LogEntry): Promise<void> {
   try {
     const supabase = createAdminClient();
 
-    const logData = {
+    const logData: Database['public']['Tables']['api_logs']['Insert'] = {
       level: entry.level,
       message: entry.message,
       context: entry.context || {},
@@ -77,7 +78,7 @@ async function saveToSupabase(entry: LogEntry): Promise<void> {
       duration_ms: entry.duration,
     };
 
-    await (supabase.from('api_logs') as ReturnType<typeof supabase.from>).insert(logData);
+    await supabase.from('api_logs').insert(logData);
   } catch (err) {
     // 로깅 실패 시 콘솔에만 출력 (무한 루프 방지)
     console.error('[Logger] Failed to save log to Supabase:', err);

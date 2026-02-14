@@ -84,14 +84,13 @@ export const POST = authApiHandler(async ({ req, user, requestId }) => {
   });
 
   // 대결방 생성
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: battleResult, error: battleError } = await (supabase
-    .from('battles') as any)
+  const { data: battleResult, error: battleError } = await supabase
+    .from('battles')
     .insert(battleData)
     .select()
     .single();
 
-  const battle = battleResult as Battle | null;
+  const battle = battleResult;
 
   if (battleError || !battle) {
     logger.error('Failed to create battle', battleError, {
@@ -105,9 +104,8 @@ export const POST = authApiHandler(async ({ req, user, requestId }) => {
   logger.info('Battle created', { requestId, battleId: battle.id });
 
   // 호스트를 참가자로 자동 등록
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: joinError } = await (supabase
-    .from('battle_participants') as any)
+  const { error: joinError } = await supabase
+    .from('battle_participants')
     .insert({
       battle_id: battle.id,
       user_id: user!.id,

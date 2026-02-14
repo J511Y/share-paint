@@ -107,8 +107,8 @@ export const POST = authApiHandler(async ({ req, params, user, requestId }) => {
     return NextResponse.json({ message: 'Already joined.' }, { status: 200 });
   }
 
-  const { error: joinError } = await (supabase
-    .from('battle_participants') as any)
+  const { error: joinError } = await supabase
+    .from('battle_participants')
     .insert({
       battle_id: battleId,
       user_id: user!.id,
