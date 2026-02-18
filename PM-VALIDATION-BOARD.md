@@ -69,3 +69,28 @@
 - `sessions_spawn`으로 PM/Backend/Frontend/DevOps 실제 위임 재개
 - PM 승인 전 `TEAM.md`의 형식(목표/산출물/제약/Acceptance) 준수
 - 각 결과를 이 문서에 링크로 반영
+
+## 5) Linear API 조회 결과 (요청 기반 정렬)
+
+조회 기준: `Paint-share` 팀, API 직접 조회 (상태/우선순위/링크)
+
+### 리뷰 상태 이슈
+- 현재 정의된 상태 집합: `Backlog`, `Todo`, `Done` (현재 `In Progress` 없음)
+- **리뷰 상태 이름을 가진 이슈는 현재 없음**
+  - `review` 키워드 검색 시 결과 0건
+
+### 오늘 착수 우선 후보 (Backlog 우선, 우선순위 desc)
+- `PAI-10` High `E6 - E2E/성능 예산 운영`
+- `PAI-11` High `E7 - 배포/환경 분리/런북`
+- `PAI-13` High `PS-E1-01 CanvasActions 테스트 라벨 정합화`
+- `PAI-14` High `PS-E1-02 DrawingCanvas App Router mock 정리`
+- `PAI-16` High `PS-E1-04 CI test:run 필수 게이트화`
+- `PAI-18` High `PS-E2-01 터치 이벤트 좌표 정밀도 개선`
+- `PAI-19` High `PS-E2-02 캔버스 리렌더/메모리 튜닝`
+- `PAI-22` High `PS-E3-01 socket.id <-> user.id 매핑 정식화`
+- `PAI-23` High `PS-E3-02 재연결 상태복구 프로토콜 추가`
+- `PAI-24` High `PS-E3-03 ACK/idempotency/timeout 정책 구현`
+
+> 실제 Top10은 [priority 라벨 기준 정렬 + Backlog 필터].
+> 참고: 위 목록은 API 응답 기준으로 실시간 정렬한 값이며, 실제 PM 우선순위는 의존성/리스크 반영해 재조정 권장
+
