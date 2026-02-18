@@ -30,18 +30,30 @@
 
 ## 2) 오늘 즉시 실행(실무) 할당표
 
+### 리뷰 상태
+- 각 오더는 작업 전/후로 `REVIEWER-AGENT` 게이트를 통과해야 함.
+- 게이트 판정: `PASS` / `PASS WITH CONDITIONS` / `BLOCK`
+
+### 오더별 리뷰 담당
+- 오더-01: Backend 리뷰(실시간/배틀 안정성 중심)
+- 오더-02: Backend+Frontend 리뷰(품질 게이트 중심)
+- 오더-03: DevOps 리뷰(운영체크리스트/롤백 중심)
+
+## 3) 오늘 즉시 실행(실무) 할당표
+
 | 에이전트 | 할당 과제 | 산출물 | 시작 규칙 |
 |---|---|---|---|
-| PM | 위 오더 승인/동결, 우선순위 재정렬, 일일 리포트 템플릿 고정 | `PM-VALIDATION-BOARD.md` 최신화 | 오늘 1회, 09:30 / 18:30 | 
+| PM | 위 오더 승인/동결, 우선순위 재정렬, 일일 리포트 템플릿 고정 | `PM-VALIDATION-BOARD.md` 최신화 | 오늘 1회, 09:30 / 18:30 |
+| Reviewer | 오더-01~03 산출물의 규칙/리스크 점검, `scripts/reviewer-gate.sh` 실행 | `REVIEWER-AGENT.md`, `scripts/reviewer-gate.sh` | 작업 착수 전/후 1회씩 | 
 | Backend | 배틀 이벤트 ACK/예외 응답/타이밍 가드, vote/vote중복 정책 1차 정리 | `/socket-server/server.js`, `/src/hooks/useBattle.ts` 수정노트 | 오더-01 완료 후 | 
 | Frontend | 재연결/오류 메시지 UX 개선(필요 시) + 핵심 시나리오 수동 검증 노트 | `/src/app/(main)/battle/**`, 관련 스냅샷 | 오더-01 연동 | 
 | DevOps | 배포 체크리스트·롤백 플로우 초안 작성 | `ROADMAP`/체크리스트 문서 1판 | 오더-03 착수 | 
 
-## 3) 현재 코드 반영(시작 표시)
+## 4) 현재 코드 반영(시작 표시)
 - `socket-server/server.js`에 `emitAck` 도입 및 주요 이벤트(`join_battle`, `leave_battle`, `ready_status`, `chat_message`, `canvas_update`, `vote`, `start_battle`)에 ACK/오류 응답 반영
 - `src/hooks/useBattle.ts`에서 방 입장/챗/준비/그림동기화/시작/투표 시 ACK 응답을 error 상태로 반영
 
-## 4) 다음 액션(후속)
+## 5) 다음 액션(후속)
 1. 위 3개 오더에 대해 PR 게이트 전/후 상태를 `PM-VALIDATION-BOARD.md`에 라벨링
 2. `review` 상태 상태명은 현재 미사용이므로 `Todo/Backlog`에서 `High` 우선순위 기준으로 1차 착수 이슈만 `Todo` 상향
 3. sessions_spawn 복구 시: PM/Backend/Frontend/DevOps에 동일 작업 태스크 템플릿으로 재할당

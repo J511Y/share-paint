@@ -124,3 +124,18 @@
 - 실제 코드 착수:
   - `socket-server/server.js` ACK 응답 레이어 1차 적용
   - `src/hooks/useBattle.ts` 클라이언트 ACK 기반 에러 처리 적용
+
+## 7) 리뷰어 에이전트 게이트 (신규)
+- 모든 오더 착수 전후에 코드 리뷰어를 통과해야 최종 승인 처리한다.
+- 리뷰어 에이전트 문서: `REVIEWER-AGENT.md`
+- 리뷰 게이트 실행 스크립트: `scripts/reviewer-gate.sh`
+- 게이트 통과 규칙:
+  - 규칙 준수(AGENTS/ROADMAP/Linear 연결 규칙)
+  - 정적검증(lint/type-check) 또는 생략 사유 기록
+  - 리스크(High/Medium/Low) 평가 및 대응안 존재
+  - PASS/CONDITIONS/BLOCK 판정 명시
+- 리뷰어 판단 결과는 오더별로 다음 중 하나로 기록:
+  - `PASS` → 다음 단계 진행
+  - `PASS WITH CONDITIONS` → 조건 해결 후 진행
+  - `BLOCK` → 리스크 재설계 후 복귀
+
