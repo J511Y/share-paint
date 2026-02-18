@@ -84,6 +84,12 @@ function getSafeUsername(socket, userId) {
   return email || `user-${userId.slice(0, 6)}`;
 }
 
+function emitAck(ack, ok, error) {
+  if (typeof ack === 'function') {
+    ack({ ok, error });
+  }
+}
+
 function normalizeBattleResult(battle) {
   const participantData = battle.participantData || {};
   const votesByTarget = battle.votes || {};
@@ -118,11 +124,13 @@ io.on('connection', (socket) => {
 
   console.log('User connected:', socket.id);
 
-  socket.on('join_battle', (data) => {
+  socket.on('join_battle', (data, ack) => {
     const { battleId, user = {} } = data || {};
     const userId = getUserId(socket);
 
-    if (!battleId || !userId) return;
+    if (!battleId || !userId) {
+      return emitAck(ack, false, 'battleId 또는 인증 정보가 유효하지 않습니다');
+    }
 
     const safeUser = {
       ...user,
@@ -165,11 +173,15 @@ io.on('connection', (socket) => {
         payload: { timeLeft: battle.timeLeft },
       });
     }
+
+    emitAck(ack, true);
   });
 
-  socket.on('leave_battle', ({ battleId }) => {
+  socket.on('leave_battle', ({ battleId }, ack) => {
     const userId = getUserId(socket);
-    if (!isBattleParticipant(socket, battleId) || !userId) return;
+    if (!isBattleParticipant(socket, battleId) || !userId) {
+      return emitAck(ack, false, '권한이 없거나 방에 없습니다');
+    }
 
     socket.leave(battleId);
     if (battles[battleId]) {
@@ -180,6 +192,7 @@ io.on('connection', (socket) => {
       type: 'leave',
       payload: { userId },
     });
+    emitAck(ack, true);
   });
 
   // Keep compatibility while preventing user spoofing.
@@ -195,14 +208,17 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('ready_status', ({ battleId, isReady }) => {
+  socket.on('ready_status', ({ battleId, isReady }, ack) => {
     const userId = getUserId(socket);
-    if (!isBattleParticipant(socket, battleId) || !userId) return;
+    if (!isBattleParticipant(socket, battleId) || !userId) {
+      return emitAck(ack, false, '권한이 없거나 방에 없습니다');
+    }
 
     io.to(battleId).emit('battle_event', {
       type: 'ready',
       payload: { userId, isReady: !!isReady },
     });
+    emitAck(ack, true);
   });
 
   socket.on('ready_update', ({ battleId, isReady }) => {
@@ -215,10 +231,12 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('chat_message', (data = {}) => {
+  socket.on('chat_message', (data = {}, ack) => {
     const { battleId, content = '', type = 'message' } = data;
     const userId = getUserId(socket);
-    if (!isBattleParticipant(socket, battleId) || !userId) return;
+    if (!isBattleParticipant(socket, battleId) || !userId) {
+      return emitAck(ack, false, '권한이 없거나 방에 없습니다');
+    }
 
     io.to(battleId).emit('battle_event', {
       type: 'chat',
@@ -231,6 +249,7 @@ io.on('connection', (socket) => {
         timestamp: new Date().toISOString(),
       },
     });
+    emitAck(ack, true);
   });
 
   socket.on('draw_event', (data = {}) => {
@@ -245,12 +264,16 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('canvas_update', ({ battleId, imageData }) => {
+  socket.on('canvas_update', ({ battleId, imageData }, ack) => {
     const senderId = getUserId(socket);
-    if (!isBattleParticipant(socket, battleId) || !senderId) return;
+    if (!isBattleParticipant(socket, battleId) || !senderId) {
+      return emitAck(ack, false, '권한이 없거나 방에 없습니다');
+    }
 
     const battle = getBattleState(battleId);
-    if (!battle) return;
+    if (!battle) {
+      return emitAck(ack, false, '전투 세션이 없습니다');
+    }
 
     if (!battle.participantData[senderId]) {
       battle.participantData[senderId] = {
@@ -266,12 +289,17 @@ io.on('connection', (socket) => {
       type: 'canvas_update',
       payload: { userId: senderId, imageData },
     });
+    emitAck(ack, true);
   });
 
-  socket.on('vote', ({ battleId, paintingUserId }) => {
+  socket.on('vote', ({ battleId, paintingUserId }, ack) => {
     const voterId = getUserId(socket);
-    if (!isBattleParticipant(socket, battleId) || !voterId) return;
-    if (!battleId || !paintingUserId || voterId === paintingUserId) return;
+    if (!isBattleParticipant(socket, battleId) || !voterId) {
+      return emitAck(ack, false, '권한이 없거나 방에 없습니다');
+    }
+    if (!battleId || !paintingUserId || voterId === paintingUserId) {
+      return emitAck(ack, false, '잘못된 투표 요청입니다');
+    }
 
     const battle = getBattleState(battleId);
     if (!battle || battle.status !== 'finished') return;
@@ -292,10 +320,13 @@ io.on('connection', (socket) => {
       type: 'finish',
       payload: voteResult,
     });
+    emitAck(ack, true);
   });
 
-  socket.on('start_battle', async ({ battleId }) => {
-    if (!battleId) return;
+  socket.on('start_battle', async ({ battleId }, ack) => {
+    if (!battleId) {
+      return emitAck(ack, false, 'battleId가 필요합니다');
+    }
     console.log(`Starting battle ${battleId}`);
 
     try {
@@ -390,8 +421,12 @@ io.on('connection', (socket) => {
           });
         }
       }, 1000);
+
+      emitAck(ack, true);
     } catch (err) {
       console.error('Failed to start battle:', err);
+      const message = err instanceof Error ? err.message : '알 수 없는 오류';
+      emitAck(ack, false, message);
     }
   });
 

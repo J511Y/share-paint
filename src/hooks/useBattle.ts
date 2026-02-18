@@ -63,7 +63,12 @@ export function useBattle(battleId: string) {
     const onConnect = () => {
       setConnected(true);
       setError(null);
-      socket?.emit('join_battle', { battleId, user });
+      socket?.emit('join_battle', { battleId, user }, (ack?: { ok: boolean; error?: string }) => {
+        if (!ack?.ok) {
+          setError(`대결방 입장 실패: ${ack?.error || '알 수 없는 오류'}`);
+          setConnected(false);
+        }
+      });
     };
 
     const onDisconnect = () => {
@@ -167,51 +172,83 @@ export function useBattle(battleId: string) {
   // 액션 메서드들
   const sendChat = useCallback((content: string) => {
     const socket = getSocket();
-    if (socket.connected && user) {
-      socket.emit('chat_message', {
-        battleId,
-        userId: user.id,
-        content,
-        timestamp: new Date().toISOString()
-      });
+    if (socket.connected) {
+      socket.emit(
+        'chat_message',
+        {
+          battleId,
+          userId: user?.id,
+          content,
+          timestamp: new Date().toISOString()
+        },
+        (ack?: { ok: boolean; error?: string }) => {
+          if (ack && !ack.ok) {
+            setError(`채팅 전송 실패: ${ack.error || '알 수 없는 오류'}`);
+          }
+        }
+      );
     }
-  }, [battleId, user]);
+  }, [battleId, user, setError]);
 
   const toggleReady = useCallback((isReady: boolean) => {
     const socket = getSocket();
     if (socket.connected) {
-      socket.emit('ready_status', { battleId, isReady });
+      socket.emit('ready_status', { battleId, isReady }, (ack?: { ok: boolean; error?: string }) => {
+        if (ack && !ack.ok) {
+          setError(`준비 상태 반영 실패: ${ack.error || '알 수 없는 오류'}`);
+        }
+      });
     }
-  }, [battleId]);
+  }, [battleId, setError]);
 
   const updateCanvas = useCallback((imageData: string) => {
     const socket = getSocket();
     if (socket.connected && user) {
-      socket.emit('canvas_update', { 
-        battleId, 
-        userId: user.id,
-        imageData 
-      });
+      socket.emit(
+        'canvas_update',
+        {
+          battleId,
+          userId: user.id,
+          imageData,
+        },
+        (ack?: { ok: boolean; error?: string }) => {
+          if (ack && !ack.ok) {
+            setError(`그림 동기화 실패: ${ack.error || '알 수 없는 오류'}`);
+          }
+        }
+      );
     }
-  }, [battleId, user]);
+  }, [battleId, user, setError]);
 
   const startBattle = useCallback(() => {
     const socket = getSocket();
     if (socket.connected) {
-      socket.emit('start_battle', { battleId });
+      socket.emit('start_battle', { battleId }, (ack?: { ok: boolean; error?: string; reason?: string }) => {
+        if (ack && !ack.ok) {
+          setError(`배틀 시작 실패: ${ack.error || '알 수 없는 오류'}`);
+        }
+      });
     }
-  }, [battleId]);
+  }, [battleId, setError]);
 
   const vote = useCallback((paintingUserId: string) => {
     const socket = getSocket();
     if (socket.connected && user) {
-      socket.emit('vote', { 
-        battleId, 
-        voterId: user.id,
-        paintingUserId 
-      });
+      socket.emit(
+        'vote',
+        {
+          battleId,
+          voterId: user.id,
+          paintingUserId,
+        },
+        (ack?: { ok: boolean; error?: string }) => {
+          if (ack && !ack.ok) {
+            setError(`투표 전송 실패: ${ack.error || '알 수 없는 오류'}`);
+          }
+        }
+      );
     }
-  }, [battleId, user]);
+  }, [battleId, user, setError]);
 
   return {
     sendChat,
