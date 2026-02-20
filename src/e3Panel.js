@@ -14,6 +14,7 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
 
   const pingBtn = document.createElement('button');
   pingBtn.textContent = 'Send ping';
+  pingBtn.disabled = true;
 
   root.append(statusEl, eventEl, connectBtn, pingBtn);
 
@@ -22,6 +23,7 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
     WebSocketImpl,
     onStatusChange(status) {
       statusEl.textContent = `E3: ${status}`;
+      pingBtn.disabled = status !== 'connected';
     },
     onEvent(payload) {
       eventEl.textContent = JSON.stringify(payload, null, 2);
@@ -29,7 +31,13 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
   });
 
   connectBtn.addEventListener('click', () => client.connect());
-  pingBtn.addEventListener('click', () => client.send({ type: 'ping', source: 'ui' }));
+  pingBtn.addEventListener('click', () => {
+    try {
+      client.send({ type: 'ping', source: 'ui' });
+    } catch (error) {
+      eventEl.textContent = JSON.stringify({ type: 'send_error', message: error.message }, null, 2);
+    }
+  });
 
   return client;
 }
