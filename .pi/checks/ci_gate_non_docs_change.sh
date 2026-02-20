@@ -56,6 +56,19 @@ while IFS='=' read -r env_name env_value; do
   fi
 done < <(env)
 
+# Hardening: manual unblock owner must remain jhyou; reject owner overrides.
+while IFS='=' read -r env_name env_value; do
+  env_name_upper="$(printf '%s' "$env_name" | tr '[:lower:]' '[:upper:]')"
+  if [[ "$env_name_upper" =~ (MANUAL_UNBLOCK_OWNER|UNBLOCK_OWNER|RELEASE_GATE_OWNER|GATE_UNBLOCK_OWNER) ]]; then
+    owner_normalized="$(printf '%s' "$env_value" | xargs | tr '[:upper:]' '[:lower:]')"
+    if [[ -n "$owner_normalized" ]] && [[ "$owner_normalized" != "jhyou" ]]; then
+      echo "[PAI-16] FAIL: manual unblock owner override is prohibited (${env_name}=${env_value})."
+      echo "[PAI-16] action required: manual unblock owner must remain jhyou."
+      exit 1
+    fi
+  fi
+done < <(env)
+
 if ! git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
   echo "[PAI-16] base ref '$BASE_REF' not found locally."
   echo "[PAI-16] hint: fetch base branch before running this check."
