@@ -84,18 +84,25 @@ test('ping button is disabled until socket connects, then sends ping', () => {
     const [statusEl, , connectBtn, pingBtn] = root.children;
 
     assert.equal(pingBtn.disabled, true);
+    assert.equal(connectBtn.disabled, false);
 
     connectBtn.click();
     assert.equal(statusEl.textContent, 'E3: connecting');
+    assert.equal(connectBtn.disabled, true);
 
     client.socket.readyState = FakeWebSocket.OPEN;
     client.socket.emit('open');
 
     assert.equal(statusEl.textContent, 'E3: connected');
     assert.equal(pingBtn.disabled, false);
+    assert.equal(connectBtn.disabled, true);
 
     pingBtn.click();
     assert.deepEqual(client.socket.sent, ['{"type":"ping","source":"ui"}']);
+
+    client.socket.emit('close');
+    assert.equal(statusEl.textContent, 'E3: disconnected');
+    assert.equal(connectBtn.disabled, false);
   } finally {
     restore();
   }

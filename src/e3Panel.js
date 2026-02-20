@@ -24,6 +24,7 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
     onStatusChange(status) {
       statusEl.textContent = `E3: ${status}`;
       pingBtn.disabled = status !== 'connected';
+      connectBtn.disabled = status === 'connecting' || status === 'connected';
     },
     onEvent(payload) {
       eventEl.textContent = JSON.stringify(payload, null, 2);
