@@ -81,14 +81,16 @@ test('ping button is disabled until socket connects, then sends ping', () => {
       WebSocketImpl: FakeWebSocket,
     });
 
-    const [statusEl, , connectBtn, pingBtn] = root.children;
+    const [statusEl, , connectBtn, pingBtn, disconnectBtn] = root.children;
 
     assert.equal(pingBtn.disabled, true);
     assert.equal(connectBtn.disabled, false);
+    assert.equal(disconnectBtn.disabled, true);
 
     connectBtn.click();
     assert.equal(statusEl.textContent, 'E3: connecting');
     assert.equal(connectBtn.disabled, true);
+    assert.equal(disconnectBtn.disabled, false);
 
     client.socket.readyState = FakeWebSocket.OPEN;
     client.socket.emit('open');
@@ -96,6 +98,7 @@ test('ping button is disabled until socket connects, then sends ping', () => {
     assert.equal(statusEl.textContent, 'E3: connected');
     assert.equal(pingBtn.disabled, false);
     assert.equal(connectBtn.disabled, true);
+    assert.equal(disconnectBtn.disabled, false);
 
     pingBtn.click();
     assert.deepEqual(client.socket.sent, ['{"type":"ping","source":"ui"}']);
@@ -103,6 +106,7 @@ test('ping button is disabled until socket connects, then sends ping', () => {
     client.socket.emit('close');
     assert.equal(statusEl.textContent, 'E3: disconnected');
     assert.equal(connectBtn.disabled, false);
+    assert.equal(disconnectBtn.disabled, true);
   } finally {
     restore();
   }
@@ -125,6 +129,32 @@ test('failed send renders send_error payload in event panel', () => {
 
     assert.match(eventEl.textContent, /"type": "send_error"/);
     assert.match(eventEl.textContent, /E3 socket is not connected/);
+  } finally {
+    restore();
+  }
+});
+
+test('disconnect button closes active socket and updates status', () => {
+  const restore = setupFakeDom();
+
+  try {
+    const root = new FakeElement('div');
+    const client = mountE3Panel(root, {
+      url: 'ws://localhost/e3',
+      WebSocketImpl: FakeWebSocket,
+    });
+
+    const [statusEl, , connectBtn, , disconnectBtn] = root.children;
+
+    connectBtn.click();
+    client.socket.readyState = FakeWebSocket.OPEN;
+    client.socket.emit('open');
+
+    disconnectBtn.click();
+
+    assert.equal(statusEl.textContent, 'E3: disconnected');
+    assert.equal(client.socket, null);
+    assert.equal(disconnectBtn.disabled, true);
   } finally {
     restore();
   }

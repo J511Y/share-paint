@@ -22,7 +22,11 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
   pingBtn.textContent = 'Send ping';
   pingBtn.disabled = true;
 
-  root.append(statusEl, eventEl, connectBtn, pingBtn);
+  const disconnectBtn = document.createElement('button');
+  disconnectBtn.textContent = 'Disconnect E3';
+  disconnectBtn.disabled = true;
+
+  root.append(statusEl, eventEl, connectBtn, pingBtn, disconnectBtn);
 
   const client = new E3SocketClient({
     url,
@@ -31,6 +35,7 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
       statusEl.textContent = `E3: ${status}`;
       pingBtn.disabled = status !== 'connected';
       connectBtn.disabled = status === 'connecting' || status === 'connected';
+      disconnectBtn.disabled = status !== 'connecting' && status !== 'connected';
     },
     onEvent(payload) {
       eventHistory.push(payload);
@@ -49,6 +54,8 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
       renderEventHistory();
     }
   });
+
+  disconnectBtn.addEventListener('click', () => client.disconnect());
 
   return client;
 }
