@@ -1,0 +1,22 @@
+name: PAI-16 CI Gate
+
+on:
+  pull_request:
+    branches: [develop]
+
+jobs:
+  non-doc-change-required:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: |
+          git fetch --no-tags origin "${{ github.base_ref }}:${{ github.base_ref }}"
+
+      - name: Enforce non-doc change
+        run: |
+          ./.pi/checks/ci_gate_non_docs_change.sh "${{ github.base_ref }}" HEAD
