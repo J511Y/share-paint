@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { E3SocketClient } from '../src/e3Socket.js';
 
 class FakeWebSocket {
+  static CONNECTING = 0;
   static OPEN = 1;
   constructor(url) {
     this.url = url;
@@ -53,6 +54,17 @@ test('connect updates status and parses JSON events', () => {
 
   assert.deepEqual(statuses, ['connecting', 'connected']);
   assert.deepEqual(events, [{ type: 'ready' }, { type: 'raw', data: 'plain-text' }]);
+});
+
+test('connect is idempotent while socket is still connecting', () => {
+  const client = new E3SocketClient({ url: 'ws://localhost/e3', WebSocketImpl: FakeWebSocket });
+
+  client.connect();
+  const firstSocket = client.socket;
+
+  client.connect();
+
+  assert.equal(client.socket, firstSocket);
 });
 
 test('send throws when disconnected and sends serialized payload when open', () => {

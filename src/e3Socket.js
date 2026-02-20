@@ -8,7 +8,11 @@ export class E3SocketClient {
   }
 
   connect() {
-    if (this.socket && this.socket.readyState === this.WebSocketImpl.OPEN) {
+    if (
+      this.socket &&
+      (this.socket.readyState === this.WebSocketImpl.OPEN ||
+        this.socket.readyState === this.WebSocketImpl.CONNECTING)
+    ) {
       return;
     }
 
