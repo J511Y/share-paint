@@ -80,8 +80,16 @@ export function isQuietNow(
 
   // Backward compatibility:
   // Legacy signature was isQuietNow(date, startHour, endHour, startMinute, endMinute)
+  // and now also supports an optional trailing useUTC boolean:
+  // isQuietNow(date, startHour, endHour, startMinute, endMinute, useUTC)
   if (typeof useUTC === 'number') {
-    resolvedUseUTC = false;
+    const trailingUseUTC = arguments.length >= 6 ? arguments[5] : false;
+
+    if (typeof trailingUseUTC !== 'boolean') {
+      throw new TypeError('useUTC must be a boolean');
+    }
+
+    resolvedUseUTC = trailingUseUTC;
     resolvedStartMinute = useUTC;
     resolvedEndMinute = arguments.length >= 5 ? startMinute : 0;
   }

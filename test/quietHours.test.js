@@ -96,6 +96,13 @@ test('isQuietNow keeps backward compatibility for legacy minute-arguments signat
   assert.equal(isQuietNow(boundaryOutside, 22, 6, 30, 15), false);
 });
 
+test('isQuietNow supports legacy minute signature with optional trailing useUTC flag', () => {
+  const utcAfternoon = new Date('2026-02-20T14:30:00Z');
+
+  assert.equal(isQuietNow(utcAfternoon, 23, 8, 0, 0), true);
+  assert.equal(isQuietNow(utcAfternoon, 23, 8, 0, 0, true), false);
+});
+
 test('isQuietNow can evaluate quiet hours in UTC', () => {
   const utcAfternoon = new Date('2026-02-20T14:30:00Z');
 
