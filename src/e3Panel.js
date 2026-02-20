@@ -7,7 +7,13 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
 
   const eventEl = document.createElement('pre');
   eventEl.dataset.testid = 'e3-event';
-  eventEl.textContent = '{}';
+
+  const eventHistory = [];
+  const renderEventHistory = () => {
+    eventEl.textContent = JSON.stringify(eventHistory, null, 2);
+  };
+
+  renderEventHistory();
 
   const connectBtn = document.createElement('button');
   connectBtn.textContent = 'Connect E3';
@@ -27,7 +33,9 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
       connectBtn.disabled = status === 'connecting' || status === 'connected';
     },
     onEvent(payload) {
-      eventEl.textContent = JSON.stringify(payload, null, 2);
+      eventHistory.push(payload);
+      if (eventHistory.length > 5) eventHistory.shift();
+      renderEventHistory();
     },
   });
 
@@ -36,7 +44,9 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
     try {
       client.send({ type: 'ping', source: 'ui' });
     } catch (error) {
-      eventEl.textContent = JSON.stringify({ type: 'send_error', message: error.message }, null, 2);
+      eventHistory.push({ type: 'send_error', message: error.message });
+      if (eventHistory.length > 5) eventHistory.shift();
+      renderEventHistory();
     }
   });
 

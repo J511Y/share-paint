@@ -129,3 +129,34 @@ test('failed send renders send_error payload in event panel', () => {
     restore();
   }
 });
+
+test('event panel keeps only the latest 5 events', () => {
+  const restore = setupFakeDom();
+
+  try {
+    const root = new FakeElement('div');
+    const client = mountE3Panel(root, {
+      url: 'ws://localhost/e3',
+      WebSocketImpl: FakeWebSocket,
+    });
+
+    const [, eventEl, connectBtn] = root.children;
+
+    connectBtn.click();
+    client.socket.readyState = FakeWebSocket.OPEN;
+    client.socket.emit('open');
+
+    for (let i = 1; i <= 6; i += 1) {
+      client.socket.emit('message', { data: `{"type":"evt","seq":${i}}` });
+    }
+
+    const parsed = JSON.parse(eventEl.textContent);
+    assert.equal(parsed.length, 5);
+    assert.deepEqual(
+      parsed.map((e) => e.seq),
+      [2, 3, 4, 5, 6],
+    );
+  } finally {
+    restore();
+  }
+});
