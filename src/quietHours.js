@@ -20,10 +20,15 @@ export function isWithinQuietHours(hour, startHour = 23, endHour = 8) {
   return hour >= startHour || hour < endHour;
 }
 
-export function isQuietNow(date = new Date(), startHour = 23, endHour = 8) {
+export function isQuietNow(date = new Date(), startHour = 23, endHour = 8, useUTC = false) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
     throw new TypeError('date must be a valid Date instance');
   }
 
-  return isWithinQuietHours(date.getHours(), startHour, endHour);
+  if (typeof useUTC !== 'boolean') {
+    throw new TypeError('useUTC must be a boolean');
+  }
+
+  const hour = useUTC ? date.getUTCHours() : date.getHours();
+  return isWithinQuietHours(hour, startHour, endHour);
 }
