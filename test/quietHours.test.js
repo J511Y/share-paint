@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isWithinQuietHours } from '../src/quietHours.js';
+import { isQuietNow, isWithinQuietHours } from '../src/quietHours.js';
 
 test('returns true during default overnight quiet hours (23-08)', () => {
   assert.equal(isWithinQuietHours(23), true);
@@ -40,4 +40,18 @@ test('throws for out-of-range or non-integer hours', () => {
   assert.throws(() => isWithinQuietHours(10.5), /hour must be an integer/);
   assert.throws(() => isWithinQuietHours(10, 99, 8), /startHour must be an integer/);
   assert.throws(() => isWithinQuietHours(10, 23, -3), /endHour must be an integer/);
+});
+
+test('isQuietNow reads hour from Date and delegates to window logic', () => {
+  const evening = new Date('2026-02-20T23:30:00+09:00');
+  const day = new Date('2026-02-20T12:00:00+09:00');
+
+  assert.equal(isQuietNow(evening), true);
+  assert.equal(isQuietNow(day), false);
+  assert.equal(isQuietNow(day, 9, 17), true);
+});
+
+test('isQuietNow throws on invalid Date input', () => {
+  assert.throws(() => isQuietNow('2026-02-20'), /valid Date instance/);
+  assert.throws(() => isQuietNow(new Date('invalid-date')), /valid Date instance/);
 });
