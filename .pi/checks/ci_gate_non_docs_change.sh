@@ -9,11 +9,18 @@ HEAD_REF="${2:-HEAD}"
 
 # Safety policy: never auto-unblock release gates for PAI-16.
 # Any unblock must be done manually by jhyou.
-if [[ "${PAI16_AUTO_UNBLOCK:-0}" == "1" ]]; then
-  echo "[PAI-16] FAIL: auto-unblock is prohibited by policy."
-  echo "[PAI-16] action required: jhyou must perform manual unblock."
-  exit 1
-fi
+auto_unblock_flags=(
+  "PAI16_AUTO_UNBLOCK=${PAI16_AUTO_UNBLOCK:-0}"
+  "RELEASE_GATE_AUTO_UNBLOCK=${RELEASE_GATE_AUTO_UNBLOCK:-0}"
+  "CI_AUTO_UNBLOCK=${CI_AUTO_UNBLOCK:-0}"
+)
+for flag in "${auto_unblock_flags[@]}"; do
+  if [[ "$flag" == *=1 ]]; then
+    echo "[PAI-16] FAIL: auto-unblock is prohibited by policy ($flag)."
+    echo "[PAI-16] action required: jhyou must perform manual unblock."
+    exit 1
+  fi
+done
 
 if ! git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
   echo "[PAI-16] base ref '$BASE_REF' not found locally."
