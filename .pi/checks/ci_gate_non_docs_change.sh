@@ -9,14 +9,28 @@ HEAD_REF="${2:-HEAD}"
 
 # Safety policy: never auto-unblock release gates for PAI-16.
 # Any unblock must be done manually by jhyou.
-auto_unblock_flags=(
-  "PAI16_AUTO_UNBLOCK=${PAI16_AUTO_UNBLOCK:-0}"
-  "RELEASE_GATE_AUTO_UNBLOCK=${RELEASE_GATE_AUTO_UNBLOCK:-0}"
-  "CI_AUTO_UNBLOCK=${CI_AUTO_UNBLOCK:-0}"
+is_truthy() {
+  local value
+  value="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | xargs)"
+  case "$value" in
+    1|true|yes|on)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+auto_unblock_vars=(
+  "PAI16_AUTO_UNBLOCK"
+  "RELEASE_GATE_AUTO_UNBLOCK"
+  "CI_AUTO_UNBLOCK"
 )
-for flag in "${auto_unblock_flags[@]}"; do
-  if [[ "$flag" == *=1 ]]; then
-    echo "[PAI-16] FAIL: auto-unblock is prohibited by policy ($flag)."
+for var_name in "${auto_unblock_vars[@]}"; do
+  var_value="${!var_name:-0}"
+  if is_truthy "$var_value"; then
+    echo "[PAI-16] FAIL: auto-unblock is prohibited by policy (${var_name}=${var_value})."
     echo "[PAI-16] action required: jhyou must perform manual unblock."
     exit 1
   fi
