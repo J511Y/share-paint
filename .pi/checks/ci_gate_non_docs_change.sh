@@ -7,13 +7,24 @@ set -euo pipefail
 BASE_REF="${1:-origin/develop}"
 HEAD_REF="${2:-HEAD}"
 
+# Safety policy: never auto-unblock release gates for PAI-16.
+# Any unblock must be done manually by jhyou.
+if [[ "${PAI16_AUTO_UNBLOCK:-0}" == "1" ]]; then
+  echo "[PAI-16] FAIL: auto-unblock is prohibited by policy."
+  echo "[PAI-16] action required: jhyou must perform manual unblock."
+  exit 1
+fi
+
 if ! git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
   echo "[PAI-16] base ref '$BASE_REF' not found locally."
   echo "[PAI-16] hint: fetch base branch before running this check."
   exit 2
 fi
 
-mapfile -t changed_files < <(git diff --name-only "$BASE_REF...$HEAD_REF")
+changed_files=()
+while IFS= read -r line; do
+  changed_files+=("$line")
+done < <(git diff --name-only "$BASE_REF...$HEAD_REF")
 
 if [[ ${#changed_files[@]} -eq 0 ]]; then
   echo "[PAI-16] no changed files detected between $BASE_REF and $HEAD_REF"
