@@ -33,6 +33,12 @@ class FakeWebSocket {
   }
 }
 
+class DeferredCloseWebSocket extends FakeWebSocket {
+  close() {
+    // intentionally deferred to mimic browser async close events
+  }
+}
+
 test('connect updates status and parses JSON events', () => {
   const statuses = [];
   const events = [];
@@ -97,6 +103,21 @@ test('disconnect closes socket and clears client reference', () => {
   assert.equal(client.socket, null);
   assert.ok(statuses.includes('disconnected'));
   assert.ok(socketRef);
+});
+
+test('disconnect immediately reports disconnected even if close event is deferred', () => {
+  const statuses = [];
+  const client = new E3SocketClient({
+    url: 'ws://localhost/e3',
+    WebSocketImpl: DeferredCloseWebSocket,
+    onStatusChange: (s) => statuses.push(s),
+  });
+
+  client.connect();
+  client.disconnect();
+
+  assert.deepEqual(statuses, ['connecting', 'disconnected']);
+  assert.equal(client.socket, null);
 });
 
 test('client can reconnect after socket error while connecting', () => {

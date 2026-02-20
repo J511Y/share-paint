@@ -60,7 +60,10 @@ export class E3SocketClient {
 
   disconnect() {
     if (!this.socket) return;
-    this.socket.close();
+
+    const socket = this.socket;
     this.socket = null;
+    socket.close();
+    this.onStatusChange('disconnected');
   }
 }
