@@ -9,7 +9,8 @@ permissions:
 
 concurrency:
   group: pai16-ci-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Hardening: do not auto-cancel in-flight gate checks; each run must complete explicitly.
+  cancel-in-progress: false
 
 jobs:
   non-doc-change-required:
