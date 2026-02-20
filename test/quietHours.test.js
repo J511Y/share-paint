@@ -80,6 +80,14 @@ test('isQuietNow reads hour from Date and delegates to window logic', () => {
   assert.equal(isQuietNow(day, 9, 17), true);
 });
 
+test('isQuietNow supports minute-level start/end boundaries', () => {
+  const boundaryInside = new Date('2026-02-20T22:45:00+09:00');
+  const boundaryOutside = new Date('2026-02-21T06:15:00+09:00');
+
+  assert.equal(isQuietNow(boundaryInside, 22, 6, false, 30, 15), true);
+  assert.equal(isQuietNow(boundaryOutside, 22, 6, false, 30, 15), false);
+});
+
 test('isQuietNow can evaluate quiet hours in UTC', () => {
   const utcAfternoon = new Date('2026-02-20T14:30:00Z');
 
@@ -91,4 +99,5 @@ test('isQuietNow throws on invalid Date input', () => {
   assert.throws(() => isQuietNow('2026-02-20'), /valid Date instance/);
   assert.throws(() => isQuietNow(new Date('invalid-date')), /valid Date instance/);
   assert.throws(() => isQuietNow(new Date(), 23, 8, 'yes'), /useUTC must be a boolean/);
+  assert.throws(() => isQuietNow(new Date(), 23, 8, false, 60, 0), /startMinute must be an integer between 0 and 59/);
 });

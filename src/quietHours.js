@@ -62,7 +62,14 @@ export function isWithinQuietHours(hour, startHour = 23, endHour = 8) {
   return isWithinQuietTime(hour, 0, startHour, 0, endHour, 0);
 }
 
-export function isQuietNow(date = new Date(), startHour = 23, endHour = 8, useUTC = false) {
+export function isQuietNow(
+  date = new Date(),
+  startHour = 23,
+  endHour = 8,
+  useUTC = false,
+  startMinute = 0,
+  endMinute = 0,
+) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
     throw new TypeError('date must be a valid Date instance');
   }
@@ -74,5 +81,5 @@ export function isQuietNow(date = new Date(), startHour = 23, endHour = 8, useUT
   const hour = useUTC ? date.getUTCHours() : date.getHours();
   const minute = useUTC ? date.getUTCMinutes() : date.getMinutes();
 
-  return isWithinQuietTime(hour, minute, startHour, 0, endHour, 0);
+  return isWithinQuietTime(hour, minute, startHour, startMinute, endHour, endMinute);
 }
