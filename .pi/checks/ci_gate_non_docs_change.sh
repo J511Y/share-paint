@@ -11,9 +11,16 @@ HEAD_REF="${2:-HEAD}"
 # Any unblock must be done manually by jhyou.
 is_truthy() {
   local value
-  value="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | xargs)"
+  value="$(printf '%s' "$1" | xargs)"
+  # Normalize wrappers often seen in CI secrets/vars, e.g. '"true"' or "'yes'".
+  while [[ "$value" =~ ^[\"\'].*[\"\']$ ]] && [[ ${#value} -ge 2 ]]; do
+    value="${value:1:${#value}-2}"
+    value="$(printf '%s' "$value" | xargs)"
+  done
+  value="$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')"
+
   case "$value" in
-    1|true|yes|on)
+    1|true|yes|on|y|t)
       return 0
       ;;
     *)
