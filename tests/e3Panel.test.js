@@ -190,3 +190,34 @@ test('event panel keeps only the latest 5 events', () => {
     restore();
   }
 });
+
+test('clear events button is disabled when empty and clears accumulated events', () => {
+  const restore = setupFakeDom();
+
+  try {
+    const root = new FakeElement('div');
+    const client = mountE3Panel(root, {
+      url: 'ws://localhost/e3',
+      WebSocketImpl: FakeWebSocket,
+    });
+
+    const [, eventEl, connectBtn, , , clearBtn] = root.children;
+
+    assert.equal(clearBtn.disabled, true);
+
+    connectBtn.click();
+    client.socket.readyState = FakeWebSocket.OPEN;
+    client.socket.emit('open');
+    client.socket.emit('message', { data: '{"type":"evt","seq":1}' });
+
+    assert.equal(clearBtn.disabled, false);
+    assert.match(eventEl.textContent, /"seq": 1/);
+
+    clearBtn.click();
+
+    assert.equal(eventEl.textContent, '[]');
+    assert.equal(clearBtn.disabled, true);
+  } finally {
+    restore();
+  }
+});
