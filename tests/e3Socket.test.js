@@ -57,9 +57,14 @@ test('connect updates status and parses JSON events', () => {
   client.socket.emit('open');
   client.socket.emit('message', { data: '{"type":"ready"}' });
   client.socket.emit('message', { data: 'plain-text' });
+  client.socket.emit('message', { data: { type: 'binary', bytes: [1, 2, 3] } });
 
   assert.deepEqual(statuses, ['connecting', 'connected']);
-  assert.deepEqual(events, [{ type: 'ready' }, { type: 'raw', data: 'plain-text' }]);
+  assert.deepEqual(events, [
+    { type: 'ready' },
+    { type: 'raw', data: 'plain-text' },
+    { type: 'binary', bytes: [1, 2, 3] },
+  ]);
 });
 
 test('connect is idempotent while socket is still connecting', () => {

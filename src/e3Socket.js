@@ -27,12 +27,18 @@ export class E3SocketClient {
 
     socket.addEventListener('message', (event) => {
       if (this.socket !== socket) return;
+
       let payload;
-      try {
-        payload = JSON.parse(event.data);
-      } catch {
-        payload = { type: 'raw', data: event.data };
+      if (typeof event.data === 'string') {
+        try {
+          payload = JSON.parse(event.data);
+        } catch {
+          payload = { type: 'raw', data: event.data };
+        }
+      } else {
+        payload = event.data;
       }
+
       this.onEvent(payload);
     });
 
