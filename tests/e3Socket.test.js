@@ -86,10 +86,13 @@ test('send throws when disconnected and sends serialized payload when open', () 
   client.connect();
   client.socket.readyState = FakeWebSocket.OPEN;
 
+  const bytes = new Uint8Array([1, 2, 3]);
+
   client.send({ type: 'ping', source: 'test' });
   client.send('raw');
+  client.send(bytes);
 
-  assert.deepEqual(client.socket.sent, ['{"type":"ping","source":"test"}', 'raw']);
+  assert.deepEqual(client.socket.sent, ['{"type":"ping","source":"test"}', 'raw', bytes]);
 });
 
 test('disconnect closes socket and clears client reference', () => {

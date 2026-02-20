@@ -60,7 +60,15 @@ export class E3SocketClient {
       throw new Error('E3 socket is not connected');
     }
 
-    const message = typeof data === 'string' ? data : JSON.stringify(data);
+    const isArrayBuffer = typeof ArrayBuffer !== 'undefined' && data instanceof ArrayBuffer;
+    const isArrayBufferView =
+      typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView && ArrayBuffer.isView(data);
+    const isBlob = typeof Blob !== 'undefined' && data instanceof Blob;
+    const message =
+      typeof data === 'string' || isArrayBuffer || isArrayBufferView || isBlob
+        ? data
+        : JSON.stringify(data);
+
     this.socket.send(message);
   }
 
