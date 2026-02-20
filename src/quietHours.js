@@ -1,13 +1,13 @@
-function assertHourInRange(value, label) {
-  if (!Number.isInteger(value) || value < 0 || value > 23) {
-    throw new RangeError(`${label} must be an integer between 0 and 23`);
+function assertHourInRange(value, label, min = 0, max = 23) {
+  if (!Number.isInteger(value) || value < min || value > max) {
+    throw new RangeError(`${label} must be an integer between ${min} and ${max}`);
   }
 }
 
 export function isWithinQuietHours(hour, startHour = 23, endHour = 8) {
-  assertHourInRange(hour, 'hour');
-  assertHourInRange(startHour, 'startHour');
-  assertHourInRange(endHour, 'endHour');
+  assertHourInRange(hour, 'hour', 0, 23);
+  assertHourInRange(startHour, 'startHour', 0, 23);
+  assertHourInRange(endHour, 'endHour', 0, 24);
 
   if (startHour === endHour) {
     return true;
