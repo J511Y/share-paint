@@ -87,7 +87,8 @@ fi
 
 non_doc_count=0
 for f in "${changed_files[@]}"; do
-  case "$f" in
+  f_lower="$(printf '%s' "$f" | tr '[:upper:]' '[:lower:]')"
+  case "$f_lower" in
     *.md|*.txt|memory/*|docs/*)
       ;;
     *)
