@@ -98,3 +98,23 @@ test('disconnect closes socket and clears client reference', () => {
   assert.ok(statuses.includes('disconnected'));
   assert.ok(socketRef);
 });
+
+test('client can reconnect after socket error while connecting', () => {
+  const statuses = [];
+  const client = new E3SocketClient({
+    url: 'ws://localhost/e3',
+    WebSocketImpl: FakeWebSocket,
+    onStatusChange: (s) => statuses.push(s),
+  });
+
+  client.connect();
+  const firstSocket = client.socket;
+
+  firstSocket.emit('error');
+  assert.equal(client.socket, null);
+
+  client.connect();
+
+  assert.notEqual(client.socket, firstSocket);
+  assert.deepEqual(statuses, ['connecting', 'error', 'connecting']);
+});

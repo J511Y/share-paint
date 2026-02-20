@@ -17,13 +17,16 @@ export class E3SocketClient {
     }
 
     this.onStatusChange('connecting');
-    this.socket = new this.WebSocketImpl(this.url);
+    const socket = new this.WebSocketImpl(this.url);
+    this.socket = socket;
 
-    this.socket.addEventListener('open', () => {
+    socket.addEventListener('open', () => {
+      if (this.socket !== socket) return;
       this.onStatusChange('connected');
     });
 
-    this.socket.addEventListener('message', (event) => {
+    socket.addEventListener('message', (event) => {
+      if (this.socket !== socket) return;
       let payload;
       try {
         payload = JSON.parse(event.data);
@@ -33,11 +36,15 @@ export class E3SocketClient {
       this.onEvent(payload);
     });
 
-    this.socket.addEventListener('close', () => {
+    socket.addEventListener('close', () => {
+      if (this.socket !== socket) return;
+      this.socket = null;
       this.onStatusChange('disconnected');
     });
 
-    this.socket.addEventListener('error', () => {
+    socket.addEventListener('error', () => {
+      if (this.socket !== socket) return;
+      this.socket = null;
       this.onStatusChange('error');
     });
   }
