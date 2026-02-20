@@ -28,6 +28,13 @@ test('supports endHour=24 as an exclusive midnight boundary', () => {
   assert.equal(isWithinQuietHours(0, 22, 24), false);
 });
 
+test('supports startHour=24 as an alias for midnight boundary', () => {
+  assert.equal(isWithinQuietHours(0, 24, 6), true);
+  assert.equal(isWithinQuietHours(5, 24, 6), true);
+  assert.equal(isWithinQuietHours(6, 24, 6), false);
+  assert.equal(isWithinQuietHours(22, 24, 6), false);
+});
+
 test('supports minute-level quiet windows with overnight boundary', () => {
   assert.equal(isWithinQuietTime(22, 30, 22, 30, 6, 15), true);
   assert.equal(isWithinQuietTime(6, 14, 22, 30, 6, 15), true);
@@ -61,6 +68,7 @@ test('throws for out-of-range or non-integer hours', () => {
   assert.throws(() => isWithinQuietHours(10, 99, 8), /startHour must be an integer/);
   assert.throws(() => isWithinQuietHours(10, 23, -3), /endHour must be an integer/);
   assert.throws(() => isWithinQuietHours(10, 23, 25), /endHour must be an integer between 0 and 24/);
+  assert.throws(() => isWithinQuietTime(1, 0, 24, 1, 6, 0), /startMinute must be 0 when startHour is 24/);
 });
 
 test('isQuietNow reads hour from Date and delegates to window logic', () => {

@@ -10,6 +10,17 @@ function assertMinuteInRange(value, label) {
   }
 }
 
+function normalizeBoundaryHour(hour, minute, label) {
+  if (hour === 24) {
+    if (minute !== 0) {
+      throw new RangeError(`${label}Minute must be 0 when ${label}Hour is 24`);
+    }
+    return 0;
+  }
+
+  return hour;
+}
+
 function toMinuteOfDay(hour, minute) {
   return (hour * 60) + minute;
 }
@@ -24,18 +35,17 @@ export function isWithinQuietTime(
 ) {
   assertHourInRange(hour, 'hour', 0, 23);
   assertMinuteInRange(minute, 'minute');
-  assertHourInRange(startHour, 'startHour', 0, 23);
+  assertHourInRange(startHour, 'startHour', 0, 24);
   assertMinuteInRange(startMinute, 'startMinute');
   assertHourInRange(endHour, 'endHour', 0, 24);
   assertMinuteInRange(endMinute, 'endMinute');
 
-  if (endHour === 24 && endMinute !== 0) {
-    throw new RangeError('endMinute must be 0 when endHour is 24');
-  }
+  const normalizedStartHour = normalizeBoundaryHour(startHour, startMinute, 'start');
+  const normalizedEndHour = normalizeBoundaryHour(endHour, endMinute, 'end');
 
   const current = toMinuteOfDay(hour, minute);
-  const start = toMinuteOfDay(startHour, startMinute);
-  const end = toMinuteOfDay(endHour, endMinute);
+  const start = toMinuteOfDay(normalizedStartHour, startMinute);
+  const end = toMinuteOfDay(normalizedEndHour, endMinute);
 
   if (start === end) {
     return true;
