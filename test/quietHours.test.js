@@ -62,13 +62,13 @@ test('treats equal start and end hour as all-day quiet mode', () => {
 });
 
 test('throws for out-of-range or non-integer hours', () => {
-  assert.throws(() => isWithinQuietHours(24), /hour must be an integer/);
   assert.throws(() => isWithinQuietHours(-1), /hour must be an integer/);
   assert.throws(() => isWithinQuietHours(10.5), /hour must be an integer/);
   assert.throws(() => isWithinQuietHours(10, 99, 8), /startHour must be an integer/);
   assert.throws(() => isWithinQuietHours(10, 23, -3), /endHour must be an integer/);
   assert.throws(() => isWithinQuietHours(10, 23, 25), /endHour must be an integer between 0 and 24/);
   assert.throws(() => isWithinQuietTime(1, 0, 24, 1, 6, 0), /startMinute must be 0 when startHour is 24/);
+  assert.throws(() => isWithinQuietTime(24, 1, 22, 0, 6, 0), /minute must be 0 when hour is 24/);
 });
 
 test('isQuietNow reads hour from Date and delegates to window logic', () => {
