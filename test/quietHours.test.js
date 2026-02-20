@@ -88,6 +88,14 @@ test('isQuietNow supports minute-level start/end boundaries', () => {
   assert.equal(isQuietNow(boundaryOutside, 22, 6, false, 30, 15), false);
 });
 
+test('isQuietNow keeps backward compatibility for legacy minute-arguments signature', () => {
+  const boundaryInside = new Date('2026-02-20T22:45:00+09:00');
+  const boundaryOutside = new Date('2026-02-21T06:15:00+09:00');
+
+  assert.equal(isQuietNow(boundaryInside, 22, 6, 30, 15), true);
+  assert.equal(isQuietNow(boundaryOutside, 22, 6, 30, 15), false);
+});
+
 test('isQuietNow can evaluate quiet hours in UTC', () => {
   const utcAfternoon = new Date('2026-02-20T14:30:00Z');
 

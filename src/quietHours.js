@@ -74,12 +74,24 @@ export function isQuietNow(
     throw new TypeError('date must be a valid Date instance');
   }
 
-  if (typeof useUTC !== 'boolean') {
+  let resolvedUseUTC = useUTC;
+  let resolvedStartMinute = startMinute;
+  let resolvedEndMinute = endMinute;
+
+  // Backward compatibility:
+  // Legacy signature was isQuietNow(date, startHour, endHour, startMinute, endMinute)
+  if (typeof useUTC === 'number') {
+    resolvedUseUTC = false;
+    resolvedStartMinute = useUTC;
+    resolvedEndMinute = arguments.length >= 5 ? startMinute : 0;
+  }
+
+  if (typeof resolvedUseUTC !== 'boolean') {
     throw new TypeError('useUTC must be a boolean');
   }
 
-  const hour = useUTC ? date.getUTCHours() : date.getHours();
-  const minute = useUTC ? date.getUTCMinutes() : date.getMinutes();
+  const hour = resolvedUseUTC ? date.getUTCHours() : date.getHours();
+  const minute = resolvedUseUTC ? date.getUTCMinutes() : date.getMinutes();
 
-  return isWithinQuietTime(hour, minute, startHour, startMinute, endHour, endMinute);
+  return isWithinQuietTime(hour, minute, startHour, resolvedStartMinute, endHour, resolvedEndMinute);
 }
