@@ -22,6 +22,13 @@ test('handles daytime window when startHour < endHour', () => {
   assert.equal(isWithinQuietHours(8, 9, 17), false);
 });
 
+test('handles custom overnight window when startHour > endHour', () => {
+  assert.equal(isWithinQuietHours(22, 22, 6), true);
+  assert.equal(isWithinQuietHours(3, 22, 6), true);
+  assert.equal(isWithinQuietHours(6, 22, 6), false);
+  assert.equal(isWithinQuietHours(14, 22, 6), false);
+});
+
 test('treats equal start and end hour as all-day quiet mode', () => {
   assert.equal(isWithinQuietHours(0, 12, 12), true);
   assert.equal(isWithinQuietHours(13, 12, 12), true);
