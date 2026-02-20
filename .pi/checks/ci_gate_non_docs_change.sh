@@ -36,6 +36,19 @@ for var_name in "${auto_unblock_vars[@]}"; do
   fi
 done
 
+# Follow-up hardening: reject any truthy env var that semantically means auto-unblock.
+# This catches newly introduced aliases without requiring script updates.
+while IFS='=' read -r env_name env_value; do
+  env_name_upper="$(printf '%s' "$env_name" | tr '[:lower:]' '[:upper:]')"
+  if [[ "$env_name_upper" =~ (AUTO_UNBLOCK|AUTOUNBLOCK|UNBLOCK_AUTO|AUTO_RELEASE_GATE|RELEASE_GATE_AUTO) ]]; then
+    if is_truthy "$env_value"; then
+      echo "[PAI-16] FAIL: auto-unblock alias is prohibited by policy (${env_name}=${env_value})."
+      echo "[PAI-16] action required: jhyou must perform manual unblock."
+      exit 1
+    fi
+  fi
+done < <(env)
+
 if ! git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
   echo "[PAI-16] base ref '$BASE_REF' not found locally."
   echo "[PAI-16] hint: fetch base branch before running this check."
