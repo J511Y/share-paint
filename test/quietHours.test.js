@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { isQuietNow, isWithinQuietHours } from '../src/quietHours.js';
+import { isQuietNow, isWithinQuietHours, isWithinQuietTime } from '../src/quietHours.js';
 
 test('returns true during default overnight quiet hours (23-08)', () => {
   assert.equal(isWithinQuietHours(23), true);
@@ -26,6 +26,20 @@ test('supports endHour=24 as an exclusive midnight boundary', () => {
   assert.equal(isWithinQuietHours(22, 22, 24), true);
   assert.equal(isWithinQuietHours(23, 22, 24), true);
   assert.equal(isWithinQuietHours(0, 22, 24), false);
+});
+
+test('supports minute-level quiet windows with overnight boundary', () => {
+  assert.equal(isWithinQuietTime(22, 30, 22, 30, 6, 15), true);
+  assert.equal(isWithinQuietTime(6, 14, 22, 30, 6, 15), true);
+  assert.equal(isWithinQuietTime(6, 15, 22, 30, 6, 15), false);
+  assert.equal(isWithinQuietTime(12, 0, 22, 30, 6, 15), false);
+});
+
+test('supports minute-level daytime windows with inclusive/exclusive boundaries', () => {
+  assert.equal(isWithinQuietTime(9, 0, 9, 0, 17, 30), true);
+  assert.equal(isWithinQuietTime(17, 29, 9, 0, 17, 30), true);
+  assert.equal(isWithinQuietTime(17, 30, 9, 0, 17, 30), false);
+  assert.equal(isWithinQuietTime(8, 59, 9, 0, 17, 30), false);
 });
 
 test('handles custom overnight window when startHour > endHour', () => {

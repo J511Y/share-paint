@@ -4,20 +4,52 @@ function assertHourInRange(value, label, min = 0, max = 23) {
   }
 }
 
-export function isWithinQuietHours(hour, startHour = 23, endHour = 8) {
-  assertHourInRange(hour, 'hour', 0, 23);
-  assertHourInRange(startHour, 'startHour', 0, 23);
-  assertHourInRange(endHour, 'endHour', 0, 24);
+function assertMinuteInRange(value, label) {
+  if (!Number.isInteger(value) || value < 0 || value > 59) {
+    throw new RangeError(`${label} must be an integer between 0 and 59`);
+  }
+}
 
-  if (startHour === endHour) {
+function toMinuteOfDay(hour, minute) {
+  return (hour * 60) + minute;
+}
+
+export function isWithinQuietTime(
+  hour,
+  minute = 0,
+  startHour = 23,
+  startMinute = 0,
+  endHour = 8,
+  endMinute = 0,
+) {
+  assertHourInRange(hour, 'hour', 0, 23);
+  assertMinuteInRange(minute, 'minute');
+  assertHourInRange(startHour, 'startHour', 0, 23);
+  assertMinuteInRange(startMinute, 'startMinute');
+  assertHourInRange(endHour, 'endHour', 0, 24);
+  assertMinuteInRange(endMinute, 'endMinute');
+
+  if (endHour === 24 && endMinute !== 0) {
+    throw new RangeError('endMinute must be 0 when endHour is 24');
+  }
+
+  const current = toMinuteOfDay(hour, minute);
+  const start = toMinuteOfDay(startHour, startMinute);
+  const end = toMinuteOfDay(endHour, endMinute);
+
+  if (start === end) {
     return true;
   }
 
-  if (startHour < endHour) {
-    return hour >= startHour && hour < endHour;
+  if (start < end) {
+    return current >= start && current < end;
   }
 
-  return hour >= startHour || hour < endHour;
+  return current >= start || current < end;
+}
+
+export function isWithinQuietHours(hour, startHour = 23, endHour = 8) {
+  return isWithinQuietTime(hour, 0, startHour, 0, endHour, 0);
 }
 
 export function isQuietNow(date = new Date(), startHour = 23, endHour = 8, useUTC = false) {
@@ -30,5 +62,7 @@ export function isQuietNow(date = new Date(), startHour = 23, endHour = 8, useUT
   }
 
   const hour = useUTC ? date.getUTCHours() : date.getHours();
-  return isWithinQuietHours(hour, startHour, endHour);
+  const minute = useUTC ? date.getUTCMinutes() : date.getMinutes();
+
+  return isWithinQuietTime(hour, minute, startHour, 0, endHour, 0);
 }
