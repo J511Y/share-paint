@@ -69,6 +69,19 @@ while IFS='=' read -r env_name env_value; do
   fi
 done < <(env)
 
+# Hardening: block bypass/skip switches for this gate.
+# Policy requires gate enforcement + manual unblock by jhyou only.
+while IFS='=' read -r env_name env_value; do
+  env_name_upper="$(printf '%s' "$env_name" | tr '[:lower:]' '[:upper:]')"
+  if [[ "$env_name_upper" =~ (PAI16|PAI_16|RELEASE_GATE|CI_GATE) ]] && [[ "$env_name_upper" =~ (SKIP|BYPASS|DISABLE) ]] && [[ "$env_name_upper" =~ (GATE|CHECK|BLOCK) ]]; then
+    if is_truthy "$env_value"; then
+      echo "[PAI-16] FAIL: gate bypass switch is prohibited (${env_name}=${env_value})."
+      echo "[PAI-16] action required: keep gate enabled; manual unblock remains jhyou-only."
+      exit 1
+    fi
+  fi
+done < <(env)
+
 if ! git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
   echo "[PAI-16] base ref '$BASE_REF' not found locally."
   echo "[PAI-16] hint: fetch base branch before running this check."
@@ -104,3 +117,4 @@ if [[ $non_doc_count -eq 0 ]]; then
 fi
 
 echo "[PAI-16] PASS: non-doc changes detected ($non_doc_count file(s))."
+echo "[PAI-16] policy check: auto-unblock prohibited; manual unblock owner=jhyou."
