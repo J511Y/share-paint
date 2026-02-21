@@ -64,10 +64,16 @@ export class E3SocketClient {
     const isArrayBufferView =
       typeof ArrayBuffer !== 'undefined' && ArrayBuffer.isView && ArrayBuffer.isView(data);
     const isBlob = typeof Blob !== 'undefined' && data instanceof Blob;
-    const message =
-      typeof data === 'string' || isArrayBuffer || isArrayBufferView || isBlob
-        ? data
-        : JSON.stringify(data);
+
+    let message;
+    if (typeof data === 'string' || isArrayBuffer || isArrayBufferView || isBlob) {
+      message = data;
+    } else {
+      message = JSON.stringify(data);
+      if (typeof message !== 'string') {
+        throw new Error('E3 payload must be serializable');
+      }
+    }
 
     this.socket.send(message);
   }

@@ -78,7 +78,7 @@ test('connect is idempotent while socket is still connecting', () => {
   assert.equal(client.socket, firstSocket);
 });
 
-test('send throws when disconnected and sends serialized payload when open', () => {
+test('send throws when disconnected, validates payload, and sends serialized payload when open', () => {
   const client = new E3SocketClient({ url: 'ws://localhost/e3', WebSocketImpl: FakeWebSocket });
 
   assert.throws(() => client.send({ type: 'ping' }), /not connected/);
@@ -91,6 +91,9 @@ test('send throws when disconnected and sends serialized payload when open', () 
   client.send({ type: 'ping', source: 'test' });
   client.send('raw');
   client.send(bytes);
+
+  assert.throws(() => client.send(undefined), /serializable/);
+  assert.throws(() => client.send(() => {}), /serializable/);
 
   assert.deepEqual(client.socket.sent, ['{"type":"ping","source":"test"}', 'raw', bytes]);
 });
