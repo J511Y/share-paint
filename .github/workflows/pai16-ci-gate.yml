@@ -1,14 +1,22 @@
 name: PAI-16 CI Gate
 
 on:
-  pull_request:
-    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: "Base ref/SHA for diff (default: origin/develop)"
+        required: false
+        type: string
+      head_ref:
+        description: "Head ref/SHA for diff (default: current workflow SHA)"
+        required: false
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: pai16-ci-gate-${{ github.event.pull_request.number || github.ref }}
+  group: pai16-ci-gate-manual-${{ github.ref }}
   # Hardening: do not auto-cancel in-flight gate checks; each run must complete explicitly.
   cancel-in-progress: false
 
@@ -22,14 +30,33 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Fetch immutable PR refs
+      - name: Resolve diff refs
+        id: refs
+        shell: bash
         run: |
-          git fetch --no-tags origin \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}"
+          set -euo pipefail
+          BASE_REF="${{ github.event.inputs.base_ref }}"
+          HEAD_REF="${{ github.event.inputs.head_ref }}"
 
-      - name: Enforce non-doc change
+          if [[ -z "$BASE_REF" ]]; then
+            BASE_REF="origin/develop"
+          fi
+
+          if [[ -z "$HEAD_REF" ]]; then
+            HEAD_REF="${GITHUB_SHA}"
+          fi
+
+          echo "base_ref=$BASE_REF" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$HEAD_REF" >> "$GITHUB_OUTPUT"
+          echo "Using BASE_REF=$BASE_REF"
+          echo "Using HEAD_REF=$HEAD_REF"
+
+      - name: Fetch develop for comparison
+        run: |
+          git fetch --no-tags origin develop
+
+      - name: Enforce manual-only non-doc change gate
         run: |
           ./.pi/checks/ci_gate_non_docs_change.sh \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}"
+            "${{ steps.refs.outputs.base_ref }}" \
+            "${{ steps.refs.outputs.head_ref }}"
