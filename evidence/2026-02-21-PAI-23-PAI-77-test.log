@@ -1,0 +1,27 @@
+2026-02-21 23:33:28 KST
+
+> test
+> node --test
+
+✔ ping button is disabled until socket connects, then sends ping (2.154916ms)
+✔ failed send renders send_error payload in event panel (0.319353ms)
+✔ disconnect button closes active socket and updates status (1.010278ms)
+✔ event panel keeps only the latest 5 events (0.406826ms)
+✔ clear events button is disabled when empty and clears accumulated events (0.269332ms)
+✔ connect failure shows retry hint and keeps connect button enabled (0.337383ms)
+✔ connect updates status and parses JSON events (1.91514ms)
+✔ connect is idempotent while socket is still connecting (0.171945ms)
+✔ connect emits retryable connect_error when url is missing (0.24039ms)
+✔ connect catches socket constructor errors and emits retryable connect_error (1.067637ms)
+✔ send throws when disconnected, validates payload, and sends serialized payload when open (0.671319ms)
+✔ disconnect closes socket and clears client reference (0.268829ms)
+✔ disconnect immediately reports disconnected even if close event is deferred (0.234022ms)
+✔ client can reconnect after socket error while connecting (0.252377ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 111.317951
