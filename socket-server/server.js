@@ -5,6 +5,12 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const {
+  DEFAULT_ACK_TIMEOUT_MS,
+  createAckEnvelope,
+  createIdempotencyTracker,
+  normalizeRequestId,
+} = require('./policy');
 
 const app = express();
 app.use(cors());
@@ -32,6 +38,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // In-memory battle state for realtime coordination.
 const battles = {};
 const socketToUser = new Map();
+const idempotencyTracker = createIdempotencyTracker();
 
 // battles[battleId] = {
 //   timer: NodeJS.Timeout,
@@ -84,10 +91,27 @@ function getSafeUsername(socket, userId) {
   return email || `user-${userId.slice(0, 6)}`;
 }
 
-function emitAck(ack, ok, error) {
+function emitAck(ack, ok, error, meta = {}) {
   if (typeof ack === 'function') {
-    ack({ ok, error });
+    ack(createAckEnvelope({ ok, error, ackTimeoutMs: DEFAULT_ACK_TIMEOUT_MS, ...meta }));
   }
+}
+
+function checkDuplicateRequest({ battleId, userId, requestId }, ack) {
+  const normalizedRequestId = normalizeRequestId(requestId);
+  if (!normalizedRequestId) {
+    return { accepted: true, requestId: null };
+  }
+
+  const scopeKey = `${battleId || 'no-battle'}:${userId || 'anonymous'}:${normalizedRequestId}`;
+  const result = idempotencyTracker.checkAndMark(scopeKey);
+
+  if (!result.accepted) {
+    emitAck(ack, true, null, { requestId: normalizedRequestId, duplicate: true });
+    return { accepted: false, requestId: normalizedRequestId };
+  }
+
+  return { accepted: true, requestId: normalizedRequestId };
 }
 
 function normalizeBattleResult(battle) {
@@ -232,11 +256,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('chat_message', (data = {}, ack) => {
-    const { battleId, content = '', type = 'message' } = data;
+    const { battleId, content = '', type = 'message', requestId } = data;
     const userId = getUserId(socket);
     if (!isBattleParticipant(socket, battleId) || !userId) {
-      return emitAck(ack, false, '권한이 없거나 방에 없습니다');
+      return emitAck(ack, false, '권한이 없거나 방에 없습니다', { requestId: normalizeRequestId(requestId) });
     }
+
+    const duplicateCheck = checkDuplicateRequest({ battleId, userId, requestId }, ack);
+    if (!duplicateCheck.accepted) return;
 
     io.to(battleId).emit('battle_event', {
       type: 'chat',
@@ -249,7 +276,7 @@ io.on('connection', (socket) => {
         timestamp: new Date().toISOString(),
       },
     });
-    emitAck(ack, true);
+    emitAck(ack, true, null, { requestId: duplicateCheck.requestId });
   });
 
   socket.on('draw_event', (data = {}) => {
@@ -264,15 +291,18 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('canvas_update', ({ battleId, imageData }, ack) => {
+  socket.on('canvas_update', ({ battleId, imageData, requestId }, ack) => {
     const senderId = getUserId(socket);
     if (!isBattleParticipant(socket, battleId) || !senderId) {
-      return emitAck(ack, false, '권한이 없거나 방에 없습니다');
+      return emitAck(ack, false, '권한이 없거나 방에 없습니다', { requestId: normalizeRequestId(requestId) });
     }
+
+    const duplicateCheck = checkDuplicateRequest({ battleId, userId: senderId, requestId }, ack);
+    if (!duplicateCheck.accepted) return;
 
     const battle = getBattleState(battleId);
     if (!battle) {
-      return emitAck(ack, false, '전투 세션이 없습니다');
+      return emitAck(ack, false, '전투 세션이 없습니다', { requestId: duplicateCheck.requestId });
     }
 
     if (!battle.participantData[senderId]) {
@@ -289,21 +319,28 @@ io.on('connection', (socket) => {
       type: 'canvas_update',
       payload: { userId: senderId, imageData },
     });
-    emitAck(ack, true);
+    emitAck(ack, true, null, { requestId: duplicateCheck.requestId });
   });
 
-  socket.on('vote', ({ battleId, paintingUserId }, ack) => {
+  socket.on('vote', ({ battleId, paintingUserId, requestId }, ack) => {
     const voterId = getUserId(socket);
     if (!isBattleParticipant(socket, battleId) || !voterId) {
-      return emitAck(ack, false, '권한이 없거나 방에 없습니다');
+      return emitAck(ack, false, '권한이 없거나 방에 없습니다', { requestId: normalizeRequestId(requestId) });
     }
     if (!battleId || !paintingUserId || voterId === paintingUserId) {
-      return emitAck(ack, false, '잘못된 투표 요청입니다');
+      return emitAck(ack, false, '잘못된 투표 요청입니다', { requestId: normalizeRequestId(requestId) });
     }
 
+    const duplicateCheck = checkDuplicateRequest({ battleId, userId: voterId, requestId }, ack);
+    if (!duplicateCheck.accepted) return;
+
     const battle = getBattleState(battleId);
-    if (!battle || battle.status !== 'finished') return;
-    if (!battle.participantData || !battle.participantData[paintingUserId]) return;
+    if (!battle || battle.status !== 'finished') {
+      return emitAck(ack, false, '전투가 종료되지 않았습니다', { requestId: duplicateCheck.requestId });
+    }
+    if (!battle.participantData || !battle.participantData[paintingUserId]) {
+      return emitAck(ack, false, '투표 대상이 유효하지 않습니다', { requestId: duplicateCheck.requestId });
+    }
 
     battle.votes = battle.votes || {};
     battle.votes[voterId] = paintingUserId;
@@ -320,13 +357,17 @@ io.on('connection', (socket) => {
       type: 'finish',
       payload: voteResult,
     });
-    emitAck(ack, true);
+    emitAck(ack, true, null, { requestId: duplicateCheck.requestId });
   });
 
-  socket.on('start_battle', async ({ battleId }, ack) => {
+  socket.on('start_battle', async ({ battleId, requestId }, ack) => {
     if (!battleId) {
-      return emitAck(ack, false, 'battleId가 필요합니다');
+      return emitAck(ack, false, 'battleId가 필요합니다', { requestId: normalizeRequestId(requestId) });
     }
+
+    const duplicateCheck = checkDuplicateRequest({ battleId, userId: authUser.id, requestId }, ack);
+    if (!duplicateCheck.accepted) return;
+
     console.log(`Starting battle ${battleId}`);
 
     try {
@@ -422,11 +463,11 @@ io.on('connection', (socket) => {
         }
       }, 1000);
 
-      emitAck(ack, true);
+      emitAck(ack, true, null, { requestId: duplicateCheck.requestId });
     } catch (err) {
       console.error('Failed to start battle:', err);
       const message = err instanceof Error ? err.message : '알 수 없는 오류';
-      emitAck(ack, false, message);
+      emitAck(ack, false, message, { requestId: duplicateCheck.requestId });
     }
   });
 
