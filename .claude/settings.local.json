@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app:*)",
+      "Bash(npm install:*)",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: initial project setup for PaintShare\n\n- Initialize Next.js 16 project with TypeScript and Tailwind CSS\n- Set up project structure \\(app router, components, hooks, stores\\)\n- Add Supabase client configuration for auth and database\n- Create database schema and migrations for profiles, paintings, battles\n- Implement Zustand stores for auth, canvas, and battle state\n- Add custom hooks \\(useAuth, useCanvas, useTimer\\)\n- Create type definitions for database entities\n- Add constants for time limits, topics, and canvas config\n- Set up middleware for route protection\n- Create landing page with basic UI\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git branch:*)",
+      "Bash(supabase --version:*)",
+      "Bash(npx supabase:*)",
+      "Bash(set SUPABASE_ACCESS_TOKEN=sbp_1e9905e2d337065561c89949618ba4a0f04539ec)",
+      "Bash(set PGPASSWORD=wYw36zR.qTfD3wD:*)",
+      "Bash(set NEXT_PUBLIC_SUPABASE_URL:*)",
+      "Bash(set SUPABASE_SERVICE_ROLE_KEY:*)",
+      "Bash(node scripts/seed.mjs:*)",
+      "Bash(node scripts/setup-storage.mjs:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(npm test)",
+      "Bash(npx knip)",
+      "Bash(npx depcheck:*)",
+      "Bash(npx ts-prune:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(git commit:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}
