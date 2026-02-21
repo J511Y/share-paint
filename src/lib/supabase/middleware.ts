@@ -8,23 +8,47 @@ type CookieToSet = {
   options?: Partial<ResponseCookie>;
 };
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+const protectedPaths = ['/draw', '/battle', '/profile'];
+const authPaths = ['/login', '/register'];
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+function isMatchedPath(pathname: string, paths: string[]) {
+  return paths.some((path) => pathname.startsWith(path));
+}
+
+function redirectToLogin(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  url.pathname = '/login';
+  url.searchParams.set('redirect', request.nextUrl.pathname);
+
+  return NextResponse.redirect(url);
+}
+
+export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  const isProtectedPath = isMatchedPath(pathname, protectedPaths);
+  const isAuthPath = isMatchedPath(pathname, authPaths);
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    if (isProtectedPath) {
+      return redirectToLogin(request);
+    }
+
+    return NextResponse.next({ request });
+  }
+
+  let supabaseResponse = NextResponse.next({ request });
+
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet: CookieToSet[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({
             request,
           });
@@ -33,38 +57,30 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
+    });
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (isProtectedPath && !user) {
+      return redirectToLogin(request);
     }
-  );
 
-  // 세션 갱신
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    if (isAuthPath && user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/feed';
+      return NextResponse.redirect(url);
+    }
 
-  // 인증이 필요한 페이지 보호
-  const protectedPaths = ['/draw', '/battle', '/profile'];
-  const isProtectedPath = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
+    return supabaseResponse;
+  } catch (error) {
+    console.error('[middleware] updateSession failed', error);
 
-  if (isProtectedPath && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('redirect', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+    if (isProtectedPath) {
+      return redirectToLogin(request);
+    }
+
+    return NextResponse.next({ request });
   }
-
-  // 이미 로그인한 사용자가 auth 페이지 접근 시 리다이렉트
-  const authPaths = ['/login', '/register'];
-  const isAuthPath = authPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
-
-  if (isAuthPath && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/feed';
-    return NextResponse.redirect(url);
-  }
-
-  return supabaseResponse;
 }
