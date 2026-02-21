@@ -7,6 +7,17 @@ export class E3SocketClient {
     this.socket = null;
   }
 
+  emitConnectionError(message, details) {
+    this.socket = null;
+    this.onStatusChange('error');
+    this.onEvent({
+      type: 'connect_error',
+      message,
+      retriable: true,
+      ...(details ? { details } : {}),
+    });
+  }
+
   connect() {
     if (
       this.socket &&
@@ -16,8 +27,21 @@ export class E3SocketClient {
       return;
     }
 
+    if (typeof this.url !== 'string' || this.url.trim().length === 0) {
+      this.emitConnectionError('E3 socket URL is missing');
+      return;
+    }
+
     this.onStatusChange('connecting');
-    const socket = new this.WebSocketImpl(this.url);
+
+    let socket;
+    try {
+      socket = new this.WebSocketImpl(this.url);
+    } catch (error) {
+      this.emitConnectionError('Failed to initialize E3 socket', error?.message ?? String(error));
+      return;
+    }
+
     this.socket = socket;
 
     socket.addEventListener('open', () => {

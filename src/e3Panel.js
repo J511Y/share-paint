@@ -5,6 +5,10 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
   statusEl.dataset.testid = 'e3-status';
   statusEl.textContent = 'E3: idle';
 
+  const hintEl = document.createElement('p');
+  hintEl.dataset.testid = 'e3-hint';
+  hintEl.textContent = '';
+
   const eventEl = document.createElement('pre');
   eventEl.dataset.testid = 'e3-event';
 
@@ -30,13 +34,15 @@ export function mountE3Panel(root, { url, WebSocketImpl } = {}) {
   disconnectBtn.textContent = 'Disconnect E3';
   disconnectBtn.disabled = true;
 
-  root.append(statusEl, eventEl, connectBtn, pingBtn, disconnectBtn, clearBtn);
+  root.append(statusEl, hintEl, eventEl, connectBtn, pingBtn, disconnectBtn, clearBtn);
 
   const client = new E3SocketClient({
     url,
     WebSocketImpl,
     onStatusChange(status) {
       statusEl.textContent = `E3: ${status}`;
+      hintEl.textContent =
+        status === 'error' ? 'Connection failed. Please retry with Connect E3.' : '';
       pingBtn.disabled = status !== 'connected';
       connectBtn.disabled = status === 'connecting' || status === 'connected';
       disconnectBtn.disabled = status !== 'connecting' && status !== 'connected';

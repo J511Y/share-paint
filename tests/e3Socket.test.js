@@ -39,6 +39,15 @@ class DeferredCloseWebSocket extends FakeWebSocket {
   }
 }
 
+class ThrowingWebSocket {
+  static CONNECTING = 0;
+  static OPEN = 1;
+
+  constructor() {
+    throw new Error('constructor boom');
+  }
+}
+
 test('connect updates status and parses JSON events', () => {
   const statuses = [];
   const events = [];
@@ -76,6 +85,49 @@ test('connect is idempotent while socket is still connecting', () => {
   client.connect();
 
   assert.equal(client.socket, firstSocket);
+});
+
+test('connect emits retryable connect_error when url is missing', () => {
+  const statuses = [];
+  const events = [];
+
+  const client = new E3SocketClient({
+    url: '',
+    WebSocketImpl: FakeWebSocket,
+    onStatusChange: (s) => statuses.push(s),
+    onEvent: (e) => events.push(e),
+  });
+
+  client.connect();
+
+  assert.equal(client.socket, null);
+  assert.deepEqual(statuses, ['error']);
+  assert.deepEqual(events, [{ type: 'connect_error', message: 'E3 socket URL is missing', retriable: true }]);
+});
+
+test('connect catches socket constructor errors and emits retryable connect_error', () => {
+  const statuses = [];
+  const events = [];
+
+  const client = new E3SocketClient({
+    url: 'ws://localhost/e3',
+    WebSocketImpl: ThrowingWebSocket,
+    onStatusChange: (s) => statuses.push(s),
+    onEvent: (e) => events.push(e),
+  });
+
+  client.connect();
+
+  assert.equal(client.socket, null);
+  assert.deepEqual(statuses, ['connecting', 'error']);
+  assert.deepEqual(events, [
+    {
+      type: 'connect_error',
+      message: 'Failed to initialize E3 socket',
+      retriable: true,
+      details: 'constructor boom',
+    },
+  ]);
 });
 
 test('send throws when disconnected, validates payload, and sends serialized payload when open', () => {
