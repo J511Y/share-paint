@@ -29,6 +29,10 @@ vi.mock('@/hooks/useResponsiveCanvas', () => ({
   useResponsiveCanvas: vi.fn(() => mockResponsiveCanvas),
 }));
 
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({ user: { id: 'test-user' } })),
+}));
+
 // forwardRef를 올바르게 처리하는 Canvas 모킹
 vi.mock('@/components/canvas', async () => {
   const React = await import('react');
@@ -116,11 +120,12 @@ vi.mock('@/components/canvas', async () => {
         <button onClick={onClear} aria-label="초기화">
           Clear
         </button>
-        <button onClick={onExport} aria-label="내보내기">
+        <button onClick={onExport} aria-label="다운로드">
           Export
         </button>
       </div>
     ),
+    SavePaintingModal: () => <div data-testid="mock-save-modal" />,
   };
 });
 
@@ -265,7 +270,7 @@ describe('DrawingCanvas', () => {
 
       render(<DrawingCanvas />);
 
-      const exportButton = screen.getByRole('button', { name: /내보내기/i });
+      const exportButton = screen.getByRole('button', { name: /다운로드/i });
       await user.click(exportButton);
 
       expect(mockGetDataUrl).toHaveBeenCalled();
@@ -397,7 +402,7 @@ describe('DrawingCanvas - 엣지 케이스', () => {
 
     render(<DrawingCanvas />);
 
-    const exportButton = screen.getByRole('button', { name: /내보내기/i });
+    const exportButton = screen.getByRole('button', { name: /다운로드/i });
 
     // 에러 없이 실행되어야 함
     await userEvent.click(exportButton);
