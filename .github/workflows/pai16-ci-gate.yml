@@ -1,0 +1,35 @@
+name: PAI-16 CI Gate
+
+on:
+  pull_request:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pai16-ci-gate-${{ github.event.pull_request.number || github.ref }}
+  # Hardening: do not auto-cancel in-flight gate checks; each run must complete explicitly.
+  cancel-in-progress: false
+
+jobs:
+  non-doc-change-required:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch immutable PR refs
+        run: |
+          git fetch --no-tags origin \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}"
+
+      - name: Enforce non-doc change
+        run: |
+          ./.pi/checks/ci_gate_non_docs_change.sh \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}"
