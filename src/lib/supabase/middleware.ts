@@ -49,40 +49,53 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet: CookieToSet[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+
+          supabaseResponse = NextResponse.next({
+            request,
+          });
+
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
       },
-      setAll(cookiesToSet: CookieToSet[]) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+    });
 
-        supabaseResponse = NextResponse.next({
-          request,
-        });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-        cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
-        );
-      },
-    },
-  });
+    if (isProtectedPath && !user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('redirect', request.nextUrl.pathname);
+      return NextResponse.redirect(url);
+    }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    if (isAuthPath && user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/feed';
+      return NextResponse.redirect(url);
+    }
+  } catch (error) {
+    console.error('[middleware] Session sync failed. Falling back safely.', error);
 
-  if (isProtectedPath && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('redirect', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
+    if (isProtectedPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('redirect', request.nextUrl.pathname);
+      return NextResponse.redirect(url);
+    }
 
-  if (isAuthPath && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/feed';
-    return NextResponse.redirect(url);
+    return NextResponse.next({ request });
   }
 
   return supabaseResponse;
