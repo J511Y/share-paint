@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
+import { getUuidParam } from '@/lib/validation/params';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: targetUserId } = await params;
+  const resolvedParams = await params;
+  const targetUserId = getUuidParam(resolvedParams, 'id');
+  if (!targetUserId) {
+    return NextResponse.json({ error: '유효한 사용자 ID가 필요합니다.' }, { status: 400 });
+  }
+
   const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -41,7 +47,12 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: targetUserId } = await params;
+  const resolvedParams = await params;
+  const targetUserId = getUuidParam(resolvedParams, 'id');
+  if (!targetUserId) {
+    return NextResponse.json({ error: '유효한 사용자 ID가 필요합니다.' }, { status: 400 });
+  }
+
   const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
