@@ -13,7 +13,10 @@
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:e2e:critical": "vitest run tests/e2e",
+    "test:coverage": "vitest run --coverage",
+    "preflight:env": "node scripts/preflight-env.mjs",
+    "check:socket": "node --check socket-server/server.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
