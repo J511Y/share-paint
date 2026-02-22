@@ -18,6 +18,7 @@
     "preflight:env": "node scripts/preflight-env.mjs",
     "check:secrets": "node scripts/secret-scan.mjs",
     "qa:sheet": "node scripts/generate-regression-sheet.mjs",
+    "retro:sheet": "node scripts/generate-launch-retro.mjs",
     "check:socket": "node --check socket-server/server.js"
   },
   "dependencies": {
