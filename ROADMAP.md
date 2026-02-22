@@ -52,7 +52,8 @@
 
 ### 주요 작업
 - [ ] **모바일 최적화** (`src/app/(main)/draw`, `src/components/canvas`)
-  - [ ] 터치 입력 정확도 및 지연 시간 개선
+  - [x] 터치 입력 정확도 개선 1차 완료 (좌표 변환 유틸 분리, touchend changedTouches 대응, 경계 clamp, 단위 테스트 추가)
+  - [ ] 터치 지연 시간 개선
   - [ ] 저사양 디바이스 렌더링/메모리 사용량 튜닝
 - [ ] **battle 안정성 강화** (`src/app/(main)/battle`, `src/components/battle`, `src/hooks/useBattle.ts`, `socket-server/server.js`)
   - [ ] 재연결/복구 로직 강화 (방 상태, 타이머, 투표 상태)

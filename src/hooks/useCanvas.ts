@@ -3,6 +3,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { floodFillCanvas } from '@/lib/canvas/floodFill';
+import { getCanvasCoordinates } from '@/lib/canvas/coordinates';
 
 interface UseCanvasOptions {
   width: number;
@@ -71,31 +72,12 @@ export function useCanvas({ width, height, backgroundColor = '#FFFFFF', onDrawEn
   }, [tool, brush]);
 
   // 좌표 계산 (터치/마우스)
-  const getCoordinates = useCallback(
-    (event: MouseEvent | TouchEvent): { x: number; y: number } | null => {
-      const canvas = canvasRef.current;
-      if (!canvas) return null;
+  const getCoordinates = useCallback((event: MouseEvent | TouchEvent): { x: number; y: number } | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
 
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-
-      if ('touches' in event) {
-        const touch = event.touches[0];
-        if (!touch) return null;
-        return {
-          x: (touch.clientX - rect.left) * scaleX,
-          y: (touch.clientY - rect.top) * scaleY,
-        };
-      }
-
-      return {
-        x: (event.clientX - rect.left) * scaleX,
-        y: (event.clientY - rect.top) * scaleY,
-      };
-    },
-    []
-  );
+    return getCanvasCoordinates(event, canvas);
+  }, []);
 
   // 드로잉 시작
   const startDrawing = useCallback(
