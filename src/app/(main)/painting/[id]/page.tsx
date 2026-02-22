@@ -1,18 +1,18 @@
-import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { formatRelativeTime, formatTime } from '@/lib/utils';
-import { Clock, Heart, MessageCircle, ArrowLeft } from 'lucide-react';
+import { Clock, MessageCircle, ArrowLeft } from 'lucide-react';
 import { CommentList } from '@/components/comment';
-import { PaintingCard } from '@/components/feed/PaintingCard'; // Reuse for consistency or build custom view? 
-// Building custom view for detail page is better for larger image and layout.
+import type { Painting, Profile } from '@/types/database';
 
 export const metadata = {
   title: '그림 상세',
 };
 
-async function getPainting(id: string) {
+type PaintingDetail = Painting & { profile: Profile | null };
+
+async function getPainting(id: string): Promise<PaintingDetail | null> {
   const supabase = await createClient();
   
   const { data: painting, error } = await supabase
@@ -28,7 +28,7 @@ async function getPainting(id: string) {
     return null;
   }
 
-  return painting;
+  return painting as PaintingDetail;
 }
 
 export default async function PaintingPage(

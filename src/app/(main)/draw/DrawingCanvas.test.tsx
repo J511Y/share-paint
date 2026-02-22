@@ -30,7 +30,14 @@ vi.mock('@/hooks/useResponsiveCanvas', () => ({
 }));
 
 vi.mock('@/hooks/useAuth', () => ({
-  useAuth: vi.fn(() => ({ user: { id: 'test-user' } })),
+  useAuth: vi.fn(() => ({
+    user: {
+      id: 'user-1',
+      username: 'tester',
+      display_name: 'Tester',
+      avatar_url: null,
+    },
+  })),
 }));
 
 // forwardRef를 올바르게 처리하는 Canvas 모킹
@@ -125,7 +132,8 @@ vi.mock('@/components/canvas', async () => {
         </button>
       </div>
     ),
-    SavePaintingModal: () => <div data-testid="mock-save-modal" />,
+    SavePaintingModal: ({ isOpen }: { isOpen: boolean }) =>
+      isOpen ? <div data-testid="mock-save-modal">Save Modal</div> : null,
   };
 });
 
