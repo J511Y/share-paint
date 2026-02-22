@@ -128,6 +128,7 @@
 ### DB/Supabase
 - [ ] 마이그레이션 정합성 점검 (`supabase/migrations/*.sql`)
 - [ ] 인덱스/RLS/스토리지 정책 재점검
+  - [x] PAI-30 1차: RLS/Storage 감사 체크리스트 템플릿 추가 (`docs/security/rls-storage-audit-checklist.md`, `scripts/generate-rls-storage-audit-checklist.mjs`)
 - [ ] 운영 데이터 백업/복구 주기 확정
 
 ### QA
