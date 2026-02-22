@@ -38,6 +38,7 @@
 - [ ] **관측성(Observability)**
   - [ ] API/Socket 에러 로깅, 요청 추적 ID, 핵심 지표 대시보드 구축
   - [ ] 알림 규칙(5xx 급증, 소켓 오류율 급증, 저장 실패율 상승) 설정
+  - [x] 성능 예산 CI 임계치 템플릿 추가 (`docs/sprint/performance-budget-ci-thresholds.json`, `npm run perf:budget`)
 - [ ] **운영 준비**
   - [ ] 배포 체크리스트/런북/롤백 절차 문서화
   - [ ] 장애 대응 연락 체계 및 온콜 역할 정의
