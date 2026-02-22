@@ -23,6 +23,7 @@
     "kpi:spec": "node scripts/generate-soft-launch-kpi-spec.mjs",
     "oncall:plan": "node scripts/generate-oncall-contact-plan.mjs",
     "perf:budget": "node scripts/generate-performance-budget-config.mjs",
+    "api:p95:report": "node scripts/generate-api-p95-report-template.mjs",
     "check:socket": "node --check socket-server/server.js"
   },
   "dependencies": {
