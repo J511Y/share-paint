@@ -41,6 +41,7 @@
 - [ ] **운영 준비**
   - [ ] 배포 체크리스트/런북/롤백 절차 문서화
   - [ ] 장애 대응 연락 체계 및 온콜 역할 정의
+    - [x] 온콜/연락체계 템플릿 추가 (`docs/runbooks/oncall-contact-plan.md`, `npm run oncall:plan`)
 
 ## 2. Phase A - 안정화 (1~2주)
 
