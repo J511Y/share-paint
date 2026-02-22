@@ -129,6 +129,7 @@
 - [ ] 인증/권한/입력 검증 강화 (`src/app/api/users/**`, `src/app/api/paintings/**`, `src/app/api/battle/**`)
   - [x] PAI-28 1차: 좋아요 API path param UUID 검증 추가 (`src/app/api/paintings/[id]/like/route.ts`) 및 params 유틸 테스트 보강
 - [ ] 핵심 API 성능 모니터링 지표 추가
+  - [x] PAI-32 1차: API 로그 표준 필드 빌더 추가 및 공통 핸들러 로그 컨텍스트 정규화 (`src/lib/observability/api-log-fields.ts`, `src/lib/api-handler.ts`)
 
 ### Realtime(Socket)
 - [ ] 재연결 및 상태 복구 로직 보강 (`socket-server/server.js`, `src/hooks/useBattle.ts`)

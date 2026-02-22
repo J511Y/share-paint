@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { devLogger as logger } from '@/lib/logger';
 import { apiErrorResponse } from '@/lib/api-error';
+import { buildApiLogFields } from '@/lib/observability/api-log-fields';
 
 export interface ApiContext {
   req: NextRequest;
@@ -67,6 +68,13 @@ export function withApiHandler(
             method,
             statusCode: 401,
             duration,
+            context: buildApiLogFields({
+              requestId,
+              path,
+              method,
+              statusCode: 401,
+              durationMs: duration,
+            }),
           });
           return apiErrorResponse(401, 'AUTH_REQUIRED', '로그인이 필요합니다.', requestId);
         }
@@ -98,6 +106,14 @@ export function withApiHandler(
         statusCode,
         duration,
         userId: user?.id,
+        context: buildApiLogFields({
+          requestId,
+          path,
+          method,
+          statusCode,
+          durationMs: duration,
+          userId: user?.id,
+        }),
       });
 
       return response;
@@ -114,6 +130,13 @@ export function withApiHandler(
         duration,
         error,
         context: {
+          ...buildApiLogFields({
+            requestId,
+            path,
+            method,
+            statusCode: 500,
+            durationMs: duration,
+          }),
           query: Object.fromEntries(req.nextUrl.searchParams),
           ...getClientInfo(req),
         },
