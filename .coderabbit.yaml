@@ -1,0 +1,56 @@
+language: ko-KR
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  changed_files_summary: true
+  sequence_diagrams: false
+  path_instructions:
+    - path: "src/components/**/*.tsx"
+      instructions: |
+        Frontend conventions:
+        - Keep components presentational when possible; move side-effects/network/state orchestration into hooks/services.
+        - Prefer small, single-responsibility components (target < 200 LOC unless justified).
+        - Avoid prop-drilling explosions; use composition or scoped store hooks.
+        - Maintain accessibility basics (semantic roles, labels, keyboard interactions).
+        - Prevent unnecessary re-renders: stable callbacks/selectors, memoization only when evidence exists (YAGNI).
+        - Flag duplicated JSX/logic candidates for extraction (DRY), but do not over-abstract one-off code.
+
+    - path: "src/hooks/**/*.ts"
+      instructions: |
+        Hook conventions:
+        - Enforce Rules of Hooks and complete dependency arrays.
+        - Separate lifecycle, IO, and domain transforms into testable helpers (SOLID).
+        - Avoid mega-hooks; suggest split by concern when complexity grows.
+
+    - path: "src/app/api/**/*.ts"
+      instructions: |
+        Backend/API conventions:
+        - Prefer shared wrappers (`apiHandler` / `authApiHandler`) for consistent error/auth handling.
+        - Validate external inputs at boundary; reject malformed IDs/params early.
+        - Keep route handlers thin; move business logic to lib/service modules.
+        - Ensure consistent HTTP status codes and response schema.
+        - Avoid repeated auth/user-fetch logic across routes; recommend shared helper (DRY).
+
+    - path: "socket-server/**/*.js"
+      instructions: |
+        Realtime backend conventions:
+        - Keep event handlers cohesive and modular; avoid monolithic files.
+        - Enforce idempotency, ack/timeout handling, and predictable recovery paths.
+        - Prefer explicit permission checks per event.
+        - Flag duplicated event logic and suggest utility extraction.
+
+    - path: "**/*"
+      instructions: |
+        Global engineering principles:
+        - Apply SOLID pragmatically (especially SRP and dependency boundaries).
+        - Prefer DRY for repeated logic, constants, and error handling.
+        - Enforce YAGNI: reject speculative abstractions and premature optimization.
+        - Require tests for non-trivial behavior changes (unit/integration/e2e as appropriate).
+        - Keep naming clear and domain-oriented; avoid ambiguous abbreviations.
+
+chat:
+  auto_reply: true
