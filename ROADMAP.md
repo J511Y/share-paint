@@ -94,6 +94,7 @@
 ### 소프트 런치
 - [ ] 제한된 사용자 그룹 대상 공개
 - [ ] 핵심 지표 추적
+  - [x] 런치 회고/백로그 재우선순위 템플릿 추가 (`docs/sprint/launch-retro-backlog-reprioritization.md`, `npm run retro:sheet`)
   - [ ] 회원가입 전환율
   - [ ] 드로잉 저장 성공률
   - [ ] 배틀 완주율
