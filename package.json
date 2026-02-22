@@ -20,6 +20,7 @@
     "qa:sheet": "node scripts/generate-regression-sheet.mjs",
     "retro:sheet": "node scripts/generate-launch-retro.mjs",
     "ga:gate": "node scripts/generate-ga-gate-checklist.mjs",
+    "kpi:spec": "node scripts/generate-soft-launch-kpi-spec.mjs",
     "check:socket": "node --check socket-server/server.js"
   },
   "dependencies": {
