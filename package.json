@@ -16,6 +16,7 @@
     "test:e2e:critical": "vitest run tests/e2e",
     "test:coverage": "vitest run --coverage",
     "preflight:env": "node scripts/preflight-env.mjs",
+    "check:secrets": "node scripts/secret-scan.mjs",
     "check:socket": "node --check socket-server/server.js"
   },
   "dependencies": {
