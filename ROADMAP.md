@@ -34,6 +34,7 @@
 - [ ] **보안**
   - [ ] Supabase RLS, API 입력 검증, 권한 검증 재점검
   - [ ] 환경 변수 및 서비스 키 노출 방지 점검
+    - [x] 1차 자동 스캔 도입 (`npm run check:secrets`, `scripts/secret-scan.mjs`)
 - [ ] **관측성(Observability)**
   - [ ] API/Socket 에러 로깅, 요청 추적 ID, 핵심 지표 대시보드 구축
   - [ ] 알림 규칙(5xx 급증, 소켓 오류율 급증, 저장 실패율 상승) 설정
