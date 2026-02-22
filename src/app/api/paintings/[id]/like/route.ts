@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import type { LikeInsert } from '@/types/database';
+import { getUuidParam } from '@/lib/validation/params';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: paintingId } = await params;
+  const resolvedParams = await params;
+  const paintingId = getUuidParam(resolvedParams, 'id');
+  if (!paintingId) {
+    return NextResponse.json({ error: 'Invalid painting id.' }, { status: 400 });
+  }
+
   const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -38,7 +44,12 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: paintingId } = await params;
+  const resolvedParams = await params;
+  const paintingId = getUuidParam(resolvedParams, 'id');
+  if (!paintingId) {
+    return NextResponse.json({ error: 'Invalid painting id.' }, { status: 400 });
+  }
+
   const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();

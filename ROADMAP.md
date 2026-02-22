@@ -36,6 +36,7 @@
   - [ ] 환경 변수 및 서비스 키 노출 방지 점검
 - [ ] **관측성(Observability)**
   - [ ] API/Socket 에러 로깅, 요청 추적 ID, 핵심 지표 대시보드 구축
+    - [x] PAI-9 1차: API 공통 핸들러 응답에 `x-request-id` 헤더 주입 + 관측 유틸/테스트 추가
   - [ ] 알림 규칙(5xx 급증, 소켓 오류율 급증, 저장 실패율 상승) 설정
 - [ ] **운영 준비**
   - [ ] 배포 체크리스트/런북/롤백 절차 문서화
@@ -49,6 +50,7 @@
 ### 주요 작업
 - [ ] **모바일 최적화** (`src/app/(main)/draw`, `src/components/canvas`)
   - [ ] 터치 입력 정확도 및 지연 시간 개선
+  - [x] 히스토리 메모리 튜닝 1차 완료 (동일 dataURL 중복 저장 방지, 스토어 단위 테스트 추가)
   - [ ] 저사양 디바이스 렌더링/메모리 사용량 튜닝
 - [ ] **battle 안정성 강화** (`src/app/(main)/battle`, `src/components/battle`, `src/hooks/useBattle.ts`, `socket-server/server.js`)
   - [ ] 재연결/복구 로직 강화 (방 상태, 타이머, 투표 상태)
@@ -118,17 +120,19 @@
 ### Backend/API
 - [ ] API 응답/에러 스키마 통일 (`src/app/api/**`, `src/lib/api-handler.ts`)
 - [ ] 인증/권한/입력 검증 강화 (`src/app/api/users/**`, `src/app/api/paintings/**`, `src/app/api/battle/**`)
-  - [x] PAI-29 1차: 팔로우 API path param UUID 검증 추가 (`src/app/api/users/[id]/follow/route.ts`) 및 params 유틸 테스트 보강
+  - [x] PAI-28 1차: 좋아요 API path param UUID 검증 추가 (`src/app/api/paintings/[id]/like/route.ts`) 및 params 유틸 테스트 보강
 - [ ] 핵심 API 성능 모니터링 지표 추가
 
 ### Realtime(Socket)
 - [ ] 재연결 및 상태 복구 로직 보강 (`socket-server/server.js`, `src/hooks/useBattle.ts`)
 - [ ] 이벤트 ACK/타임아웃/중복 처리 정책 정의
+  - [x] PAI-33 1차: 소켓 메트릭 표준 헬퍼 추가 (`src/lib/socket/metrics.ts`) 및 임계치 단위 테스트 작성
 - [ ] 배틀 단계 전이(waiting/in_progress/finished) 검증 자동화
 
 ### DB/Supabase
 - [ ] 마이그레이션 정합성 점검 (`supabase/migrations/*.sql`)
 - [ ] 인덱스/RLS/스토리지 정책 재점검
+  - [x] PAI-30 1차: RLS/Storage 감사 체크리스트 템플릿 추가 (`docs/security/rls-storage-audit-checklist.md`, `scripts/generate-rls-storage-audit-checklist.mjs`)
 - [ ] 운영 데이터 백업/복구 주기 확정
 
 ### QA
