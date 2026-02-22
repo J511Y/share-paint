@@ -109,6 +109,7 @@
 - [ ] 핵심 경로 성공률 98% 이상
 - [ ] 성능 예산(LCP/TTI/API p95) 충족
 - [ ] 운영 런북 및 온콜 대응 리허설 완료
+- [x] GA 승격 체크리스트 템플릿 추가 (`docs/sprint/ga-promotion-gate-checklist.md`, `npm run ga:gate`)
 
 ## 6. Workstream별 TODO
 
