@@ -7,83 +7,79 @@ type CookieToSet = {
   options?: Record<string, unknown>;
 };
 
-const PROTECTED_PATHS = ['/draw', '/battle', '/profile'];
-const AUTH_PATHS = ['/login', '/register'];
+const protectedPaths = ['/draw', '/battle', '/profile'];
+const authPaths = ['/login', '/register'];
 
-function isPathMatch(pathname: string, basePath: string) {
-  return pathname === basePath || pathname.startsWith(`${basePath}/`);
+function isMatchedPath(pathname: string, paths: string[]) {
+  return paths.some((path) => pathname.startsWith(path));
+}
+
+function redirectToLogin(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  url.pathname = '/login';
+  url.searchParams.set('redirect', request.nextUrl.pathname);
+
+  return NextResponse.redirect(url);
 }
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isProtectedPath = PROTECTED_PATHS.some((path) =>
-    isPathMatch(pathname, path)
-  );
-  const isAuthPath = AUTH_PATHS.some((path) => isPathMatch(pathname, path));
-
-  // 인증 흐름과 무관한 경로에서는 Supabase 세션 동기화를 생략한다.
-  if (!isProtectedPath && !isAuthPath) {
-    return NextResponse.next({ request });
-  }
+  const isProtectedPath = isMatchedPath(pathname, protectedPaths);
+  const isAuthPath = isMatchedPath(pathname, authPaths);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // 환경변수가 없는 배포/미리보기 환경에서도 미들웨어 500을 방지한다.
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error(
-      '[middleware] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Skipping session sync.'
-    );
-
     if (isProtectedPath) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('redirect', request.nextUrl.pathname);
-      return NextResponse.redirect(url);
+      return redirectToLogin(request);
     }
 
     return NextResponse.next({ request });
   }
 
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet: CookieToSet[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({
+            request,
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
       },
-      setAll(cookiesToSet: CookieToSet[]) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+    });
 
-        supabaseResponse = NextResponse.next({
-          request,
-        });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-        cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
-        );
-      },
-    },
-  });
+    if (isProtectedPath && !user) {
+      return redirectToLogin(request);
+    }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    if (isAuthPath && user) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/feed';
+      return NextResponse.redirect(url);
+    }
 
-  if (isProtectedPath && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('redirect', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+    return supabaseResponse;
+  } catch (error) {
+    console.error('[middleware] updateSession failed', error);
+
+    if (isProtectedPath) {
+      return redirectToLogin(request);
+    }
+
+    return NextResponse.next({ request });
   }
-
-  if (isAuthPath && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/feed';
-    return NextResponse.redirect(url);
-  }
-
-  return supabaseResponse;
 }

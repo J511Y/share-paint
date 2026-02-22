@@ -90,6 +90,37 @@ function emitAck(ack, ok, error) {
   }
 }
 
+function buildBattleStatePayload(battle) {
+  const participantData = battle.participantData || {};
+  const activeUserIds = new Set();
+
+  for (const socketId of battle.participants || []) {
+    const userId = socketToUser.get(socketId);
+    if (userId) {
+      activeUserIds.add(userId);
+    }
+  }
+
+  const participants = [...activeUserIds].map((userId) => {
+    const data = participantData[userId] || {};
+    return {
+      id: userId,
+      username: data.username || `user-${userId.slice(0, 6)}`,
+      displayName: data.displayName || null,
+      avatarUrl: data.avatarUrl || null,
+      isHost: battle.hostId === userId,
+      isReady: !!data.isReady,
+      canvasData: data.imageData || null,
+    };
+  });
+
+  return {
+    status: battle.status || 'waiting',
+    timeLeft: typeof battle.timeLeft === 'number' ? battle.timeLeft : 0,
+    participants,
+  };
+}
+
 function normalizeBattleResult(battle) {
   const participantData = battle.participantData || {};
   const votesByTarget = battle.votes || {};
@@ -136,6 +167,8 @@ io.on('connection', (socket) => {
       ...user,
       id: userId,
       username: user?.username || user?.display_name || user?.displayName || getSafeUsername(socket, userId),
+      displayName: user?.displayName || user?.display_name || null,
+      avatarUrl: user?.avatarUrl || user?.avatar_url || null,
     };
 
     socket.join(battleId);
@@ -146,7 +179,7 @@ io.on('connection', (socket) => {
         timeLeft: 0,
         status: 'waiting',
         participants: new Set(),
-        participantData: {}, // { userId: { username, imageData, votes } }
+        participantData: {}, // { userId: { username, imageData, votes, isReady } }
         votes: {}, // { voterId: targetUserId }
       };
     }
@@ -157,14 +190,29 @@ io.on('connection', (socket) => {
     if (userId && !battle.participantData[userId]) {
       battle.participantData[userId] = {
         username: safeUser.username,
+        displayName: safeUser.displayName,
+        avatarUrl: safeUser.avatarUrl,
         imageData: null,
         votes: 0,
+        isReady: false,
+      };
+    } else if (userId && battle.participantData[userId]) {
+      battle.participantData[userId] = {
+        ...battle.participantData[userId],
+        username: safeUser.username,
+        displayName: safeUser.displayName,
+        avatarUrl: safeUser.avatarUrl,
       };
     }
 
     socket.to(battleId).emit('battle_event', {
       type: 'join',
       payload: { user: safeUser },
+    });
+
+    socket.emit('battle_event', {
+      type: 'battle_state',
+      payload: buildBattleStatePayload(battle),
     });
 
     if (battle.status === 'in_progress') {
@@ -214,6 +262,11 @@ io.on('connection', (socket) => {
       return emitAck(ack, false, '권한이 없거나 방에 없습니다');
     }
 
+    const battle = getBattleState(battleId);
+    if (battle?.participantData?.[userId]) {
+      battle.participantData[userId].isReady = !!isReady;
+    }
+
     io.to(battleId).emit('battle_event', {
       type: 'ready',
       payload: { userId, isReady: !!isReady },
@@ -224,6 +277,11 @@ io.on('connection', (socket) => {
   socket.on('ready_update', ({ battleId, isReady }) => {
     const userId = getUserId(socket);
     if (!isBattleParticipant(socket, battleId) || !userId) return;
+
+    const battle = getBattleState(battleId);
+    if (battle?.participantData?.[userId]) {
+      battle.participantData[userId].isReady = !!isReady;
+    }
 
     io.to(battleId).emit('battle_event', {
       type: 'ready',
@@ -377,6 +435,7 @@ io.on('connection', (socket) => {
       }
 
       battles[battleId].id = battleId;
+      battles[battleId].hostId = battle.host_id;
       battles[battleId].status = 'in_progress';
       battles[battleId].timeLeft = battle.time_limit;
 

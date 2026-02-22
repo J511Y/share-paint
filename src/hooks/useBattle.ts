@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useBattleStore } from '@/stores/battleStore';
 import { connectSocket, getSocket } from '@/lib/socket/client';
+import { normalizeBattleStatePayload } from '@/lib/socket/recovery';
 import type { BattleSocketEvent, BattleUser } from '@/types/battle';
 import { useAuth } from './useAuth';
 import { createClient } from '@/lib/supabase/client';
@@ -97,7 +98,15 @@ export function useBattle(battleId: string) {
             setIsReady(event.payload.isReady);
           }
           break;
-          
+
+        case 'battle_state': {
+          const state = normalizeBattleStatePayload(event.payload);
+          setParticipants(state.participants);
+          updateRoomStatus(state.status);
+          setTimeLeft(state.timeLeft);
+          break;
+        }
+
         case 'start':
           updateRoomStatus('in_progress');
           setTimeLeft(event.payload.duration); // 서버에서 받은 시간으로 설정
