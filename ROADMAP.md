@@ -123,6 +123,7 @@
 ### Realtime(Socket)
 - [ ] 재연결 및 상태 복구 로직 보강 (`socket-server/server.js`, `src/hooks/useBattle.ts`)
 - [ ] 이벤트 ACK/타임아웃/중복 처리 정책 정의
+  - [x] PAI-33 1차: 소켓 메트릭 표준 헬퍼 추가 (`src/lib/socket/metrics.ts`) 및 임계치 단위 테스트 작성
 - [ ] 배틀 단계 전이(waiting/in_progress/finished) 검증 자동화
 
 ### DB/Supabase
