@@ -226,11 +226,8 @@ export type Database = {
         Relationships: [];
       };
     };
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    Views: {};
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    Functions: {};
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    Enums: {};
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+    Enums: Record<string, never>;
   };
 };

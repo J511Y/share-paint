@@ -1,15 +1,81 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
+import type { Socket } from 'socket.io-client';
 import { useBattleStore } from '@/stores/battleStore';
-import { connectSocket, getSocket } from '@/lib/socket/client';
-import { normalizeBattleStatePayload } from '@/lib/socket/recovery';
-import type { BattleSocketEvent, BattleUser } from '@/types/battle';
+import { useCollabStore } from '@/stores/collabStore';
+import { connectSocket } from '@/lib/socket/client';
+import { emitWithAck } from '@/lib/socket/emitWithAck';
+import type { BattleSocketEvent, BattleUser, BattleRoom, ResumeStatePayload } from '@/types/battle';
 import { useAuth } from './useAuth';
 import { createClient } from '@/lib/supabase/client';
+import { useConnectionState } from './useConnectionState';
+import { useCollaborativeCanvas } from './useCollaborativeCanvas';
+import { SOCKET_PROTOCOL_VERSION } from '@/lib/socket/battle-events';
+
+interface BattleDetailParticipant {
+  user_id: string;
+  profile?: {
+    username?: string;
+    display_name?: string | null;
+    avatar_url?: string | null;
+  };
+}
+
+interface BattleDetailResponse {
+  id: string;
+  title: string;
+  topic: string | null;
+  host_id: string;
+  status: 'waiting' | 'in_progress' | 'finished';
+  time_limit: number;
+  max_participants: number;
+  created_at: string;
+  started_at: string | null;
+  participants?: BattleDetailParticipant[];
+}
+
+function toBattleUser(participant: BattleDetailParticipant, hostId: string): BattleUser {
+  const username = participant.profile?.username || `user-${participant.user_id.slice(0, 6)}`;
+
+  return {
+    id: participant.user_id,
+    username,
+    displayName: participant.profile?.display_name ?? null,
+    avatarUrl: participant.profile?.avatar_url ?? null,
+    isHost: participant.user_id === hostId,
+    isReady: false,
+  };
+}
+
+function toBattleRoom(payload: BattleDetailResponse): BattleRoom {
+  return {
+    id: payload.id,
+    title: payload.title,
+    hostId: payload.host_id,
+    topic: payload.topic,
+    timeLimit: payload.time_limit,
+    maxParticipants: payload.max_participants,
+    status: payload.status,
+    participants: (payload.participants ?? []).map((participant) => toBattleUser(participant, payload.host_id)),
+    createdAt: payload.created_at,
+    startedAt: payload.started_at,
+  };
+}
+
+function createOpId(prefix: string) {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 export function useBattle(battleId: string) {
   const { user } = useAuth();
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  
+  const [socket, setSocket] = useState<Socket | null>(null);
+
+  useConnectionState(socket);
+
   const {
     room,
     setRoom,
@@ -23,13 +89,26 @@ export function useBattle(battleId: string) {
     setConnected,
     setError,
     reset,
-    setIsHost,
     setIsReady,
-    setBattleResult,
     timeLeft,
     setTimeLeft,
-    decrementTime
+    decrementTime,
+    setBattleResult,
   } = useBattleStore();
+
+  const setBattleContext = useCollabStore((state) => state.setBattleContext);
+  const setConnectionStatus = useCollabStore((state) => state.setConnectionStatus);
+  const markAppliedSeq = useCollabStore((state) => state.markAppliedSeq);
+  const setLastServerSeq = useCollabStore((state) => state.setLastServerSeq);
+  const startRecovery = useCollabStore((state) => state.startRecovery);
+  const finishRecovery = useCollabStore((state) => state.finishRecovery);
+  const failRecovery = useCollabStore((state) => state.failRecovery);
+  const lastServerSeq = useCollabStore((state) => state.lastServerSeq);
+
+  const { sendSnapshot, flushPendingOps, requestResume } = useCollaborativeCanvas({
+    battleId,
+    userId: user?.id,
+  });
 
   // 타이머 로직
   useEffect(() => {
@@ -39,11 +118,9 @@ export function useBattle(battleId: string) {
           decrementTime();
         }, 1000);
       }
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
 
     return () => {
@@ -54,88 +131,209 @@ export function useBattle(battleId: string) {
     };
   }, [room?.status, timeLeft, decrementTime]);
 
+  // 초기 room/participants 로드
+  useEffect(() => {
+    if (!battleId) return;
+
+    let isCancelled = false;
+
+    const loadRoom = async () => {
+      try {
+        const response = await fetch(`/api/battle/${battleId}`);
+        if (!response.ok) {
+          throw new Error('대결방 정보를 불러오지 못했습니다.');
+        }
+
+        const payload = (await response.json()) as BattleDetailResponse;
+        if (isCancelled) return;
+
+        const battleRoom = toBattleRoom(payload);
+        setRoom(battleRoom);
+        setParticipants(battleRoom.participants);
+      } catch (error) {
+        if (isCancelled) return;
+        setError(error instanceof Error ? error.message : '대결방 정보를 불러오지 못했습니다.');
+      }
+    };
+
+    loadRoom();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [battleId, setRoom, setParticipants, setError]);
+
   // 소켓 이벤트 핸들러 설정
   useEffect(() => {
     if (!battleId || !user) return;
 
-    let socket: ReturnType<typeof getSocket> | null = null;
+    let activeSocket: Socket | null = null;
     let isDisposed = false;
 
-    const onConnect = () => {
-      setConnected(true);
-      setError(null);
-      socket?.emit('join_battle', { battleId, user }, (ack?: { ok: boolean; error?: string }) => {
-        if (!ack?.ok) {
-          setError(`대결방 입장 실패: ${ack?.error || '알 수 없는 오류'}`);
-          setConnected(false);
-        }
-      });
-    };
+    setBattleContext(battleId, user.id);
 
-    const onDisconnect = () => {
-      setConnected(false);
-    };
-
-    const onConnectError = (err: Error) => {
-      setConnected(false);
-      setError(`소켓 연결 오류: ${err.message}`);
-    };
-
-    // 서버로부터의 이벤트 처리
-    const onBattleEvent = (event: BattleSocketEvent) => {
+    const applyBattleEvent = (event: BattleSocketEvent) => {
       switch (event.type) {
         case 'join':
           addParticipant(event.payload.user);
+          if (typeof event.payload.seq === 'number') {
+            markAppliedSeq(event.payload.user.id, event.payload.seq);
+          }
           break;
-          
+
         case 'leave':
           removeParticipant(event.payload.userId);
+          if (typeof event.payload.seq === 'number') {
+            markAppliedSeq(event.payload.userId, event.payload.seq);
+          }
           break;
-          
+
         case 'ready':
           updateParticipant(event.payload.userId, { isReady: event.payload.isReady });
           if (event.payload.userId === user.id) {
             setIsReady(event.payload.isReady);
           }
-          break;
-
-        case 'battle_state': {
-          const state = normalizeBattleStatePayload(event.payload);
-          setParticipants(state.participants);
-          updateRoomStatus(state.status);
-          setTimeLeft(state.timeLeft);
-          break;
-        }
-
-        case 'start':
-          updateRoomStatus('in_progress');
-          setTimeLeft(event.payload.duration); // 서버에서 받은 시간으로 설정
-          break;
-          
-        case 'timer_sync': // 타입 정의 추가 필요
-          setTimeLeft(event.payload.timeLeft);
-          if (event.payload.timeLeft > 0) {
-             updateRoomStatus('in_progress');
+          if (typeof event.payload.seq === 'number') {
+            markAppliedSeq(event.payload.userId, event.payload.seq);
           }
           break;
 
-        case 'canvas_update':
-          updateParticipantCanvas(event.payload.userId, event.payload.imageData);
+        case 'start':
+          updateRoomStatus('in_progress');
+          setTimeLeft(event.payload.duration);
+          if (typeof event.payload.seq === 'number') {
+            setLastServerSeq(event.payload.seq);
+          }
           break;
-          
+
+        case 'timer_sync':
+          setTimeLeft(event.payload.timeLeft);
+          if (event.payload.timeLeft > 0) {
+            updateRoomStatus('in_progress');
+          }
+          if (typeof event.payload.seq === 'number') {
+            setLastServerSeq(event.payload.seq);
+          }
+          break;
+
+        case 'canvas_update': {
+          const shouldApply = typeof event.payload.seq === 'number'
+            ? markAppliedSeq(event.payload.userId, event.payload.seq)
+            : true;
+
+          if (shouldApply) {
+            updateParticipantCanvas(event.payload.userId, event.payload.imageData);
+          }
+          break;
+        }
+
         case 'chat':
           addMessage(event.payload);
           break;
-          
+
         case 'finish':
           updateRoomStatus('finished');
+          setBattleResult(event.payload);
           if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
           }
-          // 결과 처리 로직
+          break;
+
+        case 'vote':
+          if (typeof event.payload.seq === 'number') {
+            setLastServerSeq(event.payload.seq);
+          }
           break;
       }
+    };
+
+    const onBattleEvent = (event: BattleSocketEvent) => {
+      applyBattleEvent(event);
+    };
+
+    const onResumeState = async (payload: ResumeStatePayload) => {
+      if (payload.battleId !== battleId) return;
+
+      try {
+        startRecovery();
+
+        for (const [participantId, imageData] of Object.entries(payload.snapshotByUser)) {
+          if (typeof imageData === 'string' && imageData.length > 0) {
+            updateParticipantCanvas(participantId, imageData);
+          }
+        }
+
+        payload.missedEvents.forEach((event) => {
+          applyBattleEvent(event);
+        });
+
+        if (typeof payload.serverSeq === 'number') {
+          setLastServerSeq(payload.serverSeq);
+        }
+
+        if (typeof payload.timeLeft === 'number') {
+          setTimeLeft(payload.timeLeft);
+        }
+
+        await flushPendingOps();
+        finishRecovery(payload.serverSeq);
+      } catch (error) {
+        failRecovery(error instanceof Error ? error.message : '복구 중 오류가 발생했습니다.');
+      }
+    };
+
+    const onConnect = async () => {
+      if (!activeSocket) return;
+
+      setConnected(true);
+      setError(null);
+      setConnectionStatus('connected');
+
+      try {
+        const joinAck = await emitWithAck(
+          activeSocket,
+          'join_battle',
+          {
+            v: SOCKET_PROTOCOL_VERSION,
+            event: 'join_battle',
+            battleId,
+            opId: createOpId(`join-${user.id}`),
+            ackId: createOpId('ack'),
+            seq: Math.max(1, lastServerSeq + 1),
+            clientTs: Date.now(),
+            user: {
+              id: user.id,
+              username: user.username,
+              displayName: user.display_name,
+              avatarUrl: user.avatar_url,
+              isHost: room?.hostId === user.id,
+              isReady: false,
+            },
+            payload: {},
+          },
+          { timeoutMs: 2000, retry: 1 }
+        );
+
+        if (!joinAck.ok) {
+          setError(joinAck.error ?? joinAck.code ?? '대결방 입장에 실패했습니다.');
+          return;
+        }
+
+        if (lastServerSeq > 0) {
+          await requestResume();
+        }
+
+        await flushPendingOps();
+      } catch (error) {
+        setError(error instanceof Error ? error.message : '대결방 입장에 실패했습니다.');
+      }
+    };
+
+    const onConnectError = (err: Error) => {
+      setConnected(false);
+      setConnectionStatus('degraded');
+      setError(`소켓 연결 오류: ${err.message}`);
     };
 
     const setupSocket = async () => {
@@ -150,120 +348,197 @@ export function useBattle(battleId: string) {
         return;
       }
 
-      socket = connectSocket({
-        token: session.access_token,
-      });
+      activeSocket = connectSocket({ token: session.access_token });
+      setSocket(activeSocket);
 
-      socket.on('connect', onConnect);
-      socket.on('disconnect', onDisconnect);
-      socket.on('connect_error', onConnectError);
-      socket.on('battle_event', onBattleEvent);
+      activeSocket.on('connect', onConnect);
+      activeSocket.on('connect_error', onConnectError);
+      activeSocket.on('battle_event', onBattleEvent);
+      activeSocket.on('battle_resume_state', onResumeState);
     };
 
     setupSocket();
 
     return () => {
       isDisposed = true;
-      if (!socket) return;
+      if (!activeSocket) return;
 
-      socket.off('connect', onConnect);
-      socket.off('disconnect', onDisconnect);
-      socket.off('connect_error', onConnectError);
-      socket.off('battle_event', onBattleEvent);
-      
-      // 컴포넌트 언마운트 시 소켓 연결 해제 (선택사항, 페이지 이동 시 유지하려면 제외)
-      // disconnectSocket(); 
-      socket.emit('leave_battle', { battleId });
+      activeSocket.off('connect', onConnect);
+      activeSocket.off('connect_error', onConnectError);
+      activeSocket.off('battle_event', onBattleEvent);
+      activeSocket.off('battle_resume_state', onResumeState);
+
+      void emitWithAck(
+        activeSocket,
+        'leave_battle',
+        {
+          v: SOCKET_PROTOCOL_VERSION,
+          event: 'leave_battle',
+          battleId,
+          opId: createOpId(`leave-${user.id}`),
+          ackId: createOpId('ack'),
+          seq: Math.max(1, lastServerSeq + 1),
+          clientTs: Date.now(),
+          payload: {},
+        },
+        { timeoutMs: 1200, retry: 0 }
+      ).catch(() => undefined);
+
       reset();
+      setSocket(null);
     };
-  }, [battleId, user, setConnected, setError, addParticipant, removeParticipant, updateParticipant, updateRoomStatus, updateParticipantCanvas, addMessage, setIsReady, reset]);
+  }, [
+    battleId,
+    user,
+    room?.hostId,
+    setBattleContext,
+    lastServerSeq,
+    addParticipant,
+    removeParticipant,
+    updateParticipant,
+    setIsReady,
+    updateRoomStatus,
+    setTimeLeft,
+    updateParticipantCanvas,
+    addMessage,
+    setBattleResult,
+    setLastServerSeq,
+    markAppliedSeq,
+    setConnected,
+    setError,
+    setConnectionStatus,
+    startRecovery,
+    finishRecovery,
+    failRecovery,
+    flushPendingOps,
+    requestResume,
+    reset,
+  ]);
 
-  // 액션 메서드들
-  const sendChat = useCallback((content: string) => {
-    const socket = getSocket();
-    if (socket.connected) {
-      socket.emit(
-        'chat_message',
+  const sendChat = useCallback(
+    async (content: string) => {
+      const activeSocket = socket;
+      if (!activeSocket || !activeSocket.connected || !user) {
+        return;
+      }
+
+      try {
+        await emitWithAck(
+          activeSocket,
+          'chat_message',
+          {
+            battleId,
+            userId: user.id,
+            content,
+            timestamp: new Date().toISOString(),
+          },
+          { timeoutMs: 1200, retry: 1 }
+        );
+      } catch (error) {
+        setError(error instanceof Error ? error.message : '채팅 전송 실패');
+      }
+    },
+    [battleId, user, socket, setError]
+  );
+
+  const toggleReady = useCallback(
+    async (isReady: boolean) => {
+      const activeSocket = socket;
+      if (!activeSocket || !activeSocket.connected || !user) {
+        return;
+      }
+
+      try {
+        await emitWithAck(
+          activeSocket,
+          'ready_status',
+          {
+            battleId,
+            isReady,
+            opId: createOpId(`ready-${user.id}`),
+          },
+          { timeoutMs: 1200, retry: 1 }
+        );
+      } catch (error) {
+        setError(error instanceof Error ? error.message : '준비 상태 반영 실패');
+      }
+    },
+    [battleId, user, socket, setError]
+  );
+
+  const updateCanvas = useCallback(
+    (imageData: string) => {
+      void sendSnapshot(imageData);
+    },
+    [sendSnapshot]
+  );
+
+  const startBattle = useCallback(async () => {
+    const activeSocket = socket;
+    if (!activeSocket || !activeSocket.connected || !user) {
+      return;
+    }
+
+    try {
+      await emitWithAck(
+        activeSocket,
+        'start_battle',
         {
+          v: SOCKET_PROTOCOL_VERSION,
+          event: 'start_battle',
           battleId,
-          userId: user?.id,
-          content,
-          timestamp: new Date().toISOString()
+          opId: createOpId(`start-${user.id}`),
+          ackId: createOpId('ack'),
+          seq: Math.max(1, lastServerSeq + 1),
+          clientTs: Date.now(),
+          payload: {},
         },
-        (ack?: { ok: boolean; error?: string }) => {
-          if (ack && !ack.ok) {
-            setError(`채팅 전송 실패: ${ack.error || '알 수 없는 오류'}`);
-          }
-        }
+        { timeoutMs: 2000, retry: 1 }
       );
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '배틀 시작 실패');
     }
-  }, [battleId, user, setError]);
+  }, [battleId, user, socket, lastServerSeq, setError]);
 
-  const toggleReady = useCallback((isReady: boolean) => {
-    const socket = getSocket();
-    if (socket.connected) {
-      socket.emit('ready_status', { battleId, isReady }, (ack?: { ok: boolean; error?: string }) => {
-        if (ack && !ack.ok) {
-          setError(`준비 상태 반영 실패: ${ack.error || '알 수 없는 오류'}`);
-        }
-      });
-    }
-  }, [battleId, setError]);
+  const vote = useCallback(
+    async (paintingUserId: string) => {
+      const activeSocket = socket;
+      if (!activeSocket || !activeSocket.connected || !user) {
+        return;
+      }
 
-  const updateCanvas = useCallback((imageData: string) => {
-    const socket = getSocket();
-    if (socket.connected && user) {
-      socket.emit(
-        'canvas_update',
-        {
-          battleId,
-          userId: user.id,
-          imageData,
-        },
-        (ack?: { ok: boolean; error?: string }) => {
-          if (ack && !ack.ok) {
-            setError(`그림 동기화 실패: ${ack.error || '알 수 없는 오류'}`);
-          }
-        }
-      );
-    }
-  }, [battleId, user, setError]);
+      const seq = Math.max(1, lastServerSeq + 1);
 
-  const startBattle = useCallback(() => {
-    const socket = getSocket();
-    if (socket.connected) {
-      socket.emit('start_battle', { battleId }, (ack?: { ok: boolean; error?: string; reason?: string }) => {
-        if (ack && !ack.ok) {
-          setError(`배틀 시작 실패: ${ack.error || '알 수 없는 오류'}`);
-        }
-      });
-    }
-  }, [battleId, setError]);
-
-  const vote = useCallback((paintingUserId: string) => {
-    const socket = getSocket();
-    if (socket.connected && user) {
-      socket.emit(
-        'vote',
-        {
-          battleId,
-          voterId: user.id,
-          paintingUserId,
-        },
-        (ack?: { ok: boolean; error?: string }) => {
-          if (ack && !ack.ok) {
-            setError(`투표 전송 실패: ${ack.error || '알 수 없는 오류'}`);
-          }
-        }
-      );
-    }
-  }, [battleId, user, setError]);
+      try {
+        await emitWithAck(
+          activeSocket,
+          'vote',
+          {
+            v: SOCKET_PROTOCOL_VERSION,
+            event: 'vote',
+            battleId,
+            opId: createOpId(`vote-${user.id}`),
+            ackId: createOpId('ack'),
+            seq,
+            clientTs: Date.now(),
+            payload: {
+              paintingUserId,
+            },
+          },
+          { timeoutMs: 2000, retry: 1 }
+        );
+      } catch (error) {
+        setError(error instanceof Error ? error.message : '투표 전송 실패');
+      }
+    },
+    [battleId, user, socket, lastServerSeq, setError]
+  );
 
   return {
     sendChat,
     toggleReady,
     updateCanvas,
     startBattle,
-    vote
+    vote,
   };
 }

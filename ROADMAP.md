@@ -34,13 +34,17 @@
 - [ ] **보안**
   - [ ] Supabase RLS, API 입력 검증, 권한 검증 재점검
   - [ ] 환경 변수 및 서비스 키 노출 방지 점검
+    - [x] 1차 자동 스캔 도입 (`npm run check:secrets`, `scripts/secret-scan.mjs`)
 - [ ] **관측성(Observability)**
   - [ ] API/Socket 에러 로깅, 요청 추적 ID, 핵심 지표 대시보드 구축
     - [x] PAI-9 1차: API 공통 핸들러 응답에 `x-request-id` 헤더 주입 + 관측 유틸/테스트 추가
   - [ ] 알림 규칙(5xx 급증, 소켓 오류율 급증, 저장 실패율 상승) 설정
+  - [x] 성능 예산 CI 임계치 템플릿 추가 (`docs/sprint/performance-budget-ci-thresholds.json`, `npm run perf:budget`)
+  - [x] API p95 리포트 템플릿 추가 (`docs/sprint/api-p95-report-template.md`, `npm run api:p95:report`)
 - [ ] **운영 준비**
   - [ ] 배포 체크리스트/런북/롤백 절차 문서화
   - [ ] 장애 대응 연락 체계 및 온콜 역할 정의
+    - [x] 온콜/연락체계 템플릿 추가 (`docs/runbooks/oncall-contact-plan.md`, `npm run oncall:plan`)
 
 ## 2. Phase A - 안정화 (1~2주)
 
@@ -95,6 +99,8 @@
 ### 소프트 런치
 - [ ] 제한된 사용자 그룹 대상 공개
 - [ ] 핵심 지표 추적
+  - [x] 소프트런치 KPI 스펙 템플릿 추가 (`docs/sprint/soft-launch-kpi-spec.md`, `npm run kpi:spec`)
+  - [x] 런치 회고/백로그 재우선순위 템플릿 추가 (`docs/sprint/launch-retro-backlog-reprioritization.md`, `npm run retro:sheet`)
   - [ ] 회원가입 전환율
   - [ ] 드로잉 저장 성공률
   - [ ] 배틀 완주율
@@ -109,6 +115,7 @@
 - [ ] 핵심 경로 성공률 98% 이상
 - [ ] 성능 예산(LCP/TTI/API p95) 충족
 - [ ] 운영 런북 및 온콜 대응 리허설 완료
+- [x] GA 승격 체크리스트 템플릿 추가 (`docs/sprint/ga-promotion-gate-checklist.md`, `npm run ga:gate`)
 
 ## 6. Workstream별 TODO
 
@@ -138,6 +145,7 @@
 ### QA
 - [ ] E2E 핵심 시나리오 자동화(로그인→드로잉→저장→피드→좋아요/댓글→배틀)
 - [ ] 회귀 테스트 체크리스트 운영
+  - [x] 기본 시트 자동 생성기 도입 (`npm run qa:sheet`, `docs/qa/regression-sheet.md`)
 - [ ] 릴리즈 전 수동 점검 시트 유지
 
 ### DevOps

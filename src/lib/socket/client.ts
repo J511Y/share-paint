@@ -10,8 +10,11 @@ export const getSocket = (): Socket => {
     socket = io(socketUrl, {
       autoConnect: false,
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 800,
+      reconnectionDelayMax: 5000,
+      timeout: 5000,
+      transports: ['websocket', 'polling'],
     });
     
     // 디버깅용 로그
