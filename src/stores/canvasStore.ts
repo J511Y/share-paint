@@ -62,6 +62,16 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
 
   addToHistory: (dataUrl) =>
     set((state) => {
+      // 현재 인덱스 기준으로 중복 스냅샷은 저장하지 않음 (메모리 최적화)
+      const currentSnapshot =
+        state.historyIndex >= 0 ? state.history[state.historyIndex] : null;
+      if (currentSnapshot === dataUrl) {
+        return {
+          history: state.history,
+          historyIndex: state.historyIndex,
+        };
+      }
+
       // 현재 인덱스 이후의 히스토리 제거 (redo 불가능하게)
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push(dataUrl);

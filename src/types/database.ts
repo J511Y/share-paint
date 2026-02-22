@@ -226,8 +226,11 @@ export type Database = {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+    Views: {};
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+    Functions: {};
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+    Enums: {};
   };
 };
