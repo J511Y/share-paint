@@ -1,0 +1,54 @@
+# PAI-77 verification evidence
+Sat Feb 21 19:10:44 KST 2026
+
+## PROD /
+HTTP/2 500 
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain; charset=utf-8
+date: Sat, 21 Feb 2026 10:10:44 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+x-vercel-error: MIDDLEWARE_INVOCATION_FAILED
+x-vercel-id: icn1::9ccfn-1771668644605-3debda0df69e
+content-length: 98
+
+A server error has occurred
+
+
+## PROD /api/topics/random
+HTTP/2 500 
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain; charset=utf-8
+date: Sat, 21 Feb 2026 10:10:44 GMT
+server: Vercel
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+x-vercel-error: MIDDLEWARE_INVOCATION_FAILED
+x-vercel-id: icn1::28snj-1771668644809-774e65563893
+content-length: 98
+
+A server error has occurred
+
+
+## LOCAL / (after hotfix, no supabase env)
+HTTP/1.1 200 OK
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+X-Powered-By: Next.js
+Cache-Control: s-maxage=31536000
+ETag: "4uy2zlluq9a8d"
+Content-Type: text/html; charset=utf-8
+Content-Length: 14017
+Date: Sat, 21 Feb 2026 10:10:44 GMT
+
+## LOCAL /draw (after hotfix, no supabase env)
+HTTP/1.1 307 Temporary Redirect
+location: /login?redirect=%2Fdraw
+Date: Sat, 21 Feb 2026 10:10:44 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+/login?redirect=%2Fdraw

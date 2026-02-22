@@ -29,6 +29,18 @@ is_truthy() {
   esac
 }
 
+# Hardening: CI execution must remain manual-only.
+# Reject any non-workflow_dispatch trigger in GitHub Actions.
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  event_name="${GITHUB_EVENT_NAME:-unknown}"
+  if [[ "$event_name" != "workflow_dispatch" ]]; then
+    echo "[PAI-16] FAIL: manual-only policy violation (GITHUB_EVENT_NAME=${event_name})."
+    echo "[PAI-16] action required: run this gate via workflow_dispatch only."
+    exit 1
+  fi
+  echo "[PAI-16] policy check: manual-only trigger verified (event=${event_name})."
+fi
+
 auto_unblock_vars=(
   "PAI16_AUTO_UNBLOCK"
   "RELEASE_GATE_AUTO_UNBLOCK"
@@ -117,4 +129,4 @@ if [[ $non_doc_count -eq 0 ]]; then
 fi
 
 echo "[PAI-16] PASS: non-doc changes detected ($non_doc_count file(s))."
-echo "[PAI-16] policy check: auto-unblock prohibited; manual unblock owner=jhyou."
+echo "[PAI-16] policy check: manual-only trigger + auto-unblock prohibited; manual unblock owner=jhyou."

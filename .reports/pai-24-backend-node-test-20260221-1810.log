@@ -1,0 +1,30 @@
+✔ resolveAckTimeoutMs clamps policy range and uses default value (1.013562ms)
+✔ resolveAckTimeoutMs validates positive integer inputs (0.539492ms)
+✔ createAckWindow builds deadline and grace expiration window (1.625154ms)
+✔ isAckTimedOut evaluates deadline boundary correctly (0.20878ms)
+✔ registerIdempotencyKey accepts first event and blocks duplicate key in ttl window (0.28697ms)
+✔ registerIdempotencyKey accepts key again after ttl expiry (0.158867ms)
+✔ returns true during default overnight quiet hours (23-08) (2.015293ms)
+✔ returns false outside default overnight quiet hours (0.154899ms)
+✔ handles daytime window when startHour < endHour (0.157822ms)
+✔ supports endHour=24 as an exclusive midnight boundary (0.140453ms)
+✔ supports startHour=24 as an alias for midnight boundary (0.18407ms)
+✔ supports minute-level quiet windows with overnight boundary (0.144322ms)
+✔ supports minute-level daytime windows with inclusive/exclusive boundaries (0.142915ms)
+✔ handles custom overnight window when startHour > endHour (0.126816ms)
+✔ treats equal start and end hour as all-day quiet mode (0.1645ms)
+✔ throws for out-of-range or non-integer hours (0.698946ms)
+✔ isQuietNow reads hour from Date and delegates to window logic (1.053236ms)
+✔ isQuietNow supports minute-level start/end boundaries (0.142661ms)
+✔ isQuietNow keeps backward compatibility for legacy minute-arguments signature (0.115925ms)
+✔ isQuietNow supports legacy minute signature with optional trailing useUTC flag (0.106252ms)
+✔ isQuietNow can evaluate quiet hours in UTC (0.103958ms)
+✔ isQuietNow throws on invalid Date input (0.309511ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 106.844018
