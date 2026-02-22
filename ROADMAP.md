@@ -31,6 +31,7 @@
 - [ ] **안정성**
   - [ ] 배틀 세션 중 이탈/재접속/중복 접속 시 상태 일관성 보장
   - [ ] 주요 API 오류 코드/메시지 표준화 및 재시도 정책 적용
+  - [x] PAI-77 1차 hotfix: `proxy.ts` -> `middleware.ts` 복원으로 prod entry `MIDDLEWARE_INVOCATION_FAILED` 복구 시도
 - [ ] **보안**
   - [ ] Supabase RLS, API 입력 검증, 권한 검증 재점검
   - [ ] 환경 변수 및 서비스 키 노출 방지 점검
