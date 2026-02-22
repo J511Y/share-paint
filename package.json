@@ -13,7 +13,10 @@
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "governance:check": "node scripts/governance-check.mjs",
+    "governance:check:strict": "node scripts/governance-check.mjs --strict",
+    "quality:local": "npm run lint && npm run type-check && npm run governance:check"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
