@@ -19,10 +19,10 @@ interface ToolConfig {
 }
 
 const tools: ToolConfig[] = [
-  { id: 'pencil', icon: Pencil, label: '연필' },
-  { id: 'marker', icon: PenLine, label: '마커' },
-  { id: 'brush', icon: Paintbrush, label: '브러시' },
-  { id: 'highlighter', icon: Highlighter, label: '형광펜' },
+  { id: 'pencil', icon: Pencil, label: '기본 펜' },
+  { id: 'marker', icon: PenLine, label: '마커 펜' },
+  { id: 'brush', icon: Paintbrush, label: '브러시 펜' },
+  { id: 'highlighter', icon: Highlighter, label: '형광 펜' },
   { id: 'eraser', icon: Eraser, label: '지우개' },
   { id: 'fill', icon: PaintBucket, label: '채우기' },
 ];

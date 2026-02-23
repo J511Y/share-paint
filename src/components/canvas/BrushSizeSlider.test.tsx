@@ -71,6 +71,17 @@ describe('BrushSizeSlider', () => {
     expect(mockSetBrushSize).toHaveBeenCalledWith(12);
   });
 
+  it('스테퍼 버튼으로 크기를 증감한다', async () => {
+    const user = userEvent.setup();
+    render(<BrushSizeSlider />);
+
+    await user.click(screen.getByRole('button', { name: '브러시 크기 줄이기' }));
+    await user.click(screen.getByRole('button', { name: '브러시 크기 늘리기' }));
+
+    expect(mockSetBrushSize).toHaveBeenCalledWith(4);
+    expect(mockSetBrushSize).toHaveBeenCalledWith(6);
+  });
+
   it('슬라이더 값 변경 시 setBrushSize를 호출한다', () => {
     render(<BrushSizeSlider />);
 
@@ -80,15 +91,20 @@ describe('BrushSizeSlider', () => {
     expect(mockSetBrushSize).toHaveBeenCalledWith(20);
   });
 
-  it('미리보기 원을 렌더링하고 현재 색상을 반영한다', () => {
+  it('스트로크 미리보기를 렌더링하고 현재 스타일을 반영한다', () => {
     mockStoreState.brush.color = '#FF0000';
     mockStoreState.brush.size = 15;
+    mockStoreState.brush.opacity = 0.7;
 
     render(<BrushSizeSlider />);
 
     const preview = screen.getByTestId('brush-preview');
+    const previewStroke = screen.getByTestId('brush-preview-stroke');
+
     expect(preview).toBeInTheDocument();
-    expect(preview).toHaveStyle({ width: '15px', height: '15px', backgroundColor: '#FF0000' });
+    expect(previewStroke).toHaveAttribute('stroke', '#FF0000');
+    expect(previewStroke).toHaveAttribute('stroke-width', '15');
+    expect(previewStroke).toHaveAttribute('stroke-opacity', '0.7');
   });
 
   it('현재 브러시 크기를 표시한다', () => {
