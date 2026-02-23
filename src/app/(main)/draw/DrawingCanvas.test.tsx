@@ -11,6 +11,18 @@ const mockGetDataUrl = vi.fn(() => 'data:image/png;base64,test') as ReturnType<t
 const mockLoadImage = vi.fn();
 
 // useResponsiveCanvas 모킹
+
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: null,
+    isLoading: false,
+    isAuthenticated: false,
+    signIn: vi.fn(),
+    signUp: vi.fn(),
+    signOut: vi.fn(),
+  }),
+}));
+
 const createMockAnchorElement = (): HTMLAnchorElement => {
   const anchor = document.createElement('a');
   anchor.href = '';
@@ -89,6 +101,8 @@ vi.mock('@/components/canvas', async () => {
         BrushSizeSlider
       </div>
     ),
+    SavePaintingModal: ({ isOpen }: { isOpen: boolean }) =>
+      isOpen ? <div data-testid="mock-save-modal">SaveModal</div> : null,
     CanvasActions: ({
       onUndo,
       onRedo,
@@ -116,7 +130,7 @@ vi.mock('@/components/canvas', async () => {
         <button onClick={onClear} aria-label="초기화">
           Clear
         </button>
-        <button onClick={onExport} aria-label="내보내기">
+        <button onClick={onExport} aria-label="다운로드">
           Export
         </button>
       </div>
@@ -265,7 +279,7 @@ describe('DrawingCanvas', () => {
 
       render(<DrawingCanvas />);
 
-      const exportButton = screen.getByRole('button', { name: /내보내기/i });
+      const exportButton = screen.getByRole('button', { name: /(내보내기|다운로드)/i });
       await user.click(exportButton);
 
       expect(mockGetDataUrl).toHaveBeenCalled();
@@ -397,7 +411,7 @@ describe('DrawingCanvas - 엣지 케이스', () => {
 
     render(<DrawingCanvas />);
 
-    const exportButton = screen.getByRole('button', { name: /내보내기/i });
+    const exportButton = screen.getByRole('button', { name: /(내보내기|다운로드)/i });
 
     // 에러 없이 실행되어야 함
     await userEvent.click(exportButton);

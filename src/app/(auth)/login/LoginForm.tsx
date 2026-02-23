@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { buildAuthRedirectLink, resolveRedirectTarget } from '@/lib/auth/redirect';
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui';
 
 const loginSchema = z.object({
@@ -19,7 +20,7 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/feed';
+  const redirectTo = resolveRedirectTarget(searchParams);
   const { signIn, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
@@ -103,7 +104,7 @@ export function LoginForm() {
           <p className="text-center text-sm text-gray-600">
             계정이 없으신가요?{' '}
             <Link
-              href={`/register${redirectTo !== '/feed' ? `?redirect=${redirectTo}` : ''}`}
+              href={buildAuthRedirectLink('/register', redirectTo)}
               className="font-medium text-purple-600 hover:text-purple-700"
             >
               회원가입
