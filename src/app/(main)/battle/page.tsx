@@ -16,6 +16,9 @@ export default function BattleLobbyPage() {
           <p className="text-gray-600 mt-2">
             다른 작가들과 실시간으로 그림 대결을 펼쳐보세요!
           </p>
+          <p className="text-xs text-emerald-700 mt-1">
+            게스트도 즉시 방 생성/참가가 가능합니다. 과도한 요청은 자동으로 잠시 제한됩니다.
+          </p>
         </div>
         <Button onClick={() => setIsCreateModalOpen(true)}>
           <Plus className="w-5 h-5 mr-1" />
