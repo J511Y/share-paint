@@ -1,7 +1,19 @@
-export function buildAuthRedirectLink(basePath: '/login' | '/register', redirectTo: string): string {
+export type AuthLinkTarget = '/login' | '/register';
+
+export type AuthLinkHref =
+  | AuthLinkTarget
+  | {
+      pathname: AuthLinkTarget;
+      query: { redirect: string };
+    };
+
+export function buildAuthRedirectLink(basePath: AuthLinkTarget, redirectTo: string): AuthLinkHref {
   if (!redirectTo || redirectTo === '/feed') {
     return basePath;
   }
 
-  return `${basePath}?redirect=${encodeURIComponent(redirectTo)}`;
+  return {
+    pathname: basePath,
+    query: { redirect: redirectTo },
+  };
 }
