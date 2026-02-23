@@ -21,9 +21,7 @@ function getRedirectTarget(request: NextRequest): string {
 }
 
 function createLoginRedirectUrl(request: NextRequest): URL {
-  const url = request.nextUrl.clone();
-  url.pathname = '/login';
-  url.search = '';
+  const url = new URL('/login', request.url);
   url.searchParams.set('redirect', getRedirectTarget(request));
   return url;
 }

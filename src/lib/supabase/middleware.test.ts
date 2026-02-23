@@ -57,8 +57,8 @@ describe('updateSession', () => {
     const response = await updateSession(makeRequest('/draw?room=abc&mode=fast'));
 
     expect(response.status).toBe(307);
-    expect(response.headers.get('location')).toContain(
-      '/login?redirect=%2Fdraw%3Froom%3Dabc%26mode%3Dfast'
+    expect(response.headers.get('location')).toBe(
+      'https://example.com/login?redirect=%2Fdraw%3Froom%3Dabc%26mode%3Dfast'
     );
   });
 
@@ -98,6 +98,8 @@ describe('updateSession', () => {
     const response = await updateSession(makeRequest('/battle?invite=xyz'));
 
     expect(response.status).toBe(307);
-    expect(response.headers.get('location')).toContain('/login?redirect=%2Fbattle%3Finvite%3Dxyz');
+    expect(response.headers.get('location')).toBe(
+      'https://example.com/login?redirect=%2Fbattle%3Finvite%3Dxyz'
+    );
   });
 });
