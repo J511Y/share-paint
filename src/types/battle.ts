@@ -20,7 +20,7 @@ export interface BattleUser {
   avatarUrl: string | null;
   isHost: boolean;
   isReady: boolean;
-  canvasData?: string; // 실시간 캔버스 미리보기
+  canvasData?: string;
 }
 
 export interface ChatMessage {
@@ -36,7 +36,7 @@ export interface ChatMessage {
 export interface BattleResult {
   battleId: string;
   paintings: BattlePainting[];
-  winner?: BattlePainting; // 투표 1위
+  winner?: BattlePainting;
 }
 
 export interface BattlePainting {
@@ -46,14 +46,24 @@ export interface BattlePainting {
   votes: number;
 }
 
-// WebSocket 이벤트 타입
+export interface ResumeStatePayload {
+  battleId: string;
+  serverSeq: number;
+  status?: BattleRoom['status'];
+  timeLeft?: number;
+  missedEvents: BattleSocketEvent[];
+  snapshotByUser: Record<string, string | null>;
+}
+
 export type BattleSocketEvent =
-  | { type: 'join'; payload: { user: BattleUser } }
-  | { type: 'leave'; payload: { userId: string } }
-  | { type: 'ready'; payload: { userId: string; isReady: boolean } }
-  | { type: 'start'; payload: { topic: string; startedAt: string; duration: number } }
-  | { type: 'timer_sync'; payload: { timeLeft: number } }
-  | { type: 'canvas_update'; payload: { userId: string; imageData: string } }
+  | { type: 'join'; payload: { user: BattleUser; seq?: number; opId?: string } }
+  | { type: 'leave'; payload: { userId: string; seq?: number; opId?: string } }
+  | { type: 'ready'; payload: { userId: string; isReady: boolean; seq?: number; opId?: string } }
+  | { type: 'start'; payload: { topic: string; startedAt: string; duration: number; seq?: number; opId?: string } }
+  | { type: 'timer_sync'; payload: { timeLeft: number; seq?: number } }
+  | { type: 'canvas_update'; payload: { userId: string; imageData: string; seq?: number; opId?: string } }
   | { type: 'chat'; payload: ChatMessage }
   | { type: 'finish'; payload: BattleResult }
-  | { type: 'vote'; payload: { voterId: string; paintingUserId: string } };
+  | { type: 'vote'; payload: { voterId: string; paintingUserId: string; seq?: number; opId?: string } };
+
+export type BattleProfile = Profile;

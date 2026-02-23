@@ -1,0 +1,8 @@
+# PAI-16 CI gate hardening verification - 2026-02-20 22:21:38 KST
+## Case 1: normal run (no auto-unblock vars)
+[PAI-16] PASS: non-doc changes detected (1 file(s)).
+
+## Case 2: alias env var set -> must fail
+[PAI-16] FAIL: auto-unblock alias is prohibited by policy (RELEASE_GATE_AUTO=yes).
+[PAI-16] action required: jhyou must perform manual unblock.
+exit_code=1

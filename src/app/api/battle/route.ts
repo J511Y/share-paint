@@ -5,10 +5,12 @@ import { apiHandler } from '@/lib/api-handler';
 import { devLogger as logger } from '@/lib/logger';
 import type { BattleInsert, Database } from '@/types/database';
 import { hashBattlePassword } from '@/lib/security/battle-password';
+import { apiErrorResponse } from '@/lib/api-error';
 import {
   ApiBattleSchema,
   BattleArraySchema,
   BattleCreatePayloadSchema,
+  type ApiBattle,
 } from '@/lib/validation/schemas';
 import { resolveApiActor } from '@/lib/api-actor';
 import { consumeRateLimit } from '@/lib/security/action-rate-limit';
@@ -36,7 +38,7 @@ export const GET = apiHandler(async ({ req, requestId }) => {
 
   if (error) {
     logger.error('Failed to fetch battles', error, { requestId, status });
-    return NextResponse.json({ error: '대전 목록 조회 중 오류가 발생했습니다.' }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '대전 목록 조회 중 오류가 발생했습니다.', requestId);
   }
 
   const parsed = BattleArraySchema.safeParse(data ?? []);
@@ -46,7 +48,7 @@ export const GET = apiHandler(async ({ req, requestId }) => {
       issues: parsed.error.issues,
       status,
     });
-    return NextResponse.json({ error: '대전 목록 응답 형식이 올바르지 않습니다.' }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '대전 목록 응답 형식이 올바르지 않습니다.', requestId);
   }
 
   logger.debug('Battles fetched successfully', { requestId, count: parsed.data.length });
@@ -78,17 +80,17 @@ export const POST = apiHandler(async ({ req, requestId }) => {
         actorId: actor.actorId,
         issues: parsedBody.error.issues,
       });
-      return NextResponse.json({ error: '요청 바디가 유효하지 않습니다.' }, { status: 400 });
+      return apiErrorResponse(400, 'VALIDATION_ERROR', '요청 바디가 유효하지 않습니다.', requestId, parsedBody.error.issues);
     }
     payload = parsedBody.data;
   } catch (parseError) {
     logger.error('Failed to parse request body', parseError, { requestId });
-    return NextResponse.json({ error: '요청 형식을 파싱할 수 없습니다.' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', '요청 형식을 파싱할 수 없습니다.', requestId);
   }
 
   if (payload.is_private && !payload.password) {
     logger.warn('Battle creation failed: missing password for private room', { requestId });
-    return NextResponse.json({ error: '비공개 방 생성 시 비밀번호가 필요합니다.' }, { status: 400 });
+    return apiErrorResponse(400, 'VALIDATION_ERROR', '비공개 방 생성 시 비밀번호가 필요합니다.', requestId);
   }
 
   const battleData = {
@@ -103,23 +105,27 @@ export const POST = apiHandler(async ({ req, requestId }) => {
     topic: payload.topic || null,
   } as BattleInsert;
 
-  const { data: battleResult, error: battleError } = await supabase
+  const { data: rawBattleResult, error: battleError } = await supabase
     .from('battles')
     .insert(battleData)
     .select()
     .single();
 
-  if (battleError || !battleResult) {
+  if (battleError || !rawBattleResult) {
     logger.error('Failed to create battle', battleError, {
       requestId,
       actorId: actor.actorId,
     });
-    return NextResponse.json(
-      { error: '대전 생성 중 오류가 발생했습니다.', detail: battleError?.message },
-      { status: 500 }
+    return apiErrorResponse(
+      500,
+      'INTERNAL_ERROR',
+      '대전 생성 중 오류가 발생했습니다.',
+      requestId,
+      battleError?.message
     );
   }
 
+  const battleResult = rawBattleResult as ApiBattle;
   const battleParsed = ApiBattleSchema.safeParse(battleResult);
   if (!battleParsed.success) {
     logger.error('Failed to parse battle create response', {
@@ -127,7 +133,7 @@ export const POST = apiHandler(async ({ req, requestId }) => {
       issues: battleParsed.error.issues,
       battleId: battleResult.id,
     });
-    return NextResponse.json({ error: '생성된 대전 데이터 형식이 유효하지 않습니다.' }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '생성된 대전 데이터 형식이 유효하지 않습니다.', requestId);
   }
 
   const participantInsert = {
@@ -148,9 +154,12 @@ export const POST = apiHandler(async ({ req, requestId }) => {
 
     await supabase.from('battles').delete().eq('id', battleParsed.data.id);
 
-    return NextResponse.json(
-      { error: '대전 참가자 등록 중 오류가 발생했습니다.', detail: joinError.message },
-      { status: 500 }
+    return apiErrorResponse(
+      500,
+      'INTERNAL_ERROR',
+      '대전 참가자 등록 중 오류가 발생했습니다.',
+      requestId,
+      joinError.message
     );
   }
 

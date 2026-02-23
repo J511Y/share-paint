@@ -162,5 +162,18 @@ export const ProfileWithCountsSchema = ApiProfileSchema.extend({
 export type ProfileWithCounts = z.infer<typeof ProfileWithCountsSchema>;
 
 export const ApiErrorSchema = z.object({
-  error: z.string(),
+  code: z.enum([
+    'AUTH_REQUIRED',
+    'FORBIDDEN',
+    'NOT_FOUND',
+    'BAD_REQUEST',
+    'VALIDATION_ERROR',
+    'ROOM_FULL',
+    'INVALID_PASSWORD',
+    'RATE_LIMITED',
+    'INTERNAL_ERROR',
+  ]),
+  message: z.string(),
+  details: z.unknown().optional(),
+  traceId: z.string(),
 });

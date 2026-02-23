@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { devLogger as logger } from '@/lib/logger';
+import { apiErrorResponse } from '@/lib/api-error';
 
 export interface ApiContext {
   req: NextRequest;
@@ -67,7 +68,7 @@ export function withApiHandler(
             statusCode: 401,
             duration,
           });
-          return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
+          return apiErrorResponse(401, 'AUTH_REQUIRED', '로그인이 필요합니다.', requestId);
         }
         user = { id: authData.user.id, email: authData.user.email };
       } else if (authData.user) {
@@ -119,13 +120,7 @@ export function withApiHandler(
       });
 
       // 클라이언트에게는 간단한 에러 메시지만 반환
-      return NextResponse.json(
-        {
-          error: '서버 오류가 발생했습니다.',
-          requestId, // 디버깅용
-        },
-        { status: 500 }
-      );
+      return apiErrorResponse(500, 'INTERNAL_ERROR', '서버 오류가 발생했습니다.', requestId);
     }
   };
 }

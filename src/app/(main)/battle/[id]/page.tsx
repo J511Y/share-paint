@@ -7,7 +7,7 @@ import { Loader2, Check, Users, MessageSquare } from 'lucide-react';
 
 import { useBattle } from '@/hooks/useBattle';
 import { useBattleStore } from '@/stores/battleStore';
-import { BattleCanvas, BattleResultView } from '@/components/battle';
+import { BattleCanvas, BattleConnectionBanner, BattleResultView } from '@/components/battle';
 import { Button } from '@/components/ui/Button';
 import { formatDuration } from '@/lib/utils';
 import { getUuidParam } from '@/lib/validation/params';
@@ -77,6 +77,8 @@ export default function BattleRoomPage() {
     <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row overflow-hidden bg-gray-100">
       {/* 硫붿씤 罹붾쾭???곸뿭 */}
       <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
+        <BattleConnectionBanner />
+
         <div className="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm shrink-0">
           <div>
             <h1 className="font-bold text-lg flex items-center gap-2">
@@ -111,7 +113,7 @@ export default function BattleRoomPage() {
 
         {/* 罹붾쾭??而댄룷?뚰듃 */}
         <div className="flex-1 overflow-hidden">
-          <BattleCanvas battleId={battleId} className="h-full" />
+          <BattleCanvas className="h-full" onCanvasSnapshot={updateCanvas} />
         </div>
       </div>
 

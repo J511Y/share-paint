@@ -13,7 +13,18 @@
     "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:e2e:critical": "vitest run tests/e2e",
+    "test:coverage": "vitest run --coverage",
+    "preflight:env": "node scripts/preflight-env.mjs",
+    "check:secrets": "node scripts/secret-scan.mjs",
+    "qa:sheet": "node scripts/generate-regression-sheet.mjs",
+    "retro:sheet": "node scripts/generate-launch-retro.mjs",
+    "ga:gate": "node scripts/generate-ga-gate-checklist.mjs",
+    "kpi:spec": "node scripts/generate-soft-launch-kpi-spec.mjs",
+    "oncall:plan": "node scripts/generate-oncall-contact-plan.mjs",
+    "perf:budget": "node scripts/generate-performance-budget-config.mjs",
+    "api:p95:report": "node scripts/generate-api-p95-report-template.mjs",
+    "check:socket": "node --check socket-server/server.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
