@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Mail, User, Lock, UserCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { buildAuthRedirectLink, resolveRedirectTarget } from '@/lib/auth/redirect';
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui';
 
 const registerSchema = z.object({
@@ -28,7 +29,7 @@ type RegisterValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/feed';
+  const redirectTo = resolveRedirectTarget(searchParams);
   const { signUp, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
@@ -150,7 +151,7 @@ export function RegisterForm() {
           <p className="text-center text-sm text-gray-600">
             이미 계정이 있으신가요?{' '}
             <Link
-              href={`/login${redirectTo !== '/feed' ? `?redirect=${redirectTo}` : ''}`}
+              href={buildAuthRedirectLink('/login', redirectTo)}
               className="font-medium text-purple-600 hover:text-purple-700"
             >
               로그인

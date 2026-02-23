@@ -23,7 +23,7 @@ describe('CanvasActions', () => {
     expect(screen.getByRole('button', { name: /실행취소/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /다시실행/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /초기화/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /내보내기/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /(내보내기|다운로드)/i })).toBeInTheDocument();
   });
 
   it('Undo 버튼 클릭 시 onUndo를 호출한다', async () => {
@@ -60,7 +60,7 @@ describe('CanvasActions', () => {
     const user = userEvent.setup();
     render(<CanvasActions {...defaultProps} />);
 
-    const exportButton = screen.getByRole('button', { name: /내보내기/i });
+    const exportButton = screen.getByRole('button', { name: /(내보내기|다운로드)/i });
     await user.click(exportButton);
 
     expect(defaultProps.onExport).toHaveBeenCalledTimes(1);
@@ -110,7 +110,7 @@ describe('CanvasActions', () => {
   it('Export 버튼은 항상 활성화되어 있다', () => {
     render(<CanvasActions {...defaultProps} canUndo={false} canRedo={false} />);
 
-    const exportButton = screen.getByRole('button', { name: /내보내기/i });
+    const exportButton = screen.getByRole('button', { name: /(내보내기|다운로드)/i });
     expect(exportButton).not.toBeDisabled();
   });
 
