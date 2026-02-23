@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { ApiBattleSchema } from '@/lib/validation/schemas';
 import { parseJsonResponse } from '@/lib/validation/http';
+import { withGuestHeaders } from '@/lib/guest/client';
 
 interface CreateBattleModalProps {
   isOpen: boolean;
@@ -34,11 +35,14 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
     setIsLoading(true);
 
     try {
-      const res = await fetch('/api/battle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+      const res = await fetch(
+        '/api/battle',
+        withGuestHeaders({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        })
+      );
 
       if (!res.ok) throw new Error('Failed to create battle');
 

@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import { useAuth } from '@/hooks/useAuth';
 import { useFollow } from '@/hooks/useFollow';
 import { Button } from '@/components/ui/Button';
 import { Settings, UserPlus, UserMinus, Loader2 } from 'lucide-react';

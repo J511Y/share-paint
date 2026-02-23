@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
 import { ProfileHeader, PaintingGrid } from '@/components/profile';
+import { withGuestHeaders } from '@/lib/guest/client';
 import { getStringParam } from '@/lib/validation/params';
 import { ProfileWithCountsSchema } from '@/lib/validation/schemas';
 import { parseJsonResponse } from '@/lib/validation/http';
@@ -24,7 +25,7 @@ export default function ProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`/api/users/by-username/${username}`);
+        const res = await fetch(`/api/users/by-username/${username}`, withGuestHeaders());
         if (!res.ok) {
           if (res.status === 404) throw new Error('사용자를 찾을 수 없습니다.');
           throw new Error('프로필을 조회할 수 없습니다.');
