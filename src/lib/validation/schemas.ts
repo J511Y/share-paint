@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 export const ApiProfileSchema = z.object({
@@ -16,7 +15,9 @@ export type ProfileResponse = ApiProfile;
 
 export const ApiPaintingSchema = z.object({
   id: z.string().uuid(),
-  user_id: z.string().uuid(),
+  user_id: z.string().uuid().nullable(),
+  guest_id: z.string().nullable().optional(),
+  guest_name: z.string().nullable().optional(),
   image_url: z.string().url(),
   topic: z.string(),
   time_limit: z.coerce.number().int().nonnegative(),
@@ -34,7 +35,6 @@ export const ApiPaintingArraySchema = z.array(ApiPaintingSchema);
 export const PaintingWithProfileArraySchema = ApiPaintingArraySchema;
 
 export const PaintingCreatePayloadSchema = z.object({
-  user_id: z.string().uuid(),
   image_url: z.string().url(),
   topic: z.string().trim().min(1),
   time_limit: z.coerce.number().int().nonnegative().default(0),
@@ -46,7 +46,9 @@ export type PaintingCreatePayload = z.infer<typeof PaintingCreatePayloadSchema>;
 
 export const ApiBattleSchema = z.object({
   id: z.string().uuid(),
-  host_id: z.string().uuid(),
+  host_id: z.string().uuid().nullable(),
+  host_guest_id: z.string().nullable().optional(),
+  host_guest_name: z.string().nullable().optional(),
   title: z.string().min(1),
   topic: z.string().nullable(),
   time_limit: z.coerce.number().int().nonnegative(),
@@ -85,7 +87,7 @@ export const BattleParticipantCountSchema = z.object({
 });
 
 export const BattleParticipantRefSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1),
 });
 
 export const BattleParticipantResultSchema = z.union([
@@ -106,7 +108,9 @@ export const BattleArraySchema = z.array(BattleWithCountSchema);
 
 export const ApiCommentSchema = z.object({
   id: z.string().uuid(),
-  user_id: z.string().uuid(),
+  user_id: z.string().uuid().nullable(),
+  guest_id: z.string().nullable().optional(),
+  guest_name: z.string().nullable().optional(),
   painting_id: z.string().uuid(),
   content: z.string().trim().min(1),
   created_at: z.string(),

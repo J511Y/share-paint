@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { ApiProfileSchema, ProfileWithCountsSchema } from '@/lib/validation/schemas';
 import { getStringParam } from '@/lib/validation/params';
+import { resolveApiActor } from '@/lib/api-actor';
 
 export async function GET(
   request: NextRequest,
@@ -40,13 +41,23 @@ export async function GET(
     .select('*', { count: 'exact', head: true })
     .eq('follower_id', parsedProfile.data.id);
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const actor = await resolveApiActor(request, supabase);
   let isFollowing = false;
-  if (user) {
+
+  if (actor?.userId) {
     const { data: followData } = await supabase
       .from('follows')
       .select('*')
-      .eq('follower_id', user.id)
+      .eq('follower_id', actor.userId)
+      .eq('following_id', parsedProfile.data.id)
+      .single();
+
+    isFollowing = !!followData;
+  } else if (actor?.guestId) {
+    const { data: followData } = await supabase
+      .from('follows')
+      .select('*')
+      .eq('follower_guest_id', actor.guestId)
       .eq('following_id', parsedProfile.data.id)
       .single();
 
