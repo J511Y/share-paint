@@ -12,6 +12,7 @@ import {
   consumeRateLimit,
   consumeDuplicateContentGuard,
 } from '@/lib/security/action-rate-limit';
+import { rateLimitJson } from '@/lib/security/rate-limit-response';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -24,10 +25,7 @@ export async function POST(request: NextRequest) {
 
     const rateLimit = consumeRateLimit(`painting:create:${actor.actorId}`, 8, 10 * 60 * 1000);
     if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: '요청이 너무 빠릅니다. 잠시 후 다시 시도해주세요.' },
-        { status: 429 }
-      );
+      return rateLimitJson('요청이 너무 빠릅니다. 잠시 후 다시 시도해주세요.', rateLimit.retryAfterMs);
     }
 
     const rawBody = await request.json();
@@ -44,9 +42,9 @@ export async function POST(request: NextRequest) {
     );
 
     if (!duplicateGuard.allowed) {
-      return NextResponse.json(
-        { error: '동일한 그림 요청이 너무 빠르게 반복되고 있습니다.' },
-        { status: 429 }
+      return rateLimitJson(
+        '동일한 그림 요청이 너무 빠르게 반복되고 있습니다.',
+        duplicateGuard.retryAfterMs
       );
     }
 

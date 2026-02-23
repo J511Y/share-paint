@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 import { resolveApiActor } from '@/lib/api-actor';
 import { consumeRateLimit } from '@/lib/security/action-rate-limit';
+import { rateLimitJson } from '@/lib/security/rate-limit-response';
 import { getUuidParam } from '@/lib/validation/params';
 
 export async function POST(
@@ -28,7 +29,7 @@ export async function POST(
 
   const rateLimit = consumeRateLimit(`user:follow:${actor.actorId}`, 20, 60 * 1000);
   if (!rateLimit.allowed) {
-    return NextResponse.json({ error: '팔로우 요청이 너무 빠릅니다.' }, { status: 429 });
+    return rateLimitJson('팔로우 요청이 너무 빠릅니다.', rateLimit.retryAfterMs);
   }
 
   const insertData = {

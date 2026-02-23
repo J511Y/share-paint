@@ -12,6 +12,7 @@ import {
   consumeDuplicateContentGuard,
   consumeRateLimit,
 } from '@/lib/security/action-rate-limit';
+import { rateLimitJson } from '@/lib/security/rate-limit-response';
 
 export async function GET(
   request: NextRequest,
@@ -72,7 +73,7 @@ export async function POST(
 
     const rateLimit = consumeRateLimit(`painting:comment:${actor.actorId}`, 12, 60 * 1000);
     if (!rateLimit.allowed) {
-      return NextResponse.json({ error: '댓글 작성이 너무 빠릅니다.' }, { status: 429 });
+      return rateLimitJson('댓글 작성이 너무 빠릅니다.', rateLimit.retryAfterMs);
     }
 
     const duplicateGuard = consumeDuplicateContentGuard(
