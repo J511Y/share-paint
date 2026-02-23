@@ -1,6 +1,6 @@
 'use client';
 
-import { QUICK_BRUSH_SIZES } from '@/constants/drawing';
+import { QUICK_BRUSH_SIZES, QUICK_OPACITY_LEVELS } from '@/constants/drawing';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { cn } from '@/lib/utils';
 
@@ -18,9 +18,14 @@ export function BrushSizeSlider({ className }: BrushSizeSliderProps) {
   const brushColor = useCanvasStore((state) => state.brush.color);
   const brushOpacity = useCanvasStore((state) => state.brush.opacity);
   const setBrushSize = useCanvasStore((state) => state.setBrushSize);
+  const setBrushOpacity = useCanvasStore((state) => state.setBrushOpacity);
 
   const handleSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBrushSize(Number(e.target.value));
+  };
+
+  const handleOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBrushOpacity(Number(e.target.value) / 100);
   };
 
   return (
@@ -71,6 +76,51 @@ export function BrushSizeSlider({ className }: BrushSizeSliderProps) {
         onChange={handleSizeChange}
         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
       />
+
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-xs font-semibold text-gray-600">브러시 농도</p>
+          <span className="text-xs font-medium text-gray-900">{Math.round(brushOpacity * 100)}%</span>
+        </div>
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {QUICK_OPACITY_LEVELS.map((opacity) => {
+            const percent = Math.round(opacity * 100);
+            const isActive = Math.abs(brushOpacity - opacity) < 0.01;
+
+            return (
+              <button
+                key={opacity}
+                type="button"
+                onClick={() => setBrushOpacity(opacity)}
+                aria-label={`농도 ${percent}%`}
+                aria-pressed={isActive}
+                className={cn(
+                  'rounded-md border px-2 py-1 text-xs font-medium transition-colors',
+                  'focus:outline-none focus:ring-2 focus:ring-purple-500',
+                  isActive
+                    ? 'border-purple-600 bg-purple-600 text-white'
+                    : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                )}
+              >
+                {percent}%
+              </button>
+            );
+          })}
+        </div>
+
+        <input
+          id="brush-opacity"
+          type="range"
+          role="slider"
+          aria-label="브러시 농도"
+          min={5}
+          max={100}
+          step={5}
+          value={Math.round(brushOpacity * 100)}
+          onChange={handleOpacityChange}
+          className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+        />
+      </div>
 
       <div className="flex items-center justify-center h-16">
         <div

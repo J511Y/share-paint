@@ -4,10 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { BrushSizeSlider } from './BrushSizeSlider';
 
 const mockSetBrushSize = vi.fn();
+const mockSetBrushOpacity = vi.fn();
 
 const mockStoreState = {
   brush: { color: '#000000', size: 5, opacity: 1, style: 'pencil' as const },
   setBrushSize: mockSetBrushSize,
+  setBrushOpacity: mockSetBrushOpacity,
 };
 
 vi.mock('@/stores/canvasStore', () => ({
@@ -21,6 +23,7 @@ describe('BrushSizeSlider', () => {
     vi.clearAllMocks();
     mockStoreState.brush.size = 5;
     mockStoreState.brush.color = '#000000';
+    mockStoreState.brush.opacity = 1;
   });
 
   it('range input을 렌더링한다', () => {
@@ -91,5 +94,23 @@ describe('BrushSizeSlider', () => {
     render(<BrushSizeSlider />);
 
     expect(screen.getByText('10px')).toBeInTheDocument();
+  });
+
+  it('농도 빠른 버튼 클릭 시 setBrushOpacity를 호출한다', async () => {
+    const user = userEvent.setup();
+    render(<BrushSizeSlider />);
+
+    await user.click(screen.getByRole('button', { name: '농도 50%' }));
+
+    expect(mockSetBrushOpacity).toHaveBeenCalledWith(0.5);
+  });
+
+  it('농도 슬라이더 값 변경 시 setBrushOpacity를 호출한다', () => {
+    render(<BrushSizeSlider />);
+
+    const opacitySlider = screen.getByRole('slider', { name: /브러시 농도/i });
+    fireEvent.change(opacitySlider, { target: { value: '35' } });
+
+    expect(mockSetBrushOpacity).toHaveBeenCalledWith(0.35);
   });
 });

@@ -52,6 +52,8 @@ export const DRAWING_PRESET_MAP = Object.fromEntries(
 
 export const QUICK_BRUSH_SIZES = [2, 4, 8, 12, 18, 26] as const;
 
+export const QUICK_OPACITY_LEVELS = [0.2, 0.35, 0.5, 0.7, 0.85, 1] as const;
+
 export const QUICK_COLOR_PRESETS = [
   { hex: '#111827', name: '차콜' },
   { hex: '#EF4444', name: '레드' },
