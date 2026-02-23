@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, User, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useActor } from '@/hooks/useActor';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +17,8 @@ const navLinks = [
 
 export function Navbar() {
   const pathname = usePathname();
-  const { user, isAuthenticated, isLoading, signOut } = useAuth();
+  const { signOut } = useAuth();
+  const { actor, isAuthenticatedUser, isLoading, user } = useActor();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
@@ -24,13 +26,11 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          {/* 로고 */}
           <div className="flex items-center gap-8">
             <Link href="/" className="text-xl font-bold text-purple-600">
               PaintShare
             </Link>
 
-            {/* 데스크톱 네비게이션 */}
             <div className="hidden items-center gap-1 md:flex">
               {navLinks.map((link) => (
                 <Link
@@ -49,11 +49,10 @@ export function Navbar() {
             </div>
           </div>
 
-          {/* 오른쪽 영역 */}
           <div className="flex items-center gap-4">
             {isLoading ? (
-              <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200" />
-            ) : isAuthenticated && user ? (
+              <div className="h-8 w-24 animate-pulse rounded-full bg-gray-200" />
+            ) : isAuthenticatedUser && user ? (
               <div className="relative">
                 <button
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
@@ -87,7 +86,7 @@ export function Navbar() {
                       <button
                         onClick={() => {
                           setIsProfileMenuOpen(false);
-                          signOut();
+                          void signOut();
                         }}
                         className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                       >
@@ -100,18 +99,17 @@ export function Navbar() {
               </div>
             ) : (
               <div className="hidden items-center gap-2 sm:flex">
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                  게스트 모드 · {actor?.displayName || '방문자'}
+                </span>
                 <Link href="/login">
                   <Button variant="ghost" size="sm">
-                    로그인
+                    계정 연결
                   </Button>
-                </Link>
-                <Link href="/register">
-                  <Button size="sm">회원가입</Button>
                 </Link>
               </div>
             )}
 
-            {/* 모바일 메뉴 버튼 */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 md:hidden"
@@ -125,7 +123,6 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* 모바일 메뉴 */}
         {isMenuOpen && (
           <div className="border-t border-gray-200 py-4 md:hidden">
             <div className="flex flex-col gap-1">
@@ -146,15 +143,13 @@ export function Navbar() {
               ))}
             </div>
 
-            {!isAuthenticated && (
+            {!isAuthenticatedUser && (
               <div className="mt-4 flex flex-col gap-2 border-t border-gray-200 pt-4">
+                <div className="px-2 text-xs text-gray-500">게스트 모드로 모든 기능을 사용할 수 있어요.</div>
                 <Link href="/login" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="outline" className="w-full">
-                    로그인
+                    계정 연결
                   </Button>
-                </Link>
-                <Link href="/register" onClick={() => setIsMenuOpen(false)}>
-                  <Button className="w-full">회원가입</Button>
                 </Link>
               </div>
             )}

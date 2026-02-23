@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { uploadImage } from '@/lib/supabase/storage';
-import { useAuth } from '@/hooks/useAuth';
+import { useActor } from '@/hooks/useActor';
+import { withGuestHeaders } from '@/lib/guest/client';
 
 interface SavePaintingModalProps {
   isOpen: boolean;
@@ -26,7 +27,7 @@ export function SavePaintingModal({
   actualTime = 0,
   initialTopic = '',
 }: SavePaintingModalProps) {
-  const { user } = useAuth();
+  const { actor } = useActor();
   const toast = useToast();
   const [topic, setTopic] = useState(initialTopic);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,8 +42,8 @@ export function SavePaintingModal({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) {
-      toast.error('로그인이 필요합니다.');
+    if (!actor) {
+      toast.error('게스트 정보를 초기화하지 못했습니다.');
       return;
     }
 
@@ -55,24 +56,25 @@ export function SavePaintingModal({
     setIsLoading(true);
 
     try {
-      // 1. 이미지 업로드
-      const publicUrl = await uploadImage(dataUrl, 'paintings', user.id);
-      
+      const publicUrl = await uploadImage(dataUrl, 'paintings', actor.id.replace(':', '-'));
+
       if (!publicUrl) {
         throw new Error('이미지 업로드 실패');
       }
 
-      // 2. DB 저장
-      const res = await fetch('/api/paintings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image_url: publicUrl,
-          topic: topic || '자유 주제', // 입력 없으면 기본값
-          time_limit: timeLimit,
-          actual_time: actualTime,
-        }),
-      });
+      const res = await fetch(
+        '/api/paintings',
+        withGuestHeaders({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_url: publicUrl,
+            topic: topic || '자유 주제',
+            time_limit: timeLimit,
+            actual_time: actualTime,
+          }),
+        })
+      );
 
       if (!res.ok) {
         throw new Error('데이터베이스 저장 실패');
@@ -102,15 +104,14 @@ export function SavePaintingModal({
 
         <form onSubmit={handleSave} className="p-4 space-y-4">
           <div className="flex justify-center bg-gray-100 rounded-lg p-4 mb-4 relative min-h-[200px]">
-            {/* 썸네일 미리보기 */}
             {getDataUrl() ? (
               <div className="relative w-full h-48">
-                <Image 
-                  src={getDataUrl()!} 
-                  alt="Preview" 
+                <Image
+                  src={getDataUrl()!}
+                  alt="Preview"
                   fill
                   className="object-contain shadow-sm"
-                  unoptimized // Data URL 사용 시 unoptimized 필요할 수 있음 (또는 next.config.js 설정 필요없음)
+                  unoptimized
                 />
               </div>
             ) : (
@@ -137,7 +138,7 @@ export function SavePaintingModal({
             <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading}>
               취소
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || !actor}>
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -146,7 +147,7 @@ export function SavePaintingModal({
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  갤러리에 저장
+                  저장하기
                 </>
               )}
             </Button>

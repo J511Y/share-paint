@@ -1,31 +1,40 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { authApiHandler } from '@/lib/api-handler';
+import { apiHandler } from '@/lib/api-handler';
 import { devLogger as logger } from '@/lib/logger';
 import { hashBattlePassword, verifyBattlePassword } from '@/lib/security/battle-password';
-import { apiErrorResponse } from '@/lib/api-error';
 import { BattleJoinPayloadSchema } from '@/lib/validation/schemas';
 import { getUuidParam } from '@/lib/validation/params';
-import type { Battle } from '@/types/database';
+import { resolveApiActor } from '@/lib/api-actor';
+import { consumeRateLimit } from '@/lib/security/action-rate-limit';
+import type { Database } from '@/types/database';
 
-export const POST = authApiHandler(async ({ req, params, user, requestId }) => {
+export const POST = apiHandler(async ({ req, params, requestId }) => {
   const battleId = getUuidParam(params, 'id');
 
   if (!battleId) {
     logger.warn('Battle ID not provided for join', { requestId });
-    return apiErrorResponse(400, 'BAD_REQUEST', 'Battle ID is required.', requestId);
+    return NextResponse.json({ error: 'Battle ID is required.' }, { status: 400 });
   }
 
   const supabase = await createClient();
+  const actor = await resolveApiActor(req, supabase);
 
-  logger.info('User attempting to join battle', { requestId, battleId, userId: user?.id });
+  if (!actor) {
+    return NextResponse.json({ error: 'Guest identity is required.' }, { status: 400 });
+  }
+
+  const rateLimit = consumeRateLimit(`battle:join:${actor.actorId}:${battleId}`, 20, 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: '입장 요청이 너무 빠릅니다.' }, { status: 429 });
+  }
 
   let password = '';
   try {
     const body = await req.json();
     const parsedBody = BattleJoinPayloadSchema.safeParse(body);
     if (!parsedBody.success) {
-      return apiErrorResponse(400, 'VALIDATION_ERROR', 'Invalid request body.', requestId, parsedBody.error.issues);
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
     }
     password = parsedBody.data.password ?? '';
   } catch {
@@ -40,24 +49,25 @@ export const POST = authApiHandler(async ({ req, params, user, requestId }) => {
 
   if (battleError || !battleData) {
     logger.warn('Battle not found', { requestId, battleId, error: battleError });
-    return apiErrorResponse(404, 'NOT_FOUND', 'Battle not found.', requestId);
+    return NextResponse.json({ error: 'Battle not found.' }, { status: 404 });
   }
 
-  const battle = battleData as Battle;
-
-  logger.debug('Battle found', { requestId, battleId, battleStatus: battle.status, isPrivate: battle.is_private });
+  const battle = battleData;
 
   if (battle.is_private) {
     const passwordMatch =
       verifyBattlePassword(password, battle.password_hash ?? null) ||
       (!!password && !!battle.password && battle.password === password);
 
-    if (!passwordMatch) {
-      if (battle.host_id !== user?.id) {
-        logger.warn('Invalid password attempt', { requestId, battleId, userId: user?.id });
-        return apiErrorResponse(403, 'INVALID_PASSWORD', '비밀번호가 일치하지 않습니다.', requestId);
-      }
-    } else if (!battle.password_hash && !!battle.password && !!password) {
+    const isHost =
+      (actor.userId && battle.host_id === actor.userId) ||
+      (actor.guestId && battle.host_guest_id === actor.guestId);
+
+    if (!passwordMatch && !isHost) {
+      return NextResponse.json({ error: '비밀번호가 일치하지 않습니다.' }, { status: 403 });
+    }
+
+    if (passwordMatch && !battle.password_hash && !!battle.password && !!password) {
       supabase
         .from('battles')
         .update({
@@ -75,8 +85,6 @@ export const POST = authApiHandler(async ({ req, params, user, requestId }) => {
           }
         });
     }
-  } else if (battle.password) {
-    logger.warn('Unexpected legacy password on public battle', { requestId, battleId });
   }
 
   const { count, error: countError } = await supabase
@@ -86,45 +94,48 @@ export const POST = authApiHandler(async ({ req, params, user, requestId }) => {
 
   if (countError) {
     logger.error('Failed to count participants', countError, { requestId, battleId });
-    return apiErrorResponse(500, 'INTERNAL_ERROR', 'Failed to validate participant count.', requestId);
+    return NextResponse.json({ error: 'Failed to validate participant count.' }, { status: 500 });
   }
-
-  logger.debug('Participant count checked', {
-    requestId,
-    battleId,
-    currentCount: count,
-    maxParticipants: battle.max_participants,
-  });
 
   if (count !== null && count >= battle.max_participants) {
-    logger.warn('Battle is full', { requestId, battleId, currentCount: count, maxParticipants: battle.max_participants });
-    return apiErrorResponse(409, 'ROOM_FULL', 'Battle participant limit reached.', requestId);
+    return NextResponse.json({ error: 'Battle participant limit reached.' }, { status: 400 });
   }
 
-  const { data: existingParticipant } = await supabase
+  let existingQuery = supabase
     .from('battle_participants')
     .select('*')
     .eq('battle_id', battleId)
-    .eq('user_id', user!.id)
-    .single();
+    .limit(1);
 
-  if (existingParticipant) {
-    logger.info('User already joined battle', { requestId, battleId, userId: user?.id });
+  if (actor.userId) {
+    existingQuery = existingQuery.eq('user_id', actor.userId);
+  } else if (actor.guestId) {
+    existingQuery = existingQuery.eq('guest_id', actor.guestId);
+  }
+
+  const { data: existingParticipants } = await existingQuery;
+
+  if (existingParticipants && existingParticipants.length > 0) {
     return NextResponse.json({ message: 'Already joined.' }, { status: 200 });
   }
 
-  const { error: joinError } = await supabase
-    .from('battle_participants')
-    .insert({
-      battle_id: battleId,
-      user_id: user!.id,
-    });
+  const participantInsert = {
+    battle_id: battleId,
+    user_id: actor.userId ?? undefined,
+    guest_id: actor.guestId,
+    guest_name: actor.userId ? null : actor.displayName,
+  } as Database['public']['Tables']['battle_participants']['Insert'];
+
+  const { error: joinError } = await supabase.from('battle_participants').insert(participantInsert);
 
   if (joinError) {
-    logger.error('Failed to join battle', joinError, { requestId, battleId, userId: user?.id });
-    return apiErrorResponse(500, 'INTERNAL_ERROR', 'Failed to join battle.', requestId, joinError.message);
+    logger.error('Failed to join battle', joinError, {
+      requestId,
+      battleId,
+      actorId: actor.actorId,
+    });
+    return NextResponse.json({ error: 'Failed to join battle.', detail: joinError.message }, { status: 500 });
   }
 
-  logger.info('User joined battle successfully', { requestId, battleId, userId: user?.id });
   return NextResponse.json({ success: true });
 });

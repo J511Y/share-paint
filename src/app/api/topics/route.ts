@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { ApiTopicSchema, TopicCreatePayloadSchema } from '@/lib/validation/schemas';
+import { resolveApiActor } from '@/lib/api-actor';
+import { consumeRateLimit } from '@/lib/security/action-rate-limit';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const actor = await resolveApiActor(request, supabase);
+  if (!actor) {
+    return NextResponse.json({ error: 'Guest identity is required.' }, { status: 400 });
+  }
+
+  const rateLimit = consumeRateLimit(`topic:create:${actor.actorId}`, 4, 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: '주제 생성 요청이 너무 빠릅니다.' }, { status: 429 });
   }
 
   try {
@@ -37,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(parsedTopic.data);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }

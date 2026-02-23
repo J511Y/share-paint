@@ -11,6 +11,20 @@ const mockGetDataUrl = vi.fn(() => 'data:image/png;base64,test') as ReturnType<t
 const mockLoadImage = vi.fn();
 
 // useResponsiveCanvas 모킹
+vi.mock('@/hooks/useActor', () => ({
+  useActor: () => ({
+    actor: {
+      id: 'guest:tester',
+      userId: null,
+      guestId: 'tester',
+      username: 'guest-tester',
+      displayName: 'Tester',
+      avatarUrl: null,
+      isGuest: true,
+    },
+  }),
+}));
+
 const createMockAnchorElement = (): HTMLAnchorElement => {
   const anchor = document.createElement('a');
   anchor.href = '';
@@ -27,17 +41,6 @@ const mockResponsiveCanvas = {
 
 vi.mock('@/hooks/useResponsiveCanvas', () => ({
   useResponsiveCanvas: vi.fn(() => mockResponsiveCanvas),
-}));
-
-vi.mock('@/hooks/useAuth', () => ({
-  useAuth: vi.fn(() => ({
-    user: {
-      id: 'user-1',
-      username: 'tester',
-      display_name: 'Tester',
-      avatar_url: null,
-    },
-  })),
 }));
 
 // forwardRef를 올바르게 처리하는 Canvas 모킹
@@ -100,6 +103,8 @@ vi.mock('@/components/canvas', async () => {
         BrushSizeSlider
       </div>
     ),
+    SavePaintingModal: ({ isOpen }: { isOpen: boolean }) =>
+      isOpen ? <div data-testid="mock-save-modal">SaveModal</div> : null,
     CanvasActions: ({
       onUndo,
       onRedo,
@@ -132,8 +137,6 @@ vi.mock('@/components/canvas', async () => {
         </button>
       </div>
     ),
-    SavePaintingModal: ({ isOpen }: { isOpen: boolean }) =>
-      isOpen ? <div data-testid="mock-save-modal">Save Modal</div> : null,
   };
 });
 
@@ -278,7 +281,7 @@ describe('DrawingCanvas', () => {
 
       render(<DrawingCanvas />);
 
-      const exportButton = screen.getByRole('button', { name: /다운로드/i });
+      const exportButton = screen.getByRole('button', { name: /(내보내기|다운로드)/i });
       await user.click(exportButton);
 
       expect(mockGetDataUrl).toHaveBeenCalled();
@@ -410,7 +413,7 @@ describe('DrawingCanvas - 엣지 케이스', () => {
 
     render(<DrawingCanvas />);
 
-    const exportButton = screen.getByRole('button', { name: /다운로드/i });
+    const exportButton = screen.getByRole('button', { name: /(내보내기|다운로드)/i });
 
     // 에러 없이 실행되어야 함
     await userEvent.click(exportButton);

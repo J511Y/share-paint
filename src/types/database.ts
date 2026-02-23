@@ -10,7 +10,9 @@
 
 export interface Painting {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  guest_id?: string | null;
+  guest_name?: string | null;
   image_url: string;
   topic: string;
   time_limit: number;
@@ -19,35 +21,41 @@ export interface Painting {
   comments_count: number;
   battle_id: string | null;
   created_at: string;
-  profile?: Profile;
+  profile?: Profile | null;
 }
 
 export interface Like {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  guest_id?: string | null;
   painting_id: string;
   created_at: string;
 }
 
 export interface Comment {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  guest_id?: string | null;
+  guest_name?: string | null;
   painting_id: string;
   content: string;
   created_at: string;
-  profile?: Profile;
+  profile?: Profile | null;
 }
 
 export interface Follow {
   id: string;
-  follower_id: string;
+  follower_id: string | null;
+  follower_guest_id?: string | null;
   following_id: string;
   created_at: string;
 }
 
 export interface Battle {
   id: string;
-  host_id: string;
+  host_id: string | null;
+  host_guest_id?: string | null;
+  host_guest_name?: string | null;
   title: string;
   topic: string | null;
   time_limit: number;
@@ -59,16 +67,18 @@ export interface Battle {
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
-  host?: Profile;
+  host?: Profile | null;
   participants?: BattleParticipant[];
 }
 
 export interface BattleParticipant {
   id: string;
   battle_id: string;
-  user_id: string;
+  user_id: string | null;
+  guest_id?: string | null;
+  guest_name?: string | null;
   joined_at: string;
-  profile?: Profile;
+  profile?: Profile | null;
 }
 
 export interface Topic {
@@ -123,7 +133,9 @@ export type ProfileInsert = {
 };
 
 export type PaintingInsert = {
-  user_id: string;
+  user_id?: string | null;
+  guest_id?: string | null;
+  guest_name?: string | null;
   image_url: string;
   topic: string;
   time_limit: number;
@@ -132,23 +144,29 @@ export type PaintingInsert = {
 };
 
 export type LikeInsert = {
-  user_id: string;
+  user_id?: string | null;
+  guest_id?: string | null;
   painting_id: string;
 };
 
 export type CommentInsert = {
-  user_id: string;
+  user_id?: string | null;
+  guest_id?: string | null;
+  guest_name?: string | null;
   painting_id: string;
   content: string;
 };
 
 export type FollowInsert = {
-  follower_id: string;
+  follower_id?: string | null;
+  follower_guest_id?: string | null;
   following_id: string;
 };
 
 export type BattleInsert = {
-  host_id: string;
+  host_id?: string | null;
+  host_guest_id?: string | null;
+  host_guest_name?: string | null;
   title: string;
   topic?: string | null;
   time_limit: number;
@@ -159,7 +177,9 @@ export type BattleInsert = {
 
 export type BattleParticipantInsert = {
   battle_id: string;
-  user_id: string;
+  user_id?: string | null;
+  guest_id?: string | null;
+  guest_name?: string | null;
 };
 
 export type TopicInsert = {
@@ -226,8 +246,11 @@ export type Database = {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+    Views: {};
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+    Functions: {};
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+    Enums: {};
   };
 };

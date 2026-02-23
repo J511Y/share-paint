@@ -8,10 +8,14 @@ export default function Home() {
           PaintShare
         </h1>
         <p className="max-w-md text-xl opacity-90">
-          주어진 시간 안에 그림을 그리고
+          로그인 없이 바로 그림을 그리고
           <br />
           친구들과 공유해보세요!
         </p>
+
+        <div className="rounded-full bg-white/20 px-4 py-2 text-sm font-medium">
+          ✨ 게스트 모드 기본 · 로그인 선택
+        </div>
 
         <div className="mt-4 flex flex-col gap-4 sm:flex-row">
           <Link
