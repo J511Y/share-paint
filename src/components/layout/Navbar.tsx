@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { ChevronDown, User, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useActor } from '@/hooks/useActor';
+import { resetGuestIdentity } from '@/lib/guest/client';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -145,7 +146,19 @@ export function Navbar() {
 
             {!isAuthenticatedUser && (
               <div className="mt-4 flex flex-col gap-2 border-t border-gray-200 pt-4">
-                <div className="px-2 text-xs text-gray-500">게스트 모드로 모든 기능을 사용할 수 있어요.</div>
+                <div className="px-2 text-xs text-gray-500">
+                  게스트 모드로 모든 기능을 사용할 수 있어요. 문제가 생기면 게스트 ID를 재발급하세요.
+                </div>
+                <button
+                  onClick={() => {
+                    resetGuestIdentity();
+                    setIsMenuOpen(false);
+                    window.location.reload();
+                  }}
+                  className="rounded-md px-2 py-2 text-left text-xs font-medium text-gray-600 hover:bg-gray-100"
+                >
+                  게스트 ID 재발급
+                </button>
                 <Link href="/login" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="outline" className="w-full">
                     계정 연결

@@ -5,6 +5,7 @@ import {
   getGuestHeaders,
   GUEST_STORAGE_KEY,
   updateGuestDisplayName,
+  resetGuestIdentity,
 } from './client';
 
 describe('guest identity client utils', () => {
@@ -28,5 +29,13 @@ describe('guest identity client utils', () => {
 
     expect(updated.guestId).toBe(first.guestId);
     expect(updated.displayName).toBe('New Guest Name');
+  });
+
+  it('resets guest identity and creates a new id', () => {
+    const first = ensureGuestIdentity();
+    const reset = resetGuestIdentity();
+
+    expect(reset.guestId).not.toBe(first.guestId);
+    expect(reset.displayName).toContain('게스트');
   });
 });
