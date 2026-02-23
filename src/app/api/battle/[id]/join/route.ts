@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { apiHandler } from '@/lib/api-handler';
 import { devLogger as logger } from '@/lib/logger';
 import { hashBattlePassword, verifyBattlePassword } from '@/lib/security/battle-password';
@@ -8,6 +9,22 @@ import { getUuidParam } from '@/lib/validation/params';
 import { resolveApiActor } from '@/lib/api-actor';
 import { consumeRateLimit } from '@/lib/security/action-rate-limit';
 import type { Database } from '@/types/database';
+
+function resolveBattleJoinWriteClient(isGuestActor: boolean, requestId: string) {
+  if (!isGuestActor) {
+    return null;
+  }
+
+  try {
+    return createAdminClient();
+  } catch (error) {
+    logger.warn('Guest battle join write client fallback to anon client', {
+      requestId,
+      reason: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
 
 export const POST = apiHandler(async ({ req, params, requestId }) => {
   const battleId = getUuidParam(params, 'id');
@@ -23,6 +40,8 @@ export const POST = apiHandler(async ({ req, params, requestId }) => {
   if (!actor) {
     return NextResponse.json({ error: 'Guest identity is required.' }, { status: 400 });
   }
+
+  const writeClient = resolveBattleJoinWriteClient(actor.kind === 'guest', requestId) ?? supabase;
 
   const rateLimit = consumeRateLimit(`battle:join:${actor.actorId}:${battleId}`, 20, 60 * 1000);
   if (!rateLimit.allowed) {
@@ -126,7 +145,7 @@ export const POST = apiHandler(async ({ req, params, requestId }) => {
     guest_name: actor.userId ? null : actor.displayName,
   } as Database['public']['Tables']['battle_participants']['Insert'];
 
-  const { error: joinError } = await supabase.from('battle_participants').insert(participantInsert);
+  const { error: joinError } = await writeClient.from('battle_participants').insert(participantInsert);
 
   if (joinError) {
     logger.error('Failed to join battle', joinError, {
