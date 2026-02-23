@@ -300,6 +300,10 @@ describe('DrawingCanvas', () => {
     expect(screen.getByTestId('quick-bar-mobile')).toBeInTheDocument();
     expect(screen.queryByTestId('detail-panel-mobile')).not.toBeInTheDocument();
 
+    const pencilButton = screen.getByRole('button', { name: '연필 도구' });
+    expect(pencilButton).toHaveClass('h-11');
+    expect(pencilButton).toHaveClass('w-11');
+
     const canvas = screen.getByTestId('mock-canvas');
     expect(canvas).toHaveAttribute('data-width', '343');
     expect(canvas).toHaveAttribute('data-height', '257');

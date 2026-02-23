@@ -192,6 +192,9 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     setTool,
   ]);
 
+  const quickButtonSizeClass = isMobile ? 'h-11 w-11' : 'h-10 w-10';
+  const quickButtonIconClass = isMobile ? 'h-5 w-5' : 'h-4 w-4';
+
   const quickBarButtons = (
     <>
       {quickTools.map(({ id, label, icon: Icon }) => {
@@ -205,13 +208,14 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             aria-label={label}
             aria-pressed={isActive}
             className={cn(
-              'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500',
+              'inline-flex shrink-0 items-center justify-center rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500',
+              quickButtonSizeClass,
               isActive
                 ? 'border-purple-600 bg-purple-600 text-white'
                 : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-100'
             )}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className={quickButtonIconClass} />
           </button>
         );
       })}
@@ -223,9 +227,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         onClick={handleUndo}
         aria-label="실행취소"
         disabled={!canUndo}
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className={cn(
+          'inline-flex shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50',
+          quickButtonSizeClass
+        )}
       >
-        <Undo2 className="h-4 w-4" />
+        <Undo2 className={quickButtonIconClass} />
       </button>
 
       <button
@@ -233,18 +240,24 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         onClick={handleRedo}
         aria-label="다시실행"
         disabled={!canRedo}
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className={cn(
+          'inline-flex shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50',
+          quickButtonSizeClass
+        )}
       >
-        <Redo2 className="h-4 w-4" />
+        <Redo2 className={quickButtonIconClass} />
       </button>
 
       <button
         type="button"
         onClick={handleSave}
         aria-label="저장"
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-purple-600 bg-purple-600 text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className={cn(
+          'inline-flex shrink-0 items-center justify-center rounded-lg border border-purple-600 bg-purple-600 text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500',
+          quickButtonSizeClass
+        )}
       >
-        <Save className="h-4 w-4" />
+        <Save className={quickButtonIconClass} />
       </button>
 
       <button
@@ -253,12 +266,15 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         aria-label={isDetailPanelOpen ? '상세 패널 닫기' : '상세 패널 열기'}
         aria-expanded={isDetailPanelOpen}
         aria-controls={detailPanelId}
-        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className={cn(
+          'inline-flex shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500',
+          quickButtonSizeClass
+        )}
       >
         {isDetailPanelOpen ? (
-          <PanelRightClose className="h-4 w-4" />
+          <PanelRightClose className={quickButtonIconClass} />
         ) : (
-          <PanelRightOpen className="h-4 w-4" />
+          <PanelRightOpen className={quickButtonIconClass} />
         )}
       </button>
     </>
@@ -409,7 +425,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           <section
             id={detailPanelId}
             data-testid="detail-panel-mobile"
-            className="fixed inset-x-3 bottom-20 z-30 max-h-[58vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-lg"
+            className="fixed inset-x-3 bottom-20 z-30 max-h-[65vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-lg"
             aria-label="상세 드로잉 설정"
           >
             <div className="space-y-4">{detailPanelContent}</div>
