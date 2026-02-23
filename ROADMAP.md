@@ -132,6 +132,7 @@
   - [x] PAI-28 2차: 보호 경로 로그인 리다이렉트에 query string 보존 (`src/lib/supabase/middleware.ts`) 및 회귀 테스트 추가
   - [x] PAI-28 3차: auth 화면 링크 리다이렉트 파라미터 URL 인코딩 표준화 (`src/lib/auth/redirect.ts`)
   - [x] PAI-28 4차: auth 링크를 query object 기반으로 구성해 redirect 파라미터 직렬화 안정화
+  - [x] PAI-28 5차: auth 링크 redirect를 URLSearchParams 문자열 직렬화로 재고정 (nested query 보존)
 - [ ] 핵심 API 성능 모니터링 지표 추가
 
 ### Realtime(Socket)
