@@ -14,6 +14,20 @@ function isPathMatch(pathname: string, basePath: string) {
   return pathname === basePath || pathname.startsWith(`${basePath}/`);
 }
 
+function getRedirectTarget(request: NextRequest): string {
+  const pathname = request.nextUrl.pathname;
+  const search = request.nextUrl.search;
+  return `${pathname}${search}`;
+}
+
+function createLoginRedirectUrl(request: NextRequest): URL {
+  const url = request.nextUrl.clone();
+  url.pathname = '/login';
+  url.search = '';
+  url.searchParams.set('redirect', getRedirectTarget(request));
+  return url;
+}
+
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isProtectedPath = PROTECTED_PATHS.some((path) =>
@@ -36,9 +50,7 @@ export async function updateSession(request: NextRequest) {
     );
 
     if (isProtectedPath) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('redirect', request.nextUrl.pathname);
+      const url = createLoginRedirectUrl(request);
       return NextResponse.redirect(url);
     }
 
@@ -74,9 +86,7 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (isProtectedPath && !user) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('redirect', request.nextUrl.pathname);
+      const url = createLoginRedirectUrl(request);
       return NextResponse.redirect(url);
     }
 
@@ -89,9 +99,7 @@ export async function updateSession(request: NextRequest) {
     console.error('[middleware] Session sync failed. Falling back safely.', error);
 
     if (isProtectedPath) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('redirect', request.nextUrl.pathname);
+      const url = createLoginRedirectUrl(request);
       return NextResponse.redirect(url);
     }
 

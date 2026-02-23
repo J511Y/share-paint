@@ -129,6 +129,7 @@
 - [ ] API 응답/에러 스키마 통일 (`src/app/api/**`, `src/lib/api-handler.ts`)
 - [ ] 인증/권한/입력 검증 강화 (`src/app/api/users/**`, `src/app/api/paintings/**`, `src/app/api/battle/**`)
   - [x] PAI-28 1차: 좋아요 API path param UUID 검증 추가 (`src/app/api/paintings/[id]/like/route.ts`) 및 params 유틸 테스트 보강
+  - [x] PAI-28 2차: 보호 경로 로그인 리다이렉트에 query string 보존 (`src/lib/supabase/middleware.ts`) 및 회귀 테스트 추가
 - [ ] 핵심 API 성능 모니터링 지표 추가
 
 ### Realtime(Socket)

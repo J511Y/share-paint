@@ -53,6 +53,15 @@ describe('updateSession', () => {
     expect(createServerClientMock).not.toHaveBeenCalled();
   });
 
+  it('preserves query string in redirect target when env is missing', async () => {
+    const response = await updateSession(makeRequest('/draw?room=abc&mode=fast'));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toContain(
+      '/login?redirect=%2Fdraw%3Froom%3Dabc%26mode%3Dfast'
+    );
+  });
+
   it('fails open on public route when Supabase client creation throws', async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
@@ -77,5 +86,18 @@ describe('updateSession', () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get('location')).toContain('/login?redirect=%2Fbattle');
+  });
+
+  it('preserves query string in redirect target when Supabase creation throws', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
+    createServerClientMock.mockImplementation(() => {
+      throw new Error('supabase init failed');
+    });
+
+    const response = await updateSession(makeRequest('/battle?invite=xyz'));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toContain('/login?redirect=%2Fbattle%3Finvite%3Dxyz');
   });
 });
