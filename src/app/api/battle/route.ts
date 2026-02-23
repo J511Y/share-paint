@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { apiHandler } from '@/lib/api-handler';
 import { devLogger as logger } from '@/lib/logger';
 import type { BattleInsert, Database } from '@/types/database';
@@ -14,6 +15,22 @@ import {
 } from '@/lib/validation/schemas';
 import { resolveApiActor } from '@/lib/api-actor';
 import { consumeRateLimit } from '@/lib/security/action-rate-limit';
+
+function resolveBattleWriteClient(isGuestActor: boolean, requestId: string) {
+  if (!isGuestActor) {
+    return null;
+  }
+
+  try {
+    return createAdminClient();
+  } catch (error) {
+    logger.warn('Guest battle write client fallback to anon client', {
+      requestId,
+      reason: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
 
 export const GET = apiHandler(async ({ req, requestId }) => {
   const supabase = await createClient();
@@ -70,6 +87,8 @@ export const POST = apiHandler(async ({ req, requestId }) => {
 
   logger.info('Creating battle room', { requestId, actorId: actor.actorId });
 
+  const writeClient = resolveBattleWriteClient(actor.kind === 'guest', requestId) ?? supabase;
+
   let payload;
   try {
     const body = await req.json();
@@ -105,7 +124,7 @@ export const POST = apiHandler(async ({ req, requestId }) => {
     topic: payload.topic || null,
   } as BattleInsert;
 
-  const { data: rawBattleResult, error: battleError } = await supabase
+  const { data: rawBattleResult, error: battleError } = await writeClient
     .from('battles')
     .insert(battleData)
     .select()
@@ -143,7 +162,7 @@ export const POST = apiHandler(async ({ req, requestId }) => {
     guest_name: actor.userId ? null : actor.displayName,
   } as Database['public']['Tables']['battle_participants']['Insert'];
 
-  const { error: joinError } = await supabase.from('battle_participants').insert(participantInsert);
+  const { error: joinError } = await writeClient.from('battle_participants').insert(participantInsert);
 
   if (joinError) {
     logger.error('Failed to add host as participant', joinError, {
@@ -152,7 +171,7 @@ export const POST = apiHandler(async ({ req, requestId }) => {
       actorId: actor.actorId,
     });
 
-    await supabase.from('battles').delete().eq('id', battleParsed.data.id);
+    await writeClient.from('battles').delete().eq('id', battleParsed.data.id);
 
     return apiErrorResponse(
       500,
