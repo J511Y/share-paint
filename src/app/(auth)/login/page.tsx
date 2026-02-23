@@ -11,6 +11,7 @@ export default function LoginPage() {
             <div className="mx-auto h-4 w-48 rounded bg-gray-200" />
           </div>
           <div className="space-y-4">
+            <div className="h-10 rounded-lg bg-gray-200" />
             <div className="h-12 rounded-lg bg-gray-200" />
             <div className="h-12 rounded-lg bg-gray-200" />
             <div className="h-12 rounded-lg bg-gray-200" />

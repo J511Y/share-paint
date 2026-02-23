@@ -3,53 +3,45 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Mail, Lock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  SOCIAL_AUTH_PROVIDERS,
+  SOCIAL_AUTH_PROVIDER_LABELS,
+  type SocialAuthProvider,
+} from '@/lib/auth/providers';
 import { buildAuthRedirectLink, resolveRedirectTarget } from '@/lib/auth/redirect';
-import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui';
+import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui';
 
-const loginSchema = z.object({
-  email: z.string().email('올바른 이메일 형식이 아닙니다.'),
-  password: z.string().min(1, '비밀번호를 입력해주세요.'),
-});
-
-type LoginValues = z.infer<typeof loginSchema>;
+const providerButtonClassName: Record<SocialAuthProvider, string> = {
+  google:
+    'w-full border border-gray-300 bg-white text-gray-900 hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400',
+  kakao:
+    'w-full border border-yellow-300 bg-[#FEE500] text-[#191919] hover:bg-[#F7DC00] disabled:bg-yellow-100 disabled:text-gray-500',
+  naver:
+    'w-full border border-green-600 bg-[#03C75A] text-white hover:bg-[#02b352] disabled:bg-green-200 disabled:text-white/80',
+};
 
 export function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = resolveRedirectTarget(searchParams);
-  const { signIn, isLoading } = useAuth();
+  const { signInWithProvider, providerStatuses, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [pendingProvider, setPendingProvider] = useState<SocialAuthProvider | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-
-  const onSubmit = async (data: LoginValues) => {
+  const onSocialLogin = async (provider: SocialAuthProvider) => {
     setError(null);
+    setPendingProvider(provider);
+
     try {
-      await signIn(data.email, data.password);
+      await signInWithProvider(provider, redirectTo);
     } catch (err) {
       if (err instanceof Error) {
-        if (err.message.includes('Invalid login credentials')) {
-          setError('이메일 또는 비밀번호가 올바르지 않습니다.');
-        } else {
-          setError(err.message);
-        }
+        setError(err.message);
       } else {
-        setError('로그인 중 오류가 발생했습니다.');
+        setError('소셜 로그인 중 오류가 발생했습니다.');
       }
+    } finally {
+      setPendingProvider(null);
     }
   };
 
@@ -57,61 +49,57 @@ export function LoginForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">로그인</CardTitle>
-        <CardDescription>
-          계정에 로그인하여 그림을 공유해보세요
-        </CardDescription>
+        <CardDescription>Google, Kakao, Naver 계정으로 로그인할 수 있습니다.</CardDescription>
       </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-              {error}
-            </div>
-          )}
+      <CardContent className="space-y-4">
+        {error && (
+          <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
-          <Input
-            label="이메일"
-            type="email"
-            placeholder="example@email.com"
-            {...register('email')}
-            error={errors.email?.message}
-            autoComplete="email"
-            leftIcon={<Mail className="h-5 w-5" />}
-          />
+        <div className="rounded-lg bg-gray-100 p-3 text-sm text-gray-700">
+          이메일/비밀번호 로그인은 지원하지 않습니다. 소셜 계정으로만 로그인할 수 있습니다.
+        </div>
 
-          <Input
-            label="비밀번호"
-            type="password"
-            placeholder="비밀번호를 입력하세요"
-            {...register('password')}
-            error={errors.password?.message}
-            autoComplete="current-password"
-            leftIcon={<Lock className="h-5 w-5" />}
-          />
-        </CardContent>
+        <div className="space-y-3">
+          {SOCIAL_AUTH_PROVIDERS.map((provider) => {
+            const providerStatus = providerStatuses[provider];
 
-        <CardFooter className="flex flex-col gap-4">
-          <Button
-            type="submit"
-            className="w-full"
-            size="lg"
-            isLoading={isLoading}
+            return (
+              <div key={provider} className="space-y-1">
+                <Button
+                  type="button"
+                  className={providerButtonClassName[provider]}
+                  size="lg"
+                  disabled={!providerStatus.available}
+                  isLoading={isLoading && pendingProvider === provider}
+                  onClick={() => onSocialLogin(provider)}
+                >
+                  {SOCIAL_AUTH_PROVIDER_LABELS[provider]}로 계속하기
+                </Button>
+
+                {!providerStatus.available && providerStatus.message && (
+                  <p className="text-xs text-amber-700">{providerStatus.message}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+
+      <CardFooter className="flex flex-col gap-4">
+        <p className="text-center text-sm text-gray-600">
+          계정이 없으신가요?{' '}
+          <Link
+            href={buildAuthRedirectLink('/register', redirectTo)}
+            className="font-medium text-purple-600 hover:text-purple-700"
           >
-            로그인
-          </Button>
-
-          <p className="text-center text-sm text-gray-600">
-            계정이 없으신가요?{' '}
-            <Link
-              href={buildAuthRedirectLink('/register', redirectTo)}
-              className="font-medium text-purple-600 hover:text-purple-700"
-            >
-              회원가입
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
+            회원가입
+          </Link>
+        </p>
+      </CardFooter>
     </Card>
   );
 }
