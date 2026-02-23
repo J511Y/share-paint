@@ -12,6 +12,7 @@ import { parseJsonResponse } from '@/lib/validation/http';
 
 interface BattleListProps {
   initialBattles?: BattleListItem[];
+  onCreateBattle?: () => void;
 }
 
 function getParticipantCount(participants: BattleListItem['participants']): number {
@@ -28,7 +29,7 @@ function getParticipantCount(participants: BattleListItem['participants']): numb
   return participants.length;
 }
 
-export function BattleList({ initialBattles = [] }: BattleListProps) {
+export function BattleList({ initialBattles = [], onCreateBattle }: BattleListProps) {
   const [battles, setBattles] = useState<BattleListItem[]>(initialBattles);
   const [loading, setLoading] = useState(!initialBattles.length);
 
@@ -69,6 +70,16 @@ export function BattleList({ initialBattles = [] }: BattleListProps) {
       <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
         <h3 className="text-lg font-medium text-gray-900">진행 중인 대결이 없습니다</h3>
         <p className="text-gray-500 mt-1">새로운 대결방을 만들어보세요!</p>
+        <p className="text-xs text-emerald-700 mt-2">
+          게스트도 바로 참가할 수 있어요. 문제가 있으면 상단에서 게스트 ID를 재발급한 뒤 다시 시도하세요.
+        </p>
+        {onCreateBattle && (
+          <div className="mt-4">
+            <Button onClick={onCreateBattle} variant="outline" size="sm">
+              방 만들기
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
