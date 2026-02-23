@@ -7,10 +7,11 @@ describe('buildAuthRedirectLink', () => {
     expect(buildAuthRedirectLink('/register', '/feed')).toBe('/register');
   });
 
-  it('encodes nested query redirect target', () => {
-    expect(buildAuthRedirectLink('/login', '/draw?room=abc&mode=fast')).toBe(
-      '/login?redirect=%2Fdraw%3Froom%3Dabc%26mode%3Dfast'
-    );
+  it('returns query object for nested query redirect target', () => {
+    expect(buildAuthRedirectLink('/login', '/draw?room=abc&mode=fast')).toEqual({
+      pathname: '/login',
+      query: { redirect: '/draw?room=abc&mode=fast' },
+    });
   });
 
   it('returns base path for empty redirect', () => {

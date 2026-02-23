@@ -131,6 +131,7 @@
   - [x] PAI-28 1차: 좋아요 API path param UUID 검증 추가 (`src/app/api/paintings/[id]/like/route.ts`) 및 params 유틸 테스트 보강
   - [x] PAI-28 2차: 보호 경로 로그인 리다이렉트에 query string 보존 (`src/lib/supabase/middleware.ts`) 및 회귀 테스트 추가
   - [x] PAI-28 3차: auth 화면 링크 리다이렉트 파라미터 URL 인코딩 표준화 (`src/lib/auth/redirect.ts`)
+  - [x] PAI-28 4차: auth 링크를 query object 기반으로 구성해 redirect 파라미터 직렬화 안정화
 - [ ] 핵심 API 성능 모니터링 지표 추가
 
 ### Realtime(Socket)
