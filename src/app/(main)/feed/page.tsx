@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { getSupabasePublicEnv } from '@/lib/supabase/env';
@@ -44,7 +45,15 @@ export default async function FeedPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">피드</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">피드</h1>
+          <p className="mt-1 text-xs text-emerald-700">
+            게스트로도 피드 탐색/좋아요/댓글 참여가 가능합니다. 문제가 있으면 상단에서 게스트 ID를 재발급하세요.
+          </p>
+        </div>
+        <Link href="/login" className="text-xs text-gray-500 hover:text-gray-700">
+          계정 연결 (선택)
+        </Link>
       </div>
 
       <Suspense fallback={<FeedSkeleton />}>
