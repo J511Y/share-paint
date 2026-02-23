@@ -33,6 +33,7 @@
   - [ ] 주요 API 오류 코드/메시지 표준화 및 재시도 정책 적용
   - [x] PAI-77 1차 hotfix: `proxy.ts` -> `middleware.ts` 복원으로 prod entry `MIDDLEWARE_INVOCATION_FAILED` 복구 시도
   - [x] guest-first abuse UX 1차: rate-limit API 429 응답에 `Retry-After` + `retryAfterMs` 표준 헤더/바디 추가
+  - [x] guest-first fallback UX 2차: 네비게이션에 게스트 ID 재발급 액션 추가 (`resetGuestIdentity`)
 - [ ] **보안**
   - [ ] Supabase RLS, API 입력 검증, 권한 검증 재점검
   - [ ] 환경 변수 및 서비스 키 노출 방지 점검

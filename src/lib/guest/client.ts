@@ -101,6 +101,14 @@ export function updateGuestDisplayName(nextName: string): GuestIdentity {
   return updated;
 }
 
+export function resetGuestIdentity(): GuestIdentity {
+  if (typeof window !== 'undefined') {
+    window.localStorage.removeItem(GUEST_STORAGE_KEY);
+  }
+
+  return ensureGuestIdentity();
+}
+
 export function getGuestActorId(guestId: string): string {
   return `guest:${guestId}`;
 }
