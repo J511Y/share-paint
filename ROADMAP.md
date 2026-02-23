@@ -145,6 +145,7 @@
 
 ### QA
 - [ ] E2E 핵심 시나리오 자동화(로그인→드로잉→저장→피드→좋아요/댓글→배틀)
+  - [x] PAI-36 1차: 랜딩 핵심 CTA 네비게이션 렌더링 테스트 추가 (`src/app/page.test.tsx`)
 - [ ] 회귀 테스트 체크리스트 운영
   - [x] 기본 시트 자동 생성기 도입 (`npm run qa:sheet`, `docs/qa/regression-sheet.md`)
 - [ ] 릴리즈 전 수동 점검 시트 유지
