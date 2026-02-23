@@ -20,6 +20,7 @@ vi.mock('@/stores/canvasStore', () => ({
 describe('ColorPicker', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     mockStoreState.brush.color = '#111827';
   });
 
@@ -77,5 +78,22 @@ describe('ColorPicker', () => {
     await user.click(toggleButton);
 
     expect(screen.getByRole('button', { name: /#A21CAF 색상/i })).toBeInTheDocument();
+  });
+
+  it('현재 색상을 즐겨찾기에 추가하고 렌더링한다', async () => {
+    const user = userEvent.setup();
+    render(<ColorPicker />);
+
+    await user.click(screen.getByRole('button', { name: /현재 색상 즐겨찾기 추가/i }));
+
+    expect(screen.getByRole('button', { name: /즐겨찾기 색상 #111827 선택됨/i })).toBeInTheDocument();
+  });
+
+  it('저장된 즐겨찾기를 로드한다', () => {
+    localStorage.setItem('paintshare.favorite.colors.v1', JSON.stringify(['#EF4444']));
+
+    render(<ColorPicker />);
+
+    expect(screen.getByRole('button', { name: /즐겨찾기 색상 #EF4444/i })).toBeInTheDocument();
   });
 });
