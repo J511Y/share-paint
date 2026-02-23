@@ -133,6 +133,7 @@
   - [x] PAI-28 3차: auth 화면 링크 리다이렉트 파라미터 URL 인코딩 표준화 (`src/lib/auth/redirect.ts`)
   - [x] PAI-28 4차: auth 링크를 query object 기반으로 구성해 redirect 파라미터 직렬화 안정화
   - [x] PAI-28 5차: auth 링크 redirect를 URLSearchParams 문자열 직렬화로 재고정 (nested query 보존)
+  - [x] PAI-28 6차: 잘못 분리된 redirect 쿼리(mode 등) 재조합 로직 추가 (`resolveRedirectTarget`)
 - [ ] 핵심 API 성능 모니터링 지표 추가
 
 ### Realtime(Socket)

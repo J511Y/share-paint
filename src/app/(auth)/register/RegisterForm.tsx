@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Mail, User, Lock, UserCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { buildAuthRedirectLink } from '@/lib/auth/redirect';
+import { buildAuthRedirectLink, resolveRedirectTarget } from '@/lib/auth/redirect';
 import { Button, Input, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui';
 
 const registerSchema = z.object({
@@ -29,7 +29,7 @@ type RegisterValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/feed';
+  const redirectTo = resolveRedirectTarget(searchParams);
   const { signUp, isLoading } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
