@@ -1,6 +1,10 @@
 'use client';
 
-import { QUICK_BRUSH_SIZES, QUICK_OPACITY_LEVELS } from '@/constants/drawing';
+import {
+  QUICK_BRUSH_SIZES,
+  QUICK_OPACITY_LEVELS,
+  QUICK_OPACITY_LEVELS_BY_PRESET,
+} from '@/constants/drawing';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +21,7 @@ export function BrushSizeSlider({ className }: BrushSizeSliderProps) {
   const brushSize = useCanvasStore((state) => state.brush.size);
   const brushColor = useCanvasStore((state) => state.brush.color);
   const brushOpacity = useCanvasStore((state) => state.brush.opacity);
+  const activePreset = useCanvasStore((state) => state.activePreset);
   const setBrushSize = useCanvasStore((state) => state.setBrushSize);
   const setBrushOpacity = useCanvasStore((state) => state.setBrushOpacity);
 
@@ -27,6 +32,9 @@ export function BrushSizeSlider({ className }: BrushSizeSliderProps) {
   const handleOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBrushOpacity(Number(e.target.value) / 100);
   };
+
+  const quickOpacityLevels =
+    QUICK_OPACITY_LEVELS_BY_PRESET[activePreset] ?? QUICK_OPACITY_LEVELS;
 
   return (
     <div className={cn('flex flex-col gap-3 p-3 bg-gray-100 rounded-lg', className)}>
@@ -83,7 +91,7 @@ export function BrushSizeSlider({ className }: BrushSizeSliderProps) {
           <span className="text-xs font-medium text-gray-900">{Math.round(brushOpacity * 100)}%</span>
         </div>
         <div className="mb-2 flex flex-wrap gap-1.5">
-          {QUICK_OPACITY_LEVELS.map((opacity) => {
+          {quickOpacityLevels.map((opacity) => {
             const percent = Math.round(opacity * 100);
             const isActive = Math.abs(brushOpacity - opacity) < 0.01;
 

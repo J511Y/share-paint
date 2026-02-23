@@ -54,6 +54,14 @@ export const QUICK_BRUSH_SIZES = [2, 4, 8, 12, 18, 26] as const;
 
 export const QUICK_OPACITY_LEVELS = [0.2, 0.35, 0.5, 0.7, 0.85, 1] as const;
 
+export const QUICK_OPACITY_LEVELS_BY_PRESET: Record<DrawingPresetId, readonly number[]> = {
+  pencil: [0.35, 0.5, 0.7, 0.85, 0.95, 1],
+  marker: [0.2, 0.35, 0.5, 0.65, 0.8, 0.95],
+  brush: [0.25, 0.4, 0.55, 0.7, 0.85, 1],
+  highlighter: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
+  eraser: [1],
+};
+
 export const QUICK_COLOR_PRESETS = [
   { hex: '#111827', name: '차콜' },
   { hex: '#EF4444', name: '레드' },

@@ -2,11 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrushSizeSlider } from './BrushSizeSlider';
+import type { DrawingPresetId } from '@/types/canvas';
 
 const mockSetBrushSize = vi.fn();
 const mockSetBrushOpacity = vi.fn();
 
 const mockStoreState = {
+  activePreset: 'pencil' as DrawingPresetId,
   brush: { color: '#000000', size: 5, opacity: 1, style: 'pencil' as const },
   setBrushSize: mockSetBrushSize,
   setBrushOpacity: mockSetBrushOpacity,
@@ -21,6 +23,7 @@ vi.mock('@/stores/canvasStore', () => ({
 describe('BrushSizeSlider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockStoreState.activePreset = 'pencil';
     mockStoreState.brush.size = 5;
     mockStoreState.brush.color = '#000000';
     mockStoreState.brush.opacity = 1;
@@ -112,5 +115,23 @@ describe('BrushSizeSlider', () => {
     fireEvent.change(opacitySlider, { target: { value: '35' } });
 
     expect(mockSetBrushOpacity).toHaveBeenCalledWith(0.35);
+  });
+
+  it('형광펜 프리셋일 때 낮은 농도 퀵 프리셋을 노출한다', () => {
+    mockStoreState.activePreset = 'highlighter';
+
+    render(<BrushSizeSlider />);
+
+    expect(screen.getByRole('button', { name: '농도 10%' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '농도 60%' })).toBeInTheDocument();
+  });
+
+  it('지우개 프리셋일 때 100% 농도만 노출한다', () => {
+    mockStoreState.activePreset = 'eraser';
+
+    render(<BrushSizeSlider />);
+
+    expect(screen.getByRole('button', { name: '농도 100%' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '농도 50%' })).not.toBeInTheDocument();
   });
 });
