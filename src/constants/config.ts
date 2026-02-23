@@ -9,7 +9,8 @@ export const CANVAS_CONFIG = {
 
 // 브러시 기본 설정
 export const DEFAULT_BRUSH = {
-  color: '#000000',
-  size: 5,
-  opacity: 1,
+  color: '#111827',
+  size: 2,
+  opacity: 0.92,
+  style: 'pencil',
 } as const;

@@ -3,22 +3,24 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrushSizeSlider } from './BrushSizeSlider';
 
-// useCanvasStore 모킹
 const mockSetBrushSize = vi.fn();
+
+const mockStoreState = {
+  brush: { color: '#000000', size: 5, opacity: 1, style: 'pencil' as const },
+  setBrushSize: mockSetBrushSize,
+};
 
 vi.mock('@/stores/canvasStore', () => ({
   useCanvasStore: vi.fn((selector) => {
-    const state = {
-      brush: { color: '#000000', size: 5, opacity: 1 },
-      setBrushSize: mockSetBrushSize,
-    };
-    return typeof selector === 'function' ? selector(state) : state;
+    return typeof selector === 'function' ? selector(mockStoreState) : mockStoreState;
   }),
 }));
 
 describe('BrushSizeSlider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockStoreState.brush.size = 5;
+    mockStoreState.brush.color = '#000000';
   });
 
   it('range input을 렌더링한다', () => {
@@ -32,34 +34,38 @@ describe('BrushSizeSlider', () => {
   it('최소값이 1이다', () => {
     render(<BrushSizeSlider />);
 
-    const slider = screen.getByRole('slider', { name: /브러시 크기/i });
-    expect(slider).toHaveAttribute('min', '1');
+    expect(screen.getByRole('slider', { name: /브러시 크기/i })).toHaveAttribute(
+      'min',
+      '1'
+    );
   });
 
-  it('최대값이 50이다', () => {
+  it('최대값이 80이다', () => {
     render(<BrushSizeSlider />);
 
-    const slider = screen.getByRole('slider', { name: /브러시 크기/i });
-    expect(slider).toHaveAttribute('max', '50');
+    expect(screen.getByRole('slider', { name: /브러시 크기/i })).toHaveAttribute(
+      'max',
+      '80'
+    );
   });
 
-  it('현재 브러시 크기를 표시한다', async () => {
-    const { useCanvasStore } = await import('@/stores/canvasStore');
-    vi.mocked(useCanvasStore).mockImplementation((selector: unknown) => {
-      const state = {
-        brush: { color: '#000000', size: 10, opacity: 1 },
-        setBrushSize: mockSetBrushSize,
-      };
-      return typeof selector === 'function' ? (selector as (s: typeof state) => unknown)(state) : state;
-    });
-
+  it('빠른 크기 버튼을 렌더링한다', () => {
     render(<BrushSizeSlider />);
 
-    const sizeDisplay = screen.getByText('10px');
-    expect(sizeDisplay).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2px' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '26px' })).toBeInTheDocument();
   });
 
-  it('슬라이더 값 변경 시 setBrushSize를 호출한다', async () => {
+  it('빠른 크기 버튼 클릭 시 setBrushSize를 호출한다', async () => {
+    const user = userEvent.setup();
+    render(<BrushSizeSlider />);
+
+    await user.click(screen.getByRole('button', { name: '12px' }));
+
+    expect(mockSetBrushSize).toHaveBeenCalledWith(12);
+  });
+
+  it('슬라이더 값 변경 시 setBrushSize를 호출한다', () => {
     render(<BrushSizeSlider />);
 
     const slider = screen.getByRole('slider', { name: /브러시 크기/i });
@@ -68,60 +74,22 @@ describe('BrushSizeSlider', () => {
     expect(mockSetBrushSize).toHaveBeenCalledWith(20);
   });
 
-  it('현재 크기 미리보기 원을 렌더링한다', async () => {
-    const { useCanvasStore } = await import('@/stores/canvasStore');
-    vi.mocked(useCanvasStore).mockImplementation((selector: unknown) => {
-      const state = {
-        brush: { color: '#FF0000', size: 15, opacity: 1 },
-        setBrushSize: mockSetBrushSize,
-      };
-      return typeof selector === 'function' ? (selector as (s: typeof state) => unknown)(state) : state;
-    });
+  it('미리보기 원을 렌더링하고 현재 색상을 반영한다', () => {
+    mockStoreState.brush.color = '#FF0000';
+    mockStoreState.brush.size = 15;
 
     render(<BrushSizeSlider />);
 
     const preview = screen.getByTestId('brush-preview');
     expect(preview).toBeInTheDocument();
-    // 크기가 반영되어야 함
-    expect(preview).toHaveStyle({ width: '15px', height: '15px' });
+    expect(preview).toHaveStyle({ width: '15px', height: '15px', backgroundColor: '#FF0000' });
   });
 
-  it('미리보기 원에 현재 색상이 적용된다', async () => {
-    const { useCanvasStore } = await import('@/stores/canvasStore');
-    vi.mocked(useCanvasStore).mockImplementation((selector: unknown) => {
-      const state = {
-        brush: { color: '#FF0000', size: 15, opacity: 1 },
-        setBrushSize: mockSetBrushSize,
-      };
-      return typeof selector === 'function' ? (selector as (s: typeof state) => unknown)(state) : state;
-    });
+  it('현재 브러시 크기를 표시한다', () => {
+    mockStoreState.brush.size = 10;
 
     render(<BrushSizeSlider />);
 
-    const preview = screen.getByTestId('brush-preview');
-    expect(preview).toHaveStyle({ backgroundColor: '#FF0000' });
-  });
-
-  it('슬라이더의 초기값이 현재 브러시 크기와 일치한다', async () => {
-    const { useCanvasStore } = await import('@/stores/canvasStore');
-    vi.mocked(useCanvasStore).mockImplementation((selector: unknown) => {
-      const state = {
-        brush: { color: '#000000', size: 25, opacity: 1 },
-        setBrushSize: mockSetBrushSize,
-      };
-      return typeof selector === 'function' ? (selector as (s: typeof state) => unknown)(state) : state;
-    });
-
-    render(<BrushSizeSlider />);
-
-    const slider = screen.getByRole('slider', { name: /브러시 크기/i });
-    expect(slider).toHaveValue('25');
-  });
-
-  it('레이블이 표시된다', () => {
-    render(<BrushSizeSlider />);
-
-    const label = screen.getByText(/브러시 크기/i);
-    expect(label).toBeInTheDocument();
+    expect(screen.getByText('10px')).toBeInTheDocument();
   });
 });

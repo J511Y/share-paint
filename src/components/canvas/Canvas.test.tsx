@@ -32,7 +32,7 @@ vi.mock('@/hooks/useCanvas', () => ({
 // useCanvasStore 모킹
 vi.mock('@/stores/canvasStore', () => ({
   useCanvasStore: vi.fn((selector) => {
-    const state = { tool: 'pen' };
+    const state = { tool: 'pen', brush: { style: 'pencil' } };
     return typeof selector === 'function' ? selector(state) : state;
   }),
 }));
@@ -166,7 +166,7 @@ describe('Canvas - Fill Tool', () => {
     // fill 도구로 설정
     const { useCanvasStore } = await import('@/stores/canvasStore');
     vi.mocked(useCanvasStore).mockImplementation((selector: unknown) => {
-      const state = { tool: 'fill' };
+      const state = { tool: 'fill', brush: { style: 'pencil' } };
       return typeof selector === 'function' ? (selector as (s: typeof state) => unknown)(state) : state;
     });
   });
@@ -298,7 +298,7 @@ describe('Canvas - 터치 최적화', () => {
   it('fill 도구일 때 터치 시작에서 startDrawing을 호출하지 않는다', async () => {
     const { useCanvasStore } = await import('@/stores/canvasStore');
     vi.mocked(useCanvasStore).mockImplementation((selector: unknown) => {
-      const state = { tool: 'fill' };
+      const state = { tool: 'fill', brush: { style: 'pencil' } };
       return typeof selector === 'function' ? (selector as (s: typeof state) => unknown)(state) : state;
     });
 
@@ -330,7 +330,7 @@ describe('Canvas - handleClick 조건 분기', () => {
   it('fill 도구가 아닐 때 클릭해도 fill을 호출하지 않는다', async () => {
     const { useCanvasStore } = await import('@/stores/canvasStore');
     vi.mocked(useCanvasStore).mockImplementation((selector: unknown) => {
-      const state = { tool: 'pen' };
+      const state = { tool: 'pen', brush: { style: 'pencil' } };
       return typeof selector === 'function' ? (selector as (s: typeof state) => unknown)(state) : state;
     });
 
@@ -345,7 +345,7 @@ describe('Canvas - handleClick 조건 분기', () => {
   it('fill 도구일 때 마우스 다운에서 startDrawing을 호출하지 않는다', async () => {
     const { useCanvasStore } = await import('@/stores/canvasStore');
     vi.mocked(useCanvasStore).mockImplementation((selector: unknown) => {
-      const state = { tool: 'fill' };
+      const state = { tool: 'fill', brush: { style: 'pencil' } };
       return typeof selector === 'function' ? (selector as (s: typeof state) => unknown)(state) : state;
     });
 
