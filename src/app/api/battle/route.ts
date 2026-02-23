@@ -14,6 +14,7 @@ import {
 } from '@/lib/validation/schemas';
 import { resolveApiActor } from '@/lib/api-actor';
 import { consumeRateLimit } from '@/lib/security/action-rate-limit';
+import { rateLimitJson } from '@/lib/security/rate-limit-response';
 
 export const GET = apiHandler(async ({ req, requestId }) => {
   const supabase = await createClient();
@@ -65,7 +66,7 @@ export const POST = apiHandler(async ({ req, requestId }) => {
 
   const rateLimit = consumeRateLimit(`battle:create:${actor.actorId}`, 6, 10 * 60 * 1000);
   if (!rateLimit.allowed) {
-    return NextResponse.json({ error: '대결방 생성이 너무 빠릅니다.' }, { status: 429 });
+    return rateLimitJson('대결방 생성이 너무 빠릅니다.', rateLimit.retryAfterMs);
   }
 
   logger.info('Creating battle room', { requestId, actorId: actor.actorId });

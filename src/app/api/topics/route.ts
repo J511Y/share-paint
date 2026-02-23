@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { ApiTopicSchema, TopicCreatePayloadSchema } from '@/lib/validation/schemas';
 import { resolveApiActor } from '@/lib/api-actor';
 import { consumeRateLimit } from '@/lib/security/action-rate-limit';
+import { rateLimitJson } from '@/lib/security/rate-limit-response';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
 
   const rateLimit = consumeRateLimit(`topic:create:${actor.actorId}`, 4, 60 * 1000);
   if (!rateLimit.allowed) {
-    return NextResponse.json({ error: '주제 생성 요청이 너무 빠릅니다.' }, { status: 429 });
+    return rateLimitJson('주제 생성 요청이 너무 빠릅니다.', rateLimit.retryAfterMs);
   }
 
   try {

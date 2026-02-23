@@ -7,6 +7,7 @@ import { BattleJoinPayloadSchema } from '@/lib/validation/schemas';
 import { getUuidParam } from '@/lib/validation/params';
 import { resolveApiActor } from '@/lib/api-actor';
 import { consumeRateLimit } from '@/lib/security/action-rate-limit';
+import { rateLimitJson } from '@/lib/security/rate-limit-response';
 import type { Database } from '@/types/database';
 
 export const POST = apiHandler(async ({ req, params, requestId }) => {
@@ -26,7 +27,7 @@ export const POST = apiHandler(async ({ req, params, requestId }) => {
 
   const rateLimit = consumeRateLimit(`battle:join:${actor.actorId}:${battleId}`, 20, 60 * 1000);
   if (!rateLimit.allowed) {
-    return NextResponse.json({ error: '입장 요청이 너무 빠릅니다.' }, { status: 429 });
+    return rateLimitJson('입장 요청이 너무 빠릅니다.', rateLimit.retryAfterMs);
   }
 
   let password = '';
