@@ -26,7 +26,7 @@ export default function BattleLobbyPage() {
         </Button>
       </div>
 
-      <BattleList />
+      <BattleList onCreateBattle={() => setIsCreateModalOpen(true)} />
 
       <CreateBattleModal
         isOpen={isCreateModalOpen}
