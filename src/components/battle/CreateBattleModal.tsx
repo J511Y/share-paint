@@ -6,7 +6,7 @@ import { X, Lock, Users, Clock, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
-import { ApiBattleSchema } from '@/lib/validation/schemas';
+import { ApiBattleSchema, ApiErrorSchema } from '@/lib/validation/schemas';
 import { parseJsonResponse } from '@/lib/validation/http';
 import { withGuestHeaders } from '@/lib/guest/client';
 
@@ -44,12 +44,21 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
         })
       );
 
-      if (!res.ok) throw new Error('Failed to create battle');
+      if (!res.ok) {
+        let errorMessage = '대결방 생성에 실패했습니다.';
+        try {
+          const apiError = await parseJsonResponse(res, ApiErrorSchema);
+          errorMessage = apiError.message;
+        } catch {
+          // no-op
+        }
+        throw new Error(errorMessage);
+      }
 
       const battle = await parseJsonResponse(res, ApiBattleSchema);
       router.push(`/battle/${battle.id}`);
-    } catch {
-      toast.error('대결방 생성에 실패했습니다.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '대결방 생성에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }

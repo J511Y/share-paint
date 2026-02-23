@@ -5,7 +5,7 @@ import { apiHandler } from '@/lib/api-handler';
 import { devLogger as logger } from '@/lib/logger';
 import type { BattleInsert, Database } from '@/types/database';
 import { hashBattlePassword } from '@/lib/security/battle-password';
-import { apiErrorResponse } from '@/lib/api-error';
+import { apiErrorResponse, createApiError } from '@/lib/api-error';
 import {
   ApiBattleSchema,
   BattleArraySchema,
@@ -14,7 +14,21 @@ import {
 } from '@/lib/validation/schemas';
 import { resolveApiActor } from '@/lib/api-actor';
 import { consumeRateLimit } from '@/lib/security/action-rate-limit';
-import { rateLimitJson } from '@/lib/security/rate-limit-response';
+import { isRlsOrPermissionError, toErrorDetails } from '@/lib/supabase/errors';
+import { resolveWriteClient } from '@/lib/supabase/write-client';
+
+function rateLimitedResponse(message: string, retryAfterMs: number, requestId: string) {
+  const retryAfterSec = Math.max(1, Math.ceil(retryAfterMs / 1000));
+  return NextResponse.json(
+    createApiError('RATE_LIMITED', message, requestId, { retryAfterMs }),
+    {
+      status: 429,
+      headers: {
+        'Retry-After': String(retryAfterSec),
+      },
+    }
+  );
+}
 
 export const GET = apiHandler(async ({ req, requestId }) => {
   const supabase = await createClient();
@@ -58,15 +72,16 @@ export const GET = apiHandler(async ({ req, requestId }) => {
 
 export const POST = apiHandler(async ({ req, requestId }) => {
   const supabase = await createClient();
+  const writeClient = resolveWriteClient(supabase);
   const actor = await resolveApiActor(req, supabase);
 
   if (!actor) {
-    return NextResponse.json({ error: 'Guest identity is required.' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', '게스트 식별 정보가 필요합니다.', requestId);
   }
 
   const rateLimit = consumeRateLimit(`battle:create:${actor.actorId}`, 6, 10 * 60 * 1000);
   if (!rateLimit.allowed) {
-    return rateLimitJson('대결방 생성이 너무 빠릅니다.', rateLimit.retryAfterMs);
+    return rateLimitedResponse('대결방 생성이 너무 빠릅니다.', rateLimit.retryAfterMs, requestId);
   }
 
   logger.info('Creating battle room', { requestId, actorId: actor.actorId });
@@ -106,7 +121,7 @@ export const POST = apiHandler(async ({ req, requestId }) => {
     topic: payload.topic || null,
   } as BattleInsert;
 
-  const { data: rawBattleResult, error: battleError } = await supabase
+  const { data: rawBattleResult, error: battleError } = await writeClient
     .from('battles')
     .insert(battleData)
     .select()
@@ -117,12 +132,17 @@ export const POST = apiHandler(async ({ req, requestId }) => {
       requestId,
       actorId: actor.actorId,
     });
+
+    if (isRlsOrPermissionError(battleError)) {
+      return apiErrorResponse(403, 'FORBIDDEN', '대결방 생성 권한이 없습니다.', requestId, toErrorDetails(battleError));
+    }
+
     return apiErrorResponse(
       500,
       'INTERNAL_ERROR',
       '대전 생성 중 오류가 발생했습니다.',
       requestId,
-      battleError?.message
+      toErrorDetails(battleError)
     );
   }
 
@@ -134,6 +154,7 @@ export const POST = apiHandler(async ({ req, requestId }) => {
       issues: battleParsed.error.issues,
       battleId: battleResult.id,
     });
+
     return apiErrorResponse(500, 'INTERNAL_ERROR', '생성된 대전 데이터 형식이 유효하지 않습니다.', requestId);
   }
 
@@ -144,7 +165,7 @@ export const POST = apiHandler(async ({ req, requestId }) => {
     guest_name: actor.userId ? null : actor.displayName,
   } as Database['public']['Tables']['battle_participants']['Insert'];
 
-  const { error: joinError } = await supabase.from('battle_participants').insert(participantInsert);
+  const { error: joinError } = await writeClient.from('battle_participants').insert(participantInsert);
 
   if (joinError) {
     logger.error('Failed to add host as participant', joinError, {
@@ -153,14 +174,33 @@ export const POST = apiHandler(async ({ req, requestId }) => {
       actorId: actor.actorId,
     });
 
-    await supabase.from('battles').delete().eq('id', battleParsed.data.id);
+    const { error: rollbackError } = await writeClient.from('battles').delete().eq('id', battleParsed.data.id);
+
+    if (rollbackError) {
+      logger.error('Failed to rollback battle after participant insert failure', rollbackError, {
+        requestId,
+        battleId: battleParsed.data.id,
+        actorId: actor.actorId,
+      });
+    }
+
+    const details = {
+      joinError: toErrorDetails(joinError),
+      rollbackAttempted: true,
+      rollbackSucceeded: !rollbackError,
+      rollbackError: toErrorDetails(rollbackError),
+    };
+
+    if (isRlsOrPermissionError(joinError)) {
+      return apiErrorResponse(403, 'FORBIDDEN', '호스트 참가자 등록 권한이 없습니다.', requestId, details);
+    }
 
     return apiErrorResponse(
       500,
       'INTERNAL_ERROR',
       '대전 참가자 등록 중 오류가 발생했습니다.',
       requestId,
-      joinError.message
+      details
     );
   }
 
