@@ -74,23 +74,6 @@ vi.mock('@/components/canvas', async () => {
 
   return {
     Canvas: MockCanvas,
-    CanvasToolbar: ({
-      className,
-      horizontal,
-    }: {
-      className?: string;
-      horizontal?: boolean;
-    }) => (
-      <div
-        data-testid="mock-toolbar"
-        data-horizontal={horizontal}
-        className={className}
-        role="toolbar"
-        aria-label="Drawing tools"
-      >
-        Toolbar
-      </div>
-    ),
     ColorPicker: ({ className }: { className?: string }) => (
       <div data-testid="mock-color-picker" className={className}>
         ColorPicker
@@ -149,6 +132,7 @@ const createMockAnchorElement = (): HTMLAnchorElement => {
 describe('DrawingCanvas', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     mockResponsiveCanvas.width = 800;
     mockResponsiveCanvas.height = 600;
     mockResponsiveCanvas.isMobile = false;
@@ -167,28 +151,29 @@ describe('DrawingCanvas', () => {
     render(<DrawingCanvas />);
 
     expect(screen.getByTestId('mock-canvas')).toBeInTheDocument();
-    expect(screen.getByTestId('mock-toolbar')).toBeInTheDocument();
     expect(screen.getByTestId('mock-color-picker')).toBeInTheDocument();
     expect(screen.getByTestId('mock-brush-slider')).toBeInTheDocument();
     expect(screen.getByTestId('quick-bar-desktop')).toBeInTheDocument();
     expect(screen.getByTestId('detail-panel-desktop')).toBeInTheDocument();
   });
 
-  it('메인 랜드마크와 제목을 표시한다', () => {
+  it('메인 랜드마크와 제목, 활성 도구 힌트를 표시한다', () => {
     render(<DrawingCanvas />);
 
     expect(screen.getByRole('main')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('그림 그리기');
+    expect(screen.getByText('현재 도구')).toBeInTheDocument();
+    expect(screen.getAllByText('기본 펜').length).toBeGreaterThan(0);
   });
 
   it('도구 버튼 클릭 시 setPreset을 호출한다', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);
 
-    await user.click(screen.getByRole('button', { name: '마커 도구' }));
+    await user.click(screen.getByRole('button', { name: '마커 펜' }));
     expect(mockSetPreset).toHaveBeenCalledWith('marker');
 
-    await user.click(screen.getByRole('button', { name: '지우개 도구' }));
+    await user.click(screen.getByRole('button', { name: '지우개' }));
     expect(mockSetPreset).toHaveBeenCalledWith('eraser');
   });
 
@@ -236,13 +221,24 @@ describe('DrawingCanvas', () => {
     expect(screen.getByTestId('detail-panel-desktop')).toBeInTheDocument();
   });
 
-  it('도움말 아이콘 클릭 시 안내 패널을 표시한다', async () => {
+  it('단축키 도움말 버튼 클릭 시 툴팁을 표시한다', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);
 
-    await user.click(screen.getByRole('button', { name: '새 드로잉 UX 안내' }));
+    await user.click(screen.getByRole('button', { name: '단축키' }));
 
-    expect(screen.getByText('새 드로잉 UX 안내')).toBeInTheDocument();
+    expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
+    expect(screen.getByText('1~5: 펜 프리셋 전환')).toBeInTheDocument();
+  });
+
+  it('초기 진입 시 마이크로 힌트를 보여준다', async () => {
+    render(<DrawingCanvas />);
+
+    expect(await screen.findByText('처음이면 이것만 기억하세요')).toBeInTheDocument();
+    expect(screen.getByText(/하단 빠른 바에서 기본\/마커\/브러시/i)).toBeInTheDocument();
+    expect(screen.getByText(/− \/ \+ 와 크기 칩/i)).toBeInTheDocument();
+    expect(screen.getByText(/빠른 팔레트에서 탭하고/i)).toBeInTheDocument();
+    expect(screen.getByText(/불투명도 칩과 슬라이더/i)).toBeInTheDocument();
   });
 
   it('다운로드 버튼 클릭 시 이미지를 다운로드한다', async () => {
@@ -300,9 +296,8 @@ describe('DrawingCanvas', () => {
     expect(screen.getByTestId('quick-bar-mobile')).toBeInTheDocument();
     expect(screen.queryByTestId('detail-panel-mobile')).not.toBeInTheDocument();
 
-    const pencilButton = screen.getByRole('button', { name: '연필 도구' });
-    expect(pencilButton).toHaveClass('h-11');
-    expect(pencilButton).toHaveClass('w-11');
+    const pencilButton = screen.getByRole('button', { name: '기본 펜' });
+    expect(pencilButton).toHaveClass('min-h-[44px]');
 
     const canvas = screen.getByTestId('mock-canvas');
     expect(canvas).toHaveAttribute('data-width', '343');

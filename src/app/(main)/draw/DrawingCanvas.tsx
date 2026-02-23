@@ -1,11 +1,13 @@
 'use client';
 
-import { useRef, useCallback, useEffect, useId, useState } from 'react';
+import { useRef, useCallback, useEffect, useId, useState, useMemo } from 'react';
 import {
   CircleHelp,
   Download,
   Eraser,
   Highlighter,
+  Keyboard,
+  PaintBucket,
   Paintbrush,
   PanelRightClose,
   PanelRightOpen,
@@ -18,7 +20,6 @@ import {
 } from 'lucide-react';
 import {
   Canvas,
-  CanvasToolbar,
   ColorPicker,
   BrushSizeSlider,
   SavePaintingModal,
@@ -30,10 +31,14 @@ import { useCanvasStore } from '@/stores/canvasStore';
 import { useResponsiveCanvas } from '@/hooks/useResponsiveCanvas';
 import { cn } from '@/lib/utils';
 import { useActor } from '@/hooks/useActor';
+import { DRAWING_PRESET_MAP } from '@/constants/drawing';
+import type { DrawingPresetId } from '@/types/canvas';
 
 interface DrawingCanvasProps {
   className?: string;
 }
+
+const MICRO_HINT_DISMISS_STORAGE_KEY = 'paintshare.draw.microhints.dismissed.v2';
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -48,17 +53,72 @@ const isEditableTarget = (target: EventTarget | null) => {
 const clampSize = (size: number) => Math.max(1, Math.min(80, size));
 
 const quickTools = [
-  { id: 'pencil', label: '연필 도구', icon: Pencil },
-  { id: 'marker', label: '마커 도구', icon: PenLine },
-  { id: 'brush', label: '브러시 도구', icon: Paintbrush },
-  { id: 'highlighter', label: '형광펜 도구', icon: Highlighter },
-  { id: 'eraser', label: '지우개 도구', icon: Eraser },
+  {
+    id: 'pencil',
+    label: '기본 펜',
+    hint: '얇고 또렷한 기본 선',
+    icon: Pencil,
+    primary: true,
+  },
+  {
+    id: 'marker',
+    label: '마커 펜',
+    hint: '균일하고 또렷한 선',
+    icon: PenLine,
+    primary: false,
+  },
+  {
+    id: 'brush',
+    label: '브러시 펜',
+    hint: '부드럽고 풍부한 질감',
+    icon: Paintbrush,
+    primary: false,
+  },
+  {
+    id: 'highlighter',
+    label: '형광 펜',
+    hint: '투명하게 강조',
+    icon: Highlighter,
+    primary: false,
+  },
+  {
+    id: 'eraser',
+    label: '지우개',
+    hint: '문지르면 바로 지워져요',
+    icon: Eraser,
+    primary: false,
+  },
+] as const;
+
+const onboardingHints = [
+  {
+    id: 'pen',
+    title: '펜',
+    description: '하단 빠른 바에서 기본/마커/브러시를 한 번 탭해 즉시 전환하세요.',
+  },
+  {
+    id: 'size',
+    title: '크기',
+    description: '상세 패널의 − / + 와 크기 칩으로 굵기를 바로 맞출 수 있어요.',
+  },
+  {
+    id: 'color',
+    title: '색상',
+    description: '빠른 팔레트에서 탭하고, 자주 쓰는 색은 즐겨찾기로 고정하세요.',
+  },
+  {
+    id: 'opacity',
+    title: '농도',
+    description: '불투명도 칩과 슬라이더로 번짐·투명감을 직관적으로 조정하세요.',
+  },
 ] as const;
 
 export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const canvasRef = useRef<CanvasHandle>(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isTipsOpen, setIsTipsOpen] = useState(false);
+  const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false);
+  const [showMicroHints, setShowMicroHints] = useState(false);
   const { actor } = useActor();
 
   const { width, height, isMobile } = useResponsiveCanvas();
@@ -79,7 +139,21 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     : isDesktopDetailPanelOpen;
   const detailPanelId = useId();
   const tipsPanelId = useId();
+  const shortcutPanelId = useId();
   const drawingTopic = '';
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const dismissed = localStorage.getItem(MICRO_HINT_DISMISS_STORAGE_KEY) === '1';
+    const frameId = window.requestAnimationFrame(() => {
+      setShowMicroHints(!dismissed);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, []);
 
   const handleUndo = useCallback(() => {
     canvasRef.current?.undo();
@@ -124,6 +198,45 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
     setIsDesktopDetailPanelOpen((prev) => !prev);
   }, [isMobile]);
+
+  const dismissMicroHints = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(MICRO_HINT_DISMISS_STORAGE_KEY, '1');
+    }
+    setShowMicroHints(false);
+  }, []);
+
+  const toggleFillMode = useCallback(() => {
+    if (activeTool === 'fill') {
+      setPreset(activePreset);
+      return;
+    }
+
+    setTool('fill');
+  }, [activePreset, activeTool, setPreset, setTool]);
+
+  const activeToolMeta = useMemo(() => {
+    if (activeTool === 'fill') {
+      return {
+        label: '영역 채우기',
+        hint: '닫힌 영역을 한 번 탭하면 현재 색으로 채워집니다.',
+      };
+    }
+
+    const quickTool = quickTools.find((tool) => tool.id === activePreset);
+    if (quickTool) {
+      return {
+        label: quickTool.label,
+        hint: quickTool.hint,
+      };
+    }
+
+    const presetConfig = DRAWING_PRESET_MAP[activePreset as DrawingPresetId];
+    return {
+      label: presetConfig.label,
+      hint: presetConfig.description,
+    };
+  }, [activePreset, activeTool]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -192,12 +305,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     setTool,
   ]);
 
-  const quickButtonSizeClass = isMobile ? 'h-11 w-11' : 'h-10 w-10';
-  const quickButtonIconClass = isMobile ? 'h-5 w-5' : 'h-4 w-4';
+  const quickButtonBaseClass =
+    'inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-xl border transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500';
 
   const quickBarButtons = (
     <>
-      {quickTools.map(({ id, label, icon: Icon }) => {
+      {quickTools.map(({ id, label, icon: Icon, primary }) => {
         const isActive = activePreset === id && activeTool !== 'fill';
 
         return (
@@ -208,14 +321,25 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             aria-label={label}
             aria-pressed={isActive}
             className={cn(
-              'inline-flex shrink-0 items-center justify-center rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500',
-              quickButtonSizeClass,
+              quickButtonBaseClass,
+              'gap-1.5 px-3 text-sm font-medium',
               isActive
                 ? 'border-purple-600 bg-purple-600 text-white'
                 : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-100'
             )}
           >
-            <Icon className={quickButtonIconClass} />
+            <Icon className="h-4 w-4" />
+            <span>{label}</span>
+            {primary && (
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
+                  isActive ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700'
+                )}
+              >
+                기본
+              </span>
+            )}
           </button>
         );
       })}
@@ -228,11 +352,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         aria-label="실행취소"
         disabled={!canUndo}
         className={cn(
-          'inline-flex shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50',
-          quickButtonSizeClass
+          quickButtonBaseClass,
+          'gap-1.5 border-gray-200 bg-white px-3 text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
         )}
       >
-        <Undo2 className={quickButtonIconClass} />
+        <Undo2 className="h-4 w-4" />
+        <span>실행취소</span>
       </button>
 
       <button
@@ -241,11 +366,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         aria-label="다시실행"
         disabled={!canRedo}
         className={cn(
-          'inline-flex shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50',
-          quickButtonSizeClass
+          quickButtonBaseClass,
+          'gap-1.5 border-gray-200 bg-white px-3 text-sm text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50'
         )}
       >
-        <Redo2 className={quickButtonIconClass} />
+        <Redo2 className="h-4 w-4" />
+        <span>다시실행</span>
       </button>
 
       <button
@@ -253,11 +379,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         onClick={handleSave}
         aria-label="저장"
         className={cn(
-          'inline-flex shrink-0 items-center justify-center rounded-lg border border-purple-600 bg-purple-600 text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500',
-          quickButtonSizeClass
+          quickButtonBaseClass,
+          'gap-1.5 border-purple-600 bg-purple-600 px-3 text-sm text-white hover:bg-purple-700'
         )}
       >
-        <Save className={quickButtonIconClass} />
+        <Save className="h-4 w-4" />
+        <span>저장</span>
       </button>
 
       <button
@@ -267,15 +394,16 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         aria-expanded={isDetailPanelOpen}
         aria-controls={detailPanelId}
         className={cn(
-          'inline-flex shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500',
-          quickButtonSizeClass
+          quickButtonBaseClass,
+          'gap-1.5 border-gray-200 bg-white px-3 text-sm text-gray-700 hover:bg-gray-100'
         )}
       >
         {isDetailPanelOpen ? (
-          <PanelRightClose className={quickButtonIconClass} />
+          <PanelRightClose className="h-4 w-4" />
         ) : (
-          <PanelRightOpen className={quickButtonIconClass} />
+          <PanelRightOpen className="h-4 w-4" />
         )}
+        <span>상세</span>
       </button>
     </>
   );
@@ -284,40 +412,79 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     <>
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-gray-900">상세 도구</h2>
+          <h2 className="text-sm font-semibold text-gray-900">정밀 설정</h2>
           <button
             type="button"
             onClick={() => setIsTipsOpen((prev) => !prev)}
             aria-expanded={isTipsOpen}
             aria-controls={tipsPanelId}
-            aria-label="새 드로잉 UX 안내"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            aria-label="설정 도움말"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <CircleHelp className="h-4 w-4" />
           </button>
         </div>
         <p className="text-xs text-gray-500">
-          채우기, 색상, 브러시를 조정해 디테일을 완성하세요.
+          빠른 바는 바로 그리기에 집중하고, 이 패널은 색상/굵기/농도 같은 세부 조정에 집중합니다.
         </p>
       </div>
+
+      {showMicroHints && (
+        <section className="space-y-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-900">
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-semibold">처음이면 이것만 기억하세요</p>
+            <button
+              type="button"
+              onClick={dismissMicroHints}
+              className="rounded-md px-2 py-1 text-[11px] font-medium text-emerald-700 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              닫기
+            </button>
+          </div>
+          <ul className="space-y-1.5">
+            {onboardingHints.map((hint) => (
+              <li key={hint.id} className="rounded-lg bg-white/80 px-2.5 py-2">
+                <span className="font-semibold">{hint.title}</span>
+                <span className="ml-1">{hint.description}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {isTipsOpen && (
         <section
           id={tipsPanelId}
           className="space-y-1 rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900"
         >
-          <p className="font-semibold">새 드로잉 UX 안내</p>
+          <p className="font-semibold">도구 사용 팁</p>
           <ul className="list-disc space-y-1 pl-4">
-            <li>1~5 키로 연필/마커/브러시/형광펜/지우개를 즉시 전환할 수 있어요.</li>
-            <li>[ / ] 키로 선 굵기를 빠르게 미세 조정할 수 있어요.</li>
-            <li>색상 패널은 빠른 팔레트 + 최근 색상 + 고급 패널 순으로 구성했어요.</li>
+            <li>기본 펜이 시작 도구입니다. 선화는 기본 펜부터 시작하면 가장 안정적이에요.</li>
+            <li>채우기(F)는 디테일 보정용입니다. 메인 드로잉은 펜 프리셋이 더 직관적이에요.</li>
+            <li>크기와 농도는 칩 버튼으로 먼저 맞추고, 슬라이더로 미세 조정해보세요.</li>
           </ul>
         </section>
       )}
 
       <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
-        <h3 className="mb-2 text-xs font-semibold text-gray-600">도구 세트</h3>
-        <CanvasToolbar horizontal className="justify-start" />
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h3 className="text-xs font-semibold text-gray-700">영역 채우기</h3>
+          <button
+            type="button"
+            onClick={toggleFillMode}
+            aria-pressed={activeTool === 'fill'}
+            className={cn(
+              'inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500',
+              activeTool === 'fill'
+                ? 'border-purple-600 bg-purple-600 text-white'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-100'
+            )}
+          >
+            <PaintBucket className="h-4 w-4" />
+            {activeTool === 'fill' ? '펜으로 돌아가기' : '채우기 모드'}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500">닫힌 영역을 탭해 채우고, 다시 누르면 펜 프리셋으로 돌아옵니다.</p>
       </div>
 
       <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
@@ -326,7 +493,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       </div>
 
       <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
-        <h3 className="mb-2 text-xs font-semibold text-gray-600">브러시 크기</h3>
+        <h3 className="mb-2 text-xs font-semibold text-gray-600">굵기 · 농도</h3>
         <BrushSizeSlider className="bg-transparent p-0" />
       </div>
 
@@ -338,6 +505,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           onClick={handleExport}
           leftIcon={<Download className="h-4 w-4" />}
           aria-label="다운로드"
+          className="min-h-[44px]"
         >
           다운로드
         </Button>
@@ -348,6 +516,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           onClick={handleClear}
           leftIcon={<Trash2 className="h-4 w-4" />}
           aria-label="초기화"
+          className="min-h-[44px]"
         >
           초기화
         </Button>
@@ -361,16 +530,53 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">그림 그리기</h1>
-            <p className="mt-1 text-sm text-gray-600">빠른 도구로 바로 그리고 필요할 때만 상세 설정을 열어보세요.</p>
+            <p className="mt-1 text-sm text-gray-600">빠른 바에서 펜을 고르고 바로 그린 뒤, 필요할 때만 상세 설정을 열어보세요.</p>
           </div>
-          <InfoDisclosure label="드로잉 안내 보기" title="드로잉 안내">
-            <ul className="list-disc space-y-1 pl-4">
-              <li>연필/마커/브러시/형광펜/지우개를 빠르게 전환할 수 있어요.</li>
-              <li>게스트도 저장 및 공유가 가능하며 계정 연결은 선택사항입니다.</li>
-              <li>문제가 생기면 상단에서 게스트 ID를 재발급한 뒤 다시 시도해보세요.</li>
-            </ul>
-          </InfoDisclosure>
+          <div className="relative flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsShortcutHelpOpen((prev) => !prev)}
+              aria-expanded={isShortcutHelpOpen}
+              aria-controls={shortcutPanelId}
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <Keyboard className="h-4 w-4" />
+              단축키
+            </button>
+
+            {isShortcutHelpOpen && (
+              <section
+                id={shortcutPanelId}
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg"
+              >
+                <p className="mb-2 font-semibold text-gray-900">키보드 빠른 조작</p>
+                <ul className="space-y-1">
+                  <li>1~5: 펜 프리셋 전환</li>
+                  <li>F: 영역 채우기</li>
+                  <li>[ / ]: 굵기 줄이기/늘리기</li>
+                  <li>⌘/Ctrl + Z, Shift+Z, Y: 실행취소/다시실행</li>
+                </ul>
+              </section>
+            )}
+
+            <InfoDisclosure label="드로잉 안내 보기" title="드로잉 안내">
+              <ul className="list-disc space-y-1 pl-4">
+                <li>기본 펜/마커/브러시/형광 펜/지우개를 빠르게 전환할 수 있어요.</li>
+                <li>게스트도 저장 및 공유가 가능하며 계정 연결은 선택사항입니다.</li>
+                <li>문제가 생기면 상단에서 게스트 ID를 재발급한 뒤 다시 시도해보세요.</li>
+              </ul>
+            </InfoDisclosure>
+          </div>
         </div>
+
+        <div className="mt-3 rounded-xl border border-purple-100 bg-purple-50 p-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-full bg-purple-100 px-2 py-1 font-semibold text-purple-700">현재 도구</span>
+            <p className="font-semibold text-purple-900">{activeToolMeta.label}</p>
+            <p className="text-purple-800">· {activeToolMeta.hint}</p>
+          </div>
+        </div>
+
         {actor?.isGuest && (
           <p className="mt-1 text-xs text-emerald-700">
             게스트 모드로 작업 중 · 저장 시 현재 게스트 이름으로 게시됩니다.
@@ -393,7 +599,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         <div
           className={cn(
             'grid gap-4',
-            !isMobile && isDetailPanelOpen && 'grid-cols-[minmax(0,1fr)_19rem]'
+            !isMobile && isDetailPanelOpen && 'grid-cols-[minmax(0,1fr)_21rem]'
           )}
         >
           <section
