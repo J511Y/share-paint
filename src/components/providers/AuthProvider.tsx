@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getSupabasePublicEnv } from '@/lib/supabase/env';
 import { useAuthStore } from '@/stores/authStore';
 import { ApiProfileSchema } from '@/lib/validation/schemas';
 import type { Profile } from '@/types/database';
@@ -14,11 +15,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { setUser, setLoading, logout } = useAuthStore();
 
   useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error(
+    if (!getSupabasePublicEnv()) {
+      console.warn(
         '[AuthProvider] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Skipping auth bootstrap.'
       );
       setUser(null);
