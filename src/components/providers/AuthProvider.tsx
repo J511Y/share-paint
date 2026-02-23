@@ -14,6 +14,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { setUser, setLoading, logout } = useAuthStore();
 
   useEffect(() => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error(
+        '[AuthProvider] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Skipping auth bootstrap.'
+      );
+      setUser(null);
+      return;
+    }
+
     const supabase = createClient();
 
     const getProfile = async (userId: string): Promise<Profile | null> => {
@@ -60,7 +71,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       }
     );
-
 
     return () => {
       subscription.unsubscribe();
