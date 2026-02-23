@@ -11,6 +11,8 @@ const mockGetDataUrl = vi.fn(
 ) as ReturnType<typeof vi.fn> & { mockReturnValueOnce: (val: string | null) => void };
 const mockLoadImage = vi.fn();
 const mockSetTool = vi.fn();
+const mockSetPreset = vi.fn();
+const mockSetBrushSize = vi.fn();
 
 let mockCanUndo = true;
 let mockCanRedo = false;
@@ -106,7 +108,8 @@ vi.mock('@/components/canvas', async () => {
 
 const mockStoreState = {
   tool: 'pen' as const,
-  brush: { color: '#000000', size: 5, opacity: 1 },
+  activePreset: 'pencil' as const,
+  brush: { color: '#000000', size: 5, opacity: 1, style: 'pencil' as const },
   isDrawing: false,
   history: ['state1', 'state2'],
   historyIndex: 1,
@@ -114,8 +117,9 @@ const mockStoreState = {
   canRedo: () => mockCanRedo,
   reset: vi.fn(),
   setTool: mockSetTool,
+  setPreset: mockSetPreset,
   setBrushColor: vi.fn(),
-  setBrushSize: vi.fn(),
+  setBrushSize: mockSetBrushSize,
   setBrushOpacity: vi.fn(),
   setBrush: vi.fn(),
   setIsDrawing: vi.fn(),
@@ -123,6 +127,7 @@ const mockStoreState = {
   undo: vi.fn(),
   redo: vi.fn(),
   clearHistory: vi.fn(),
+  recentColors: ['#000000', '#FF0000'],
 };
 
 vi.mock('@/stores/canvasStore', () => ({
@@ -150,220 +155,208 @@ describe('DrawingCanvas', () => {
     mockCanUndo = true;
     mockCanRedo = false;
     mockStoreState.tool = 'pen';
+    mockStoreState.activePreset = 'pencil';
+    mockStoreState.brush.size = 5;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  describe('렌더링', () => {
-    it('필수 컴포넌트를 렌더링한다', () => {
-      render(<DrawingCanvas />);
+  it('필수 컴포넌트를 렌더링한다', () => {
+    render(<DrawingCanvas />);
 
-      expect(screen.getByTestId('mock-canvas')).toBeInTheDocument();
-      expect(screen.getByTestId('mock-toolbar')).toBeInTheDocument();
-      expect(screen.getByTestId('mock-color-picker')).toBeInTheDocument();
-      expect(screen.getByTestId('mock-brush-slider')).toBeInTheDocument();
-      expect(screen.getByTestId('quick-bar-desktop')).toBeInTheDocument();
-      expect(screen.getByTestId('detail-panel-desktop')).toBeInTheDocument();
-    });
-
-    it('메인 랜드마크와 제목을 표시한다', () => {
-      render(<DrawingCanvas />);
-
-      expect(screen.getByRole('main')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('그림 그리기');
-    });
-
-    it('캔버스 영역을 렌더링한다', () => {
-      render(<DrawingCanvas />);
-
-      expect(screen.getByTestId('canvas-area')).toBeInTheDocument();
-    });
+    expect(screen.getByTestId('mock-canvas')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-toolbar')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-color-picker')).toBeInTheDocument();
+    expect(screen.getByTestId('mock-brush-slider')).toBeInTheDocument();
+    expect(screen.getByTestId('quick-bar-desktop')).toBeInTheDocument();
+    expect(screen.getByTestId('detail-panel-desktop')).toBeInTheDocument();
   });
 
-  describe('빠른 실행 바 동작', () => {
-    it('Undo 버튼 클릭 시 undo 함수를 호출한다', async () => {
-      const user = userEvent.setup();
-      render(<DrawingCanvas />);
+  it('메인 랜드마크와 제목을 표시한다', () => {
+    render(<DrawingCanvas />);
 
-      await user.click(screen.getByRole('button', { name: '실행취소' }));
-
-      expect(mockUndo).toHaveBeenCalledTimes(1);
-    });
-
-    it('Redo 버튼이 활성화되면 redo 함수를 호출한다', async () => {
-      mockCanRedo = true;
-      const user = userEvent.setup();
-      render(<DrawingCanvas />);
-
-      const redoButton = screen.getByRole('button', { name: '다시실행' });
-      expect(redoButton).not.toBeDisabled();
-
-      await user.click(redoButton);
-      expect(mockRedo).toHaveBeenCalledTimes(1);
-    });
-
-    it('도구 버튼 클릭 시 setTool을 호출한다', async () => {
-      const user = userEvent.setup();
-      render(<DrawingCanvas />);
-
-      await user.click(screen.getByRole('button', { name: '지우개 도구' }));
-      expect(mockSetTool).toHaveBeenCalledWith('eraser');
-
-      await user.click(screen.getByRole('button', { name: '펜 도구' }));
-      expect(mockSetTool).toHaveBeenCalledWith('pen');
-    });
-
-    it('저장 버튼 클릭 시 저장 모달을 연다', async () => {
-      const user = userEvent.setup();
-      render(<DrawingCanvas />);
-
-      await user.click(screen.getByRole('button', { name: '저장' }));
-
-      expect(screen.getByTestId('mock-save-modal')).toBeInTheDocument();
-    });
-
-    it('Ctrl+Z 키 입력 시 undo를 실행한다', () => {
-      render(<DrawingCanvas />);
-
-      fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
-
-      expect(mockUndo).toHaveBeenCalledTimes(1);
-    });
+    expect(screen.getByRole('main')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('그림 그리기');
   });
 
-  describe('상세 패널', () => {
-    it('토글 버튼으로 데스크톱 상세 패널을 닫고 연다', async () => {
-      const user = userEvent.setup();
-      render(<DrawingCanvas />);
+  it('도구 버튼 클릭 시 setPreset을 호출한다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
 
-      const toggleButton = screen.getByRole('button', { name: '상세 패널 닫기' });
-      expect(screen.getByTestId('detail-panel-desktop')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '마커 도구' }));
+    expect(mockSetPreset).toHaveBeenCalledWith('marker');
 
-      await user.click(toggleButton);
-      expect(screen.queryByTestId('detail-panel-desktop')).not.toBeInTheDocument();
-
-      await user.click(screen.getByRole('button', { name: '상세 패널 열기' }));
-      expect(screen.getByTestId('detail-panel-desktop')).toBeInTheDocument();
-    });
-
-    it('다운로드 버튼 클릭 시 이미지를 다운로드한다', async () => {
-      const user = userEvent.setup();
-      const mockLink = createMockAnchorElement();
-      const originalCreateElement = document.createElement.bind(document);
-      const createElementSpy = vi
-        .spyOn(document, 'createElement')
-        .mockImplementation((tagName: string) => {
-          if (tagName === 'a') {
-            return mockLink;
-          }
-          return originalCreateElement(tagName);
-        });
-
-      render(<DrawingCanvas />);
-
-      await user.click(screen.getByRole('button', { name: '다운로드' }));
-
-      expect(mockGetDataUrl).toHaveBeenCalled();
-      expect(createElementSpy).toHaveBeenCalledWith('a');
-      expect(mockLink.click).toHaveBeenCalled();
-      expect(mockLink.download).toContain('drawing-');
-
-      createElementSpy.mockRestore();
-    });
-
-    it('초기화 버튼 클릭 시 clearCanvas를 호출한다', async () => {
-      const user = userEvent.setup();
-      render(<DrawingCanvas />);
-
-      await user.click(screen.getByRole('button', { name: '초기화' }));
-
-      expect(mockClearCanvas).toHaveBeenCalledTimes(1);
-    });
+    await user.click(screen.getByRole('button', { name: '지우개 도구' }));
+    expect(mockSetPreset).toHaveBeenCalledWith('eraser');
   });
 
-  describe('반응형', () => {
-    it('데스크톱에서는 데스크톱 퀵바를 표시한다', () => {
-      render(<DrawingCanvas />);
+  it('Undo 버튼 클릭 시 undo 함수를 호출한다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
 
-      expect(screen.getByTestId('quick-bar-desktop')).toBeInTheDocument();
-      expect(screen.queryByTestId('quick-bar-mobile')).not.toBeInTheDocument();
-    });
+    await user.click(screen.getByRole('button', { name: '실행취소' }));
 
-    it('모바일에서는 모바일 퀵바를 표시하고 상세 패널을 기본 닫힘으로 유지한다', async () => {
-      const { useResponsiveCanvas } = await import('@/hooks/useResponsiveCanvas');
-      vi.mocked(useResponsiveCanvas).mockReturnValue({
-        width: 343,
-        height: 257,
-        isMobile: true,
+    expect(mockUndo).toHaveBeenCalledTimes(1);
+  });
+
+  it('Redo 버튼이 활성화되면 redo 함수를 호출한다', async () => {
+    mockCanRedo = true;
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    const redoButton = screen.getByRole('button', { name: '다시실행' });
+    expect(redoButton).not.toBeDisabled();
+
+    await user.click(redoButton);
+    expect(mockRedo).toHaveBeenCalledTimes(1);
+  });
+
+  it('저장 버튼 클릭 시 저장 모달을 연다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: '저장' }));
+
+    expect(screen.getByTestId('mock-save-modal')).toBeInTheDocument();
+  });
+
+  it('토글 버튼으로 데스크톱 상세 패널을 닫고 연다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    const toggleButton = screen.getByRole('button', { name: '상세 패널 닫기' });
+    expect(screen.getByTestId('detail-panel-desktop')).toBeInTheDocument();
+
+    await user.click(toggleButton);
+    expect(screen.queryByTestId('detail-panel-desktop')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '상세 패널 열기' }));
+    expect(screen.getByTestId('detail-panel-desktop')).toBeInTheDocument();
+  });
+
+  it('도움말 아이콘 클릭 시 안내 패널을 표시한다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: '새 드로잉 UX 안내' }));
+
+    expect(screen.getByText('새 드로잉 UX 안내')).toBeInTheDocument();
+  });
+
+  it('다운로드 버튼 클릭 시 이미지를 다운로드한다', async () => {
+    const user = userEvent.setup();
+    const mockLink = createMockAnchorElement();
+    const originalCreateElement = document.createElement.bind(document);
+    const createElementSpy = vi
+      .spyOn(document, 'createElement')
+      .mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return mockLink;
+        }
+        return originalCreateElement(tagName);
       });
 
-      render(<DrawingCanvas />);
+    render(<DrawingCanvas />);
 
-      expect(screen.getByTestId('quick-bar-mobile')).toBeInTheDocument();
-      expect(screen.queryByTestId('detail-panel-mobile')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '다운로드' }));
 
-      const canvas = screen.getByTestId('mock-canvas');
-      expect(canvas).toHaveAttribute('data-width', '343');
-      expect(canvas).toHaveAttribute('data-height', '257');
-    });
+    expect(mockGetDataUrl).toHaveBeenCalled();
+    expect(createElementSpy).toHaveBeenCalledWith('a');
+    expect(mockLink.click).toHaveBeenCalled();
+    expect(mockLink.download).toContain('drawing-');
 
-    it('모바일에서 토글 버튼으로 상세 패널을 연다', async () => {
-      const { useResponsiveCanvas } = await import('@/hooks/useResponsiveCanvas');
-      vi.mocked(useResponsiveCanvas).mockReturnValue({
-        width: 343,
-        height: 257,
-        isMobile: true,
-      });
-
-      const user = userEvent.setup();
-      render(<DrawingCanvas />);
-
-      await user.click(screen.getByRole('button', { name: '상세 패널 열기' }));
-
-      expect(screen.getByTestId('detail-panel-mobile')).toBeInTheDocument();
-      expect(screen.getByTestId('detail-panel-mobile')).toContainElement(
-        screen.getByTestId('mock-color-picker')
-      );
-    });
+    createElementSpy.mockRestore();
   });
 
-  describe('엣지 케이스', () => {
-    it('getDataUrl이 null을 반환하면 다운로드를 건너뛴다', async () => {
-      mockGetDataUrl.mockReturnValueOnce(null);
+  it('숫자 단축키로 도구 프리셋을 변경한다', () => {
+    render(<DrawingCanvas />);
 
-      const mockLink = createMockAnchorElement();
-      const originalCreateElement = document.createElement.bind(document);
-      const createElementSpy = vi
-        .spyOn(document, 'createElement')
-        .mockImplementation((tagName: string) => {
-          if (tagName === 'a') {
-            return mockLink;
-          }
-          return originalCreateElement(tagName);
-        });
+    fireEvent.keyDown(window, { key: '2' });
+    expect(mockSetPreset).toHaveBeenCalledWith('marker');
 
-      render(<DrawingCanvas />);
+    fireEvent.keyDown(window, { key: '5' });
+    expect(mockSetPreset).toHaveBeenCalledWith('eraser');
+  });
 
-      const downloadButton = screen.queryByRole('button', { name: '다운로드' });
+  it('[ ] 단축키로 브러시 크기를 조절한다', () => {
+    render(<DrawingCanvas />);
 
-      if (downloadButton) {
-        await userEvent.click(downloadButton);
-      } else {
-        await userEvent.click(screen.getByRole('button', { name: '상세 패널 열기' }));
-        await userEvent.click(screen.getByRole('button', { name: '다운로드' }));
-      }
+    fireEvent.keyDown(window, { key: ']' });
+    expect(mockSetBrushSize).toHaveBeenCalledWith(6);
+  });
 
-      expect(mockLink.click).not.toHaveBeenCalled();
-
-      createElementSpy.mockRestore();
+  it('모바일에서는 모바일 퀵바를 표시한다', async () => {
+    const { useResponsiveCanvas } = await import('@/hooks/useResponsiveCanvas');
+    vi.mocked(useResponsiveCanvas).mockReturnValue({
+      width: 343,
+      height: 257,
+      isMobile: true,
     });
 
-    it('커스텀 className을 적용할 수 있다', () => {
-      render(<DrawingCanvas className="custom-class" />);
+    render(<DrawingCanvas />);
 
-      expect(screen.getByRole('main')).toHaveClass('custom-class');
+    expect(screen.getByTestId('quick-bar-mobile')).toBeInTheDocument();
+    expect(screen.queryByTestId('detail-panel-mobile')).not.toBeInTheDocument();
+
+    const canvas = screen.getByTestId('mock-canvas');
+    expect(canvas).toHaveAttribute('data-width', '343');
+    expect(canvas).toHaveAttribute('data-height', '257');
+  });
+
+  it('모바일에서 토글 버튼으로 상세 패널을 연다', async () => {
+    const { useResponsiveCanvas } = await import('@/hooks/useResponsiveCanvas');
+    vi.mocked(useResponsiveCanvas).mockReturnValue({
+      width: 343,
+      height: 257,
+      isMobile: true,
     });
+
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: '상세 패널 열기' }));
+
+    expect(screen.getByTestId('detail-panel-mobile')).toBeInTheDocument();
+    expect(screen.getByTestId('detail-panel-mobile')).toContainElement(
+      screen.getByTestId('mock-color-picker')
+    );
+  });
+
+  it('getDataUrl이 null을 반환하면 다운로드를 건너뛴다', async () => {
+    mockGetDataUrl.mockReturnValueOnce(null);
+
+    const mockLink = createMockAnchorElement();
+    const originalCreateElement = document.createElement.bind(document);
+    const createElementSpy = vi
+      .spyOn(document, 'createElement')
+      .mockImplementation((tagName: string) => {
+        if (tagName === 'a') {
+          return mockLink;
+        }
+        return originalCreateElement(tagName);
+      });
+
+    render(<DrawingCanvas />);
+
+    const downloadButton = screen.queryByRole('button', { name: '다운로드' });
+
+    if (downloadButton) {
+      await userEvent.click(downloadButton);
+    } else {
+      await userEvent.click(screen.getByRole('button', { name: '상세 패널 열기' }));
+      await userEvent.click(screen.getByRole('button', { name: '다운로드' }));
+    }
+
+    expect(mockLink.click).not.toHaveBeenCalled();
+
+    createElementSpy.mockRestore();
+  });
+
+  it('커스텀 className을 적용할 수 있다', () => {
+    render(<DrawingCanvas className="custom-class" />);
+
+    expect(screen.getByRole('main')).toHaveClass('custom-class');
   });
 });

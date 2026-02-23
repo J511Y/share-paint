@@ -36,6 +36,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(
     ref
   ) => {
     const tool = useCanvasStore((state) => state.tool);
+    const brushStyle = useCanvasStore((state) => state.brush.style);
 
     const {
       canvasRef,
@@ -151,7 +152,12 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(
         role="img"
         aria-label="Drawing canvas"
         className={cn(
-          'border border-gray-300 rounded-lg cursor-crosshair bg-white',
+          'border border-gray-300 rounded-lg bg-white',
+          tool === 'fill'
+            ? 'cursor-pointer'
+            : tool === 'eraser' || brushStyle === 'eraser'
+              ? 'cursor-cell'
+              : 'cursor-crosshair',
           className
         )}
         style={{ touchAction: 'none' }}

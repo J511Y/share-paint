@@ -1,0 +1,92 @@
+import type { BrushSettings, DrawingPresetId, DrawingTool } from '@/types/canvas';
+
+export interface DrawingPresetConfig {
+  id: DrawingPresetId;
+  label: string;
+  description: string;
+  tool: DrawingTool;
+  brush: Pick<BrushSettings, 'size' | 'opacity' | 'style'>;
+}
+
+export const DRAWING_PRESETS: DrawingPresetConfig[] = [
+  {
+    id: 'pencil',
+    label: '연필',
+    description: '얇고 선명한 기본 드로잉',
+    tool: 'pen',
+    brush: { style: 'pencil', size: 2, opacity: 0.92 },
+  },
+  {
+    id: 'marker',
+    label: '마커',
+    description: '두껍고 균일한 라인',
+    tool: 'pen',
+    brush: { style: 'marker', size: 7, opacity: 0.78 },
+  },
+  {
+    id: 'brush',
+    label: '브러시',
+    description: '부드럽고 풍부한 붓 터치',
+    tool: 'pen',
+    brush: { style: 'brush', size: 12, opacity: 0.95 },
+  },
+  {
+    id: 'highlighter',
+    label: '형광펜',
+    description: '투명한 강조 스트로크',
+    tool: 'pen',
+    brush: { style: 'highlighter', size: 18, opacity: 0.34 },
+  },
+  {
+    id: 'eraser',
+    label: '지우개',
+    description: '빠르게 지우기',
+    tool: 'eraser',
+    brush: { style: 'eraser', size: 16, opacity: 1 },
+  },
+];
+
+export const DRAWING_PRESET_MAP = Object.fromEntries(
+  DRAWING_PRESETS.map((preset) => [preset.id, preset])
+) as Record<DrawingPresetId, DrawingPresetConfig>;
+
+export const QUICK_BRUSH_SIZES = [2, 4, 8, 12, 18, 26] as const;
+
+export const QUICK_COLOR_PRESETS = [
+  { hex: '#111827', name: '차콜' },
+  { hex: '#EF4444', name: '레드' },
+  { hex: '#F59E0B', name: '오렌지' },
+  { hex: '#FACC15', name: '옐로우' },
+  { hex: '#22C55E', name: '그린' },
+  { hex: '#06B6D4', name: '시안' },
+  { hex: '#3B82F6', name: '블루' },
+  { hex: '#8B5CF6', name: '퍼플' },
+] as const;
+
+export const ADVANCED_COLOR_PRESETS = [
+  '#000000',
+  '#FFFFFF',
+  '#991B1B',
+  '#DC2626',
+  '#EA580C',
+  '#F97316',
+  '#FACC15',
+  '#A3E635',
+  '#16A34A',
+  '#0D9488',
+  '#0891B2',
+  '#2563EB',
+  '#1D4ED8',
+  '#7C3AED',
+  '#A21CAF',
+  '#EC4899',
+] as const;
+
+export const MAX_RECENT_COLORS = 8;
+
+export const DEFAULT_RECENT_COLORS = [
+  '#111827',
+  '#EF4444',
+  '#3B82F6',
+  '#22C55E',
+] as const;

@@ -2,10 +2,14 @@
 
 import { useRef, useCallback, useEffect, useId, useState } from 'react';
 import {
+  CircleHelp,
   Download,
   Eraser,
+  Highlighter,
+  Paintbrush,
   PanelRightClose,
   PanelRightOpen,
+  PenLine,
   Pencil,
   Redo2,
   Save,
@@ -40,15 +44,30 @@ const isEditableTarget = (target: EventTarget | null) => {
   );
 };
 
+const clampSize = (size: number) => Math.max(1, Math.min(80, size));
+
+const quickTools = [
+  { id: 'pencil', label: '연필 도구', icon: Pencil },
+  { id: 'marker', label: '마커 도구', icon: PenLine },
+  { id: 'brush', label: '브러시 도구', icon: Paintbrush },
+  { id: 'highlighter', label: '형광펜 도구', icon: Highlighter },
+  { id: 'eraser', label: '지우개 도구', icon: Eraser },
+] as const;
+
 export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const canvasRef = useRef<CanvasHandle>(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isTipsOpen, setIsTipsOpen] = useState(false);
   const { actor } = useActor();
 
   const { width, height, isMobile } = useResponsiveCanvas();
 
   const activeTool = useCanvasStore((state) => state.tool);
+  const activePreset = useCanvasStore((state) => state.activePreset);
+  const brushSize = useCanvasStore((state) => state.brush.size);
   const setTool = useCanvasStore((state) => state.setTool);
+  const setPreset = useCanvasStore((state) => state.setPreset);
+  const setBrushSize = useCanvasStore((state) => state.setBrushSize);
   const canUndo = useCanvasStore((state) => state.canUndo());
   const canRedo = useCanvasStore((state) => state.canRedo());
 
@@ -58,6 +77,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     ? isMobileDetailPanelOpen
     : isDesktopDetailPanelOpen;
   const detailPanelId = useId();
+  const tipsPanelId = useId();
   const drawingTopic = '';
 
   const handleUndo = useCallback(() => {
@@ -110,29 +130,49 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
       const key = event.key.toLowerCase();
       const hasModifier = event.metaKey || event.ctrlKey;
-      if (!hasModifier) return;
 
-      if (key === 'z' && event.shiftKey) {
-        event.preventDefault();
-        handleRedo();
-        return;
+      if (hasModifier) {
+        if (key === 'z' && event.shiftKey) {
+          event.preventDefault();
+          handleRedo();
+          return;
+        }
+
+        if (key === 'z') {
+          event.preventDefault();
+          handleUndo();
+          return;
+        }
+
+        if (key === 'y') {
+          event.preventDefault();
+          handleRedo();
+          return;
+        }
+
+        if (key === 's') {
+          event.preventDefault();
+          handleSave();
+          return;
+        }
       }
 
-      if (key === 'z') {
-        event.preventDefault();
-        handleUndo();
-        return;
-      }
-
-      if (key === 'y') {
-        event.preventDefault();
-        handleRedo();
-        return;
-      }
-
-      if (key === 's') {
-        event.preventDefault();
-        handleSave();
+      if (key === '1') {
+        setPreset('pencil');
+      } else if (key === '2') {
+        setPreset('marker');
+      } else if (key === '3') {
+        setPreset('brush');
+      } else if (key === '4') {
+        setPreset('highlighter');
+      } else if (key === '5') {
+        setPreset('eraser');
+      } else if (key === 'f') {
+        setTool('fill');
+      } else if (event.key === '[') {
+        setBrushSize(clampSize(brushSize - 1));
+      } else if (event.key === ']') {
+        setBrushSize(clampSize(brushSize + 1));
       }
     };
 
@@ -141,51 +181,48 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleRedo, handleSave, handleUndo]);
-
-  const isPenActive = activeTool === 'pen';
-  const isEraserActive = activeTool === 'eraser';
+  }, [
+    brushSize,
+    handleRedo,
+    handleSave,
+    handleUndo,
+    setBrushSize,
+    setPreset,
+    setTool,
+  ]);
 
   const quickBarButtons = (
     <>
-      <button
-        type="button"
-        onClick={() => setTool('pen')}
-        aria-label="펜 도구"
-        aria-pressed={isPenActive}
-        className={cn(
-          'inline-flex h-10 w-10 items-center justify-center rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500',
-          isPenActive
-            ? 'border-purple-600 bg-purple-600 text-white'
-            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-100'
-        )}
-      >
-        <Pencil className="h-4 w-4" />
-      </button>
+      {quickTools.map(({ id, label, icon: Icon }) => {
+        const isActive = activePreset === id && activeTool !== 'fill';
 
-      <button
-        type="button"
-        onClick={() => setTool('eraser')}
-        aria-label="지우개 도구"
-        aria-pressed={isEraserActive}
-        className={cn(
-          'inline-flex h-10 w-10 items-center justify-center rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500',
-          isEraserActive
-            ? 'border-purple-600 bg-purple-600 text-white'
-            : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-100'
-        )}
-      >
-        <Eraser className="h-4 w-4" />
-      </button>
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setPreset(id)}
+            aria-label={label}
+            aria-pressed={isActive}
+            className={cn(
+              'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500',
+              isActive
+                ? 'border-purple-600 bg-purple-600 text-white'
+                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-100'
+            )}
+          >
+            <Icon className="h-4 w-4" />
+          </button>
+        );
+      })}
 
-      <div className="h-6 w-px bg-gray-200" aria-hidden="true" />
+      <div className="h-6 w-px shrink-0 bg-gray-200" aria-hidden="true" />
 
       <button
         type="button"
         onClick={handleUndo}
         aria-label="실행취소"
         disabled={!canUndo}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Undo2 className="h-4 w-4" />
       </button>
@@ -195,7 +232,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         onClick={handleRedo}
         aria-label="다시실행"
         disabled={!canRedo}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Redo2 className="h-4 w-4" />
       </button>
@@ -204,7 +241,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         type="button"
         onClick={handleSave}
         aria-label="저장"
-        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-purple-600 bg-purple-600 text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-purple-600 bg-purple-600 text-white transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
       >
         <Save className="h-4 w-4" />
       </button>
@@ -215,7 +252,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         aria-label={isDetailPanelOpen ? '상세 패널 닫기' : '상세 패널 열기'}
         aria-expanded={isDetailPanelOpen}
         aria-controls={detailPanelId}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
       >
         {isDetailPanelOpen ? (
           <PanelRightClose className="h-4 w-4" />
@@ -229,14 +266,40 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const detailPanelContent = (
     <>
       <div className="space-y-1">
-        <h2 className="text-sm font-semibold text-gray-900">상세 도구</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-gray-900">상세 도구</h2>
+          <button
+            type="button"
+            onClick={() => setIsTipsOpen((prev) => !prev)}
+            aria-expanded={isTipsOpen}
+            aria-controls={tipsPanelId}
+            aria-label="새 드로잉 UX 안내"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <CircleHelp className="h-4 w-4" />
+          </button>
+        </div>
         <p className="text-xs text-gray-500">
           채우기, 색상, 브러시를 조정해 디테일을 완성하세요.
         </p>
       </div>
 
+      {isTipsOpen && (
+        <section
+          id={tipsPanelId}
+          className="space-y-1 rounded-xl border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900"
+        >
+          <p className="font-semibold">새 드로잉 UX 안내</p>
+          <ul className="list-disc space-y-1 pl-4">
+            <li>1~5 키로 연필/마커/브러시/형광펜/지우개를 즉시 전환할 수 있어요.</li>
+            <li>[ / ] 키로 선 굵기를 빠르게 미세 조정할 수 있어요.</li>
+            <li>색상 패널은 빠른 팔레트 + 최근 색상 + 고급 패널 순으로 구성했어요.</li>
+          </ul>
+        </section>
+      )}
+
       <div className="rounded-xl border border-gray-100 bg-gray-50 p-3">
-        <h3 className="mb-2 text-xs font-semibold text-gray-600">고급 도구</h3>
+        <h3 className="mb-2 text-xs font-semibold text-gray-600">도구 세트</h3>
         <CanvasToolbar horizontal className="justify-start" />
       </div>
 
@@ -280,7 +343,8 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-gray-900">그림 그리기</h1>
         <p className="mt-1 text-sm text-gray-600">
-          빠른 도구 바에서 바로 그리고, 상세 패널은 필요할 때만 펼쳐서 사용하세요.
+          연필/마커/브러시/형광펜/지우개를 빠르게 오가며, 필요할 때만 상세 패널을 열어
+          흐름을 끊지 않고 그려보세요.
         </p>
         {actor?.isGuest && (
           <p className="mt-1 text-xs text-emerald-700">
@@ -296,7 +360,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             data-testid="quick-bar-desktop"
             role="toolbar"
             aria-label="빠른 실행 도구"
-            className="sticky top-20 z-20 mb-4 inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white/95 p-2 shadow-sm backdrop-blur"
+            className="sticky top-20 z-20 mb-4 inline-flex max-w-full items-center gap-2 overflow-x-auto rounded-xl border border-gray-200 bg-white/95 p-2 shadow-sm backdrop-blur"
           >
             {quickBarButtons}
           </div>
@@ -305,7 +369,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         <div
           className={cn(
             'grid gap-4',
-            !isMobile && isDetailPanelOpen && 'grid-cols-[minmax(0,1fr)_18rem]'
+            !isMobile && isDetailPanelOpen && 'grid-cols-[minmax(0,1fr)_19rem]'
           )}
         >
           <section
@@ -350,7 +414,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               data-testid="quick-bar-mobile"
               role="toolbar"
               aria-label="빠른 실행 도구"
-              className="inline-flex w-full max-w-md items-center justify-between gap-2 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg"
+              className="inline-flex w-full max-w-md items-center justify-start gap-2 overflow-x-auto rounded-2xl border border-gray-200 bg-white p-2 shadow-lg"
             >
               {quickBarButtons}
             </div>

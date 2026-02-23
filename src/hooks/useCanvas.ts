@@ -12,7 +12,12 @@ interface UseCanvasOptions {
   onDrawEnd?: (dataUrl: string) => void;
 }
 
-export function useCanvas({ width, height, backgroundColor = '#FFFFFF', onDrawEnd }: UseCanvasOptions) {
+export function useCanvas({
+  width,
+  height,
+  backgroundColor = '#FFFFFF',
+  onDrawEnd,
+}: UseCanvasOptions) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -59,25 +64,68 @@ export function useCanvas({ width, height, backgroundColor = '#FFFFFF', onDrawEn
     const context = contextRef.current;
     if (!context) return;
 
-    if (tool === 'eraser') {
+    const isEraserStyle = tool === 'eraser' || brush.style === 'eraser';
+
+    if (isEraserStyle) {
       context.globalCompositeOperation = 'destination-out';
       context.strokeStyle = 'rgba(0,0,0,1)';
-    } else {
-      context.globalCompositeOperation = 'source-over';
-      context.strokeStyle = brush.color;
+      context.globalAlpha = 1;
+      context.shadowBlur = 0;
+      context.shadowColor = 'transparent';
+      context.lineCap = 'round';
+      context.lineJoin = 'round';
+      context.lineWidth = brush.size;
+      return;
     }
 
+    context.globalCompositeOperation = 'source-over';
+    context.strokeStyle = brush.color;
     context.lineWidth = brush.size;
     context.globalAlpha = brush.opacity;
+
+    switch (brush.style) {
+      case 'brush': {
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.shadowColor = brush.color;
+        context.shadowBlur = Math.max(0, brush.size * 0.18);
+        break;
+      }
+      case 'highlighter': {
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+        context.globalAlpha = Math.min(0.45, brush.opacity);
+        break;
+      }
+      case 'marker': {
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+        break;
+      }
+      case 'pencil':
+      default: {
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
+      }
+    }
   }, [tool, brush]);
 
   // 좌표 계산 (터치/마우스)
-  const getCoordinates = useCallback((event: MouseEvent | TouchEvent): { x: number; y: number } | null => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
+  const getCoordinates = useCallback(
+    (event: MouseEvent | TouchEvent): { x: number; y: number } | null => {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
 
-    return getCanvasCoordinates(event, canvas);
-  }, []);
+      return getCanvasCoordinates(event, canvas);
+    },
+    []
+  );
 
   // 드로잉 시작
   const startDrawing = useCallback(

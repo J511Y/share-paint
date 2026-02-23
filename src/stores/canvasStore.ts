@@ -1,10 +1,21 @@
 import { create } from 'zustand';
-import type { DrawingTool, BrushSettings, CanvasState } from '@/types/canvas';
+import type {
+  DrawingTool,
+  BrushSettings,
+  CanvasState,
+  DrawingPresetId,
+} from '@/types/canvas';
 import { DEFAULT_BRUSH, CANVAS_CONFIG } from '@/constants/config';
+import {
+  DEFAULT_RECENT_COLORS,
+  DRAWING_PRESET_MAP,
+  MAX_RECENT_COLORS,
+} from '@/constants/drawing';
 
 interface CanvasStore extends CanvasState {
   // 도구 관련
   setTool: (tool: DrawingTool) => void;
+  setPreset: (preset: DrawingPresetId) => void;
   setBrushColor: (color: string) => void;
   setBrushSize: (size: number) => void;
   setBrushOpacity: (opacity: number) => void;
@@ -25,9 +36,27 @@ interface CanvasStore extends CanvasState {
   reset: () => void;
 }
 
+const normalizeColor = (color: string) => color.trim().toUpperCase();
+
+const pushRecentColor = (recentColors: string[], color: string) => {
+  const normalizedColor = normalizeColor(color);
+  const withoutDuplicate = recentColors.filter(
+    (recentColor) => normalizeColor(recentColor) !== normalizedColor
+  );
+
+  return [normalizedColor, ...withoutDuplicate].slice(0, MAX_RECENT_COLORS);
+};
+
+const clampBrushSize = (size: number) => {
+  if (!Number.isFinite(size)) return 1;
+  return Math.max(1, Math.min(80, size));
+};
+
 const initialState: CanvasState = {
   tool: 'pen',
+  activePreset: 'pencil',
   brush: DEFAULT_BRUSH,
+  recentColors: [...DEFAULT_RECENT_COLORS],
   isDrawing: false,
   history: [],
   historyIndex: -1,
@@ -36,27 +65,97 @@ const initialState: CanvasState = {
 export const useCanvasStore = create<CanvasStore>((set, get) => ({
   ...initialState,
 
-  setTool: (tool) => set({ tool }),
+  setTool: (tool) =>
+    set((state) => {
+      if (tool === 'eraser') {
+        return {
+          tool: 'eraser',
+          activePreset: 'eraser',
+          brush: {
+            ...state.brush,
+            style: 'eraser',
+            opacity: 1,
+          },
+        };
+      }
+
+      if (tool === 'pen') {
+        const nextPreset =
+          state.activePreset === 'eraser' ? 'pencil' : state.activePreset;
+
+        return {
+          tool: 'pen',
+          activePreset: nextPreset,
+          brush: {
+            ...state.brush,
+            style: nextPreset,
+          },
+        };
+      }
+
+      return { tool };
+    }),
+
+  setPreset: (preset) =>
+    set((state) => {
+      const presetConfig = DRAWING_PRESET_MAP[preset];
+      const nextTool = presetConfig.tool;
+
+      return {
+        tool: nextTool,
+        activePreset: preset,
+        brush: {
+          ...state.brush,
+          size: presetConfig.brush.size,
+          opacity: presetConfig.brush.opacity,
+          style: presetConfig.brush.style,
+        },
+      };
+    }),
 
   setBrushColor: (color) =>
-    set((state) => ({
-      brush: { ...state.brush, color },
-    })),
+    set((state) => {
+      const normalizedColor = normalizeColor(color);
+
+      return {
+        brush: { ...state.brush, color: normalizedColor },
+        recentColors: pushRecentColor(state.recentColors, normalizedColor),
+      };
+    }),
 
   setBrushSize: (size) =>
     set((state) => ({
-      brush: { ...state.brush, size },
+      brush: { ...state.brush, size: clampBrushSize(size) },
     })),
 
   setBrushOpacity: (opacity) =>
     set((state) => ({
-      brush: { ...state.brush, opacity },
+      brush: {
+        ...state.brush,
+        opacity: Math.min(1, Math.max(0.05, opacity)),
+      },
     })),
 
   setBrush: (brush) =>
-    set((state) => ({
-      brush: { ...state.brush, ...brush },
-    })),
+    set((state) => {
+      const nextBrush: BrushSettings = {
+        ...state.brush,
+        ...brush,
+      };
+
+      const nextActivePreset =
+        nextBrush.style === 'eraser'
+          ? 'eraser'
+          : nextBrush.style ?? state.activePreset;
+
+      return {
+        activePreset: nextActivePreset,
+        brush: {
+          ...nextBrush,
+          size: clampBrushSize(nextBrush.size),
+        },
+      };
+    }),
 
   setIsDrawing: (isDrawing) => set({ isDrawing }),
 
