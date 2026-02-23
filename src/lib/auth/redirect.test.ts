@@ -13,8 +13,8 @@ describe('resolveRedirectTarget', () => {
     expect(resolveRedirectTarget(params)).toBe('/draw?room=abc&mode=fast');
   });
 
-  it('keeps existing redirect query when no split params exist', () => {
-    const params = new URLSearchParams('redirect=%2Fdraw%3Froom%3Dabc%26mode%3Dfast');
+  it('decodes double-encoded redirect target from auth cross-link', () => {
+    const params = new URLSearchParams('redirect=%252Fdraw%253Froom%253Dabc%2526mode%253Dfast');
     expect(resolveRedirectTarget(params)).toBe('/draw?room=abc&mode=fast');
   });
 });
@@ -24,9 +24,9 @@ describe('buildAuthRedirectLink', () => {
     expect(buildAuthRedirectLink('/register', '/feed')).toBe('/register');
   });
 
-  it('encodes nested query redirect target in query string', () => {
+  it('double-encodes nested query redirect target for safe cross-linking', () => {
     expect(buildAuthRedirectLink('/login', '/draw?room=abc&mode=fast')).toBe(
-      '/login?redirect=%2Fdraw%3Froom%3Dabc%26mode%3Dfast'
+      '/login?redirect=%252Fdraw%253Froom%253Dabc%2526mode%253Dfast'
     );
   });
 });
