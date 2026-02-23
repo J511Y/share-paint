@@ -6,9 +6,19 @@ type SearchParamsLike = {
 };
 
 export function resolveRedirectTarget(searchParams: SearchParamsLike): string {
-  const redirect = searchParams.get('redirect') || '/feed';
-  if (!redirect || redirect === '/feed') {
+  const rawRedirect = searchParams.get('redirect') || '/feed';
+  if (!rawRedirect || rawRedirect === '/feed') {
     return '/feed';
+  }
+
+  let redirect = rawRedirect;
+  try {
+    const decoded = decodeURIComponent(rawRedirect);
+    if (decoded.startsWith('/')) {
+      redirect = decoded;
+    }
+  } catch {
+    // keep rawRedirect as-is
   }
 
   const extras: Array<[string, string]> = [];
@@ -40,6 +50,6 @@ export function buildAuthRedirectLink(basePath: AuthLinkTarget, redirectTo: stri
     return basePath;
   }
 
-  const params = new URLSearchParams({ redirect: redirectTo });
+  const params = new URLSearchParams({ redirect: encodeURIComponent(redirectTo) });
   return `${basePath}?${params.toString()}`;
 }
