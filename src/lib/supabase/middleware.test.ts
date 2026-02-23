@@ -45,11 +45,11 @@ describe('updateSession', () => {
     expect(createServerClientMock).not.toHaveBeenCalled();
   });
 
-  it('redirects protected route to login when Supabase env is missing', async () => {
+  it('allows draw route when Supabase env is missing (guest-first)', async () => {
     const response = await updateSession(makeRequest('/draw'));
 
-    expect(response.status).toBe(307);
-    expect(response.headers.get('location')).toContain('/login?redirect=%2Fdraw');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
     expect(createServerClientMock).not.toHaveBeenCalled();
   });
 
@@ -66,7 +66,7 @@ describe('updateSession', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
-  it('redirects protected route when Supabase client creation throws', async () => {
+  it('allows battle route when Supabase client creation throws (guest-first)', async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
     createServerClientMock.mockImplementation(() => {
@@ -75,7 +75,7 @@ describe('updateSession', () => {
 
     const response = await updateSession(makeRequest('/battle'));
 
-    expect(response.status).toBe(307);
-    expect(response.headers.get('location')).toContain('/login?redirect=%2Fbattle');
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
   });
 });

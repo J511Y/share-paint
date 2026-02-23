@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
-import { apiHandler, authApiHandler } from '@/lib/api-handler';
+import { apiHandler } from '@/lib/api-handler';
 import { devLogger as logger } from '@/lib/logger';
-import type { BattleInsert } from '@/types/database';
+import type { BattleInsert, Database } from '@/types/database';
 import { hashBattlePassword } from '@/lib/security/battle-password';
 import {
   ApiBattleSchema,
   BattleArraySchema,
   BattleCreatePayloadSchema,
-  type ApiBattle,
 } from '@/lib/validation/schemas';
+import { resolveApiActor } from '@/lib/api-actor';
+import { consumeRateLimit } from '@/lib/security/action-rate-limit';
 
 export const GET = apiHandler(async ({ req, requestId }) => {
   const supabase = await createClient();
@@ -23,11 +24,13 @@ export const GET = apiHandler(async ({ req, requestId }) => {
 
   const { data, error } = await supabase
     .from('battles')
-    .select(`
+    .select(
+      `
       *,
       host:profiles!host_id(*),
       participants:battle_participants(count)
-    `)
+    `
+    )
     .eq('status', status)
     .order('created_at', { ascending: false });
 
@@ -50,10 +53,20 @@ export const GET = apiHandler(async ({ req, requestId }) => {
   return NextResponse.json(parsed.data);
 });
 
-export const POST = authApiHandler(async ({ req, user, requestId }) => {
+export const POST = apiHandler(async ({ req, requestId }) => {
   const supabase = await createClient();
+  const actor = await resolveApiActor(req, supabase);
 
-  logger.info('Creating battle room', { requestId, userId: user?.id });
+  if (!actor) {
+    return NextResponse.json({ error: 'Guest identity is required.' }, { status: 400 });
+  }
+
+  const rateLimit = consumeRateLimit(`battle:create:${actor.actorId}`, 6, 10 * 60 * 1000);
+  if (!rateLimit.allowed) {
+    return NextResponse.json({ error: '대결방 생성이 너무 빠릅니다.' }, { status: 429 });
+  }
+
+  logger.info('Creating battle room', { requestId, actorId: actor.actorId });
 
   let payload;
   try {
@@ -62,7 +75,7 @@ export const POST = authApiHandler(async ({ req, user, requestId }) => {
     if (!parsedBody.success) {
       logger.warn('Battle creation failed: invalid payload', {
         requestId,
-        userId: user?.id,
+        actorId: actor.actorId,
         issues: parsedBody.error.issues,
       });
       return NextResponse.json({ error: '요청 바디가 유효하지 않습니다.' }, { status: 400 });
@@ -78,20 +91,17 @@ export const POST = authApiHandler(async ({ req, user, requestId }) => {
     return NextResponse.json({ error: '비공개 방 생성 시 비밀번호가 필요합니다.' }, { status: 400 });
   }
 
-  const battleData: BattleInsert = {
-    host_id: user!.id,
+  const battleData = {
+    host_id: actor.userId ?? undefined,
+    host_guest_id: actor.guestId,
+    host_guest_name: actor.userId ? null : actor.displayName,
     title: payload.title,
     time_limit: payload.time_limit,
     max_participants: payload.max_participants,
     is_private: payload.is_private,
     password_hash: payload.password ? hashBattlePassword(payload.password) : null,
     topic: payload.topic || null,
-  };
-
-  logger.debug('Battle data prepared', {
-    requestId,
-    battleData: { ...battleData, password_hash: '[REDACTED]' },
-  });
+  } as BattleInsert;
 
   const { data: battleResult, error: battleError } = await supabase
     .from('battles')
@@ -102,8 +112,7 @@ export const POST = authApiHandler(async ({ req, user, requestId }) => {
   if (battleError || !battleResult) {
     logger.error('Failed to create battle', battleError, {
       requestId,
-      userId: user?.id,
-      battleData: { ...battleData, password_hash: '[REDACTED]' },
+      actorId: actor.actorId,
     });
     return NextResponse.json(
       { error: '대전 생성 중 오류가 발생했습니다.', detail: battleError?.message },
@@ -121,27 +130,23 @@ export const POST = authApiHandler(async ({ req, user, requestId }) => {
     return NextResponse.json({ error: '생성된 대전 데이터 형식이 유효하지 않습니다.' }, { status: 500 });
   }
 
-  logger.info('Battle created', { requestId, battleId: battleParsed.data.id });
+  const participantInsert = {
+    battle_id: battleParsed.data.id,
+    user_id: actor.userId ?? undefined,
+    guest_id: actor.guestId,
+    guest_name: actor.userId ? null : actor.displayName,
+  } as Database['public']['Tables']['battle_participants']['Insert'];
 
-  const { error: joinError } = await supabase
-    .from('battle_participants')
-    .insert({
-      battle_id: battleParsed.data.id,
-      user_id: user!.id,
-    });
+  const { error: joinError } = await supabase.from('battle_participants').insert(participantInsert);
 
   if (joinError) {
     logger.error('Failed to add host as participant', joinError, {
       requestId,
       battleId: battleParsed.data.id,
-      userId: user?.id,
+      actorId: actor.actorId,
     });
 
     await supabase.from('battles').delete().eq('id', battleParsed.data.id);
-    logger.warn('Battle rolled back due to participant join failure', {
-      requestId,
-      battleId: battleParsed.data.id,
-    });
 
     return NextResponse.json(
       { error: '대전 참가자 등록 중 오류가 발생했습니다.', detail: joinError.message },
@@ -149,7 +154,11 @@ export const POST = authApiHandler(async ({ req, user, requestId }) => {
     );
   }
 
-  logger.info('Battle creation completed successfully', { requestId, battleId: battleParsed.data.id, userId: user?.id });
+  logger.info('Battle creation completed successfully', {
+    requestId,
+    battleId: battleParsed.data.id,
+    actorId: actor.actorId,
+  });
 
   return NextResponse.json(battleParsed.data);
 });

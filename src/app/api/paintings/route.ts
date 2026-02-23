@@ -7,35 +7,65 @@ import {
   PaintingCreatePayloadSchema,
 } from '@/lib/validation/schemas';
 import type { PaintingInsert } from '@/types/database';
+import { resolveApiActor } from '@/lib/api-actor';
+import {
+  consumeRateLimit,
+  consumeDuplicateContentGuard,
+} from '@/lib/security/action-rate-limit';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
+    const actor = await resolveApiActor(request, supabase);
+    if (!actor) {
+      return NextResponse.json({ error: 'Guest identity is required.' }, { status: 400 });
+    }
+
+    const rateLimit = consumeRateLimit(`painting:create:${actor.actorId}`, 8, 10 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: '요청이 너무 빠릅니다. 잠시 후 다시 시도해주세요.' },
+        { status: 429 }
+      );
+    }
+
     const rawBody = await request.json();
-    const parsedBody = PaintingCreatePayloadSchema.safeParse({
-      ...rawBody,
-      user_id: user.id,
-    });
+    const parsedBody = PaintingCreatePayloadSchema.safeParse(rawBody);
 
     if (!parsedBody.success) {
       return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
     }
 
-    const paintingData: PaintingInsert = parsedBody.data;
+    const duplicateGuard = consumeDuplicateContentGuard(
+      `painting:topic:${actor.actorId}`,
+      `${parsedBody.data.topic}:${parsedBody.data.image_url.slice(0, 64)}`,
+      3000
+    );
+
+    if (!duplicateGuard.allowed) {
+      return NextResponse.json(
+        { error: '동일한 그림 요청이 너무 빠르게 반복되고 있습니다.' },
+        { status: 429 }
+      );
+    }
+
+    const paintingData = {
+      ...parsedBody.data,
+      user_id: actor.userId ?? undefined,
+      guest_id: actor.guestId,
+      guest_name: actor.userId ? null : actor.displayName,
+    } as PaintingInsert;
 
     const { data, error } = await supabase
       .from('paintings')
       .insert(paintingData)
-      .select(`
+      .select(
+        `
         *,
         profile:profiles(*)
-      `)
+      `
+      )
       .single();
 
     if (error) {
@@ -59,7 +89,13 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get('userId');
   const battleId = searchParams.get('battleId');
 
-  const parsedLimit = z.coerce.number().int().positive().max(100).default(20).safeParse(searchParams.get('limit'));
+  const parsedLimit = z.coerce
+    .number()
+    .int()
+    .positive()
+    .max(100)
+    .default(20)
+    .safeParse(searchParams.get('limit'));
   const limit = parsedLimit.success ? parsedLimit.data : 20;
 
   if (userId) {
@@ -78,10 +114,12 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from('paintings')
-    .select(`
+    .select(
+      `
       *,
       profile:profiles(*)
-    `)
+    `
+    )
     .order('created_at', { ascending: false })
     .limit(limit);
 
