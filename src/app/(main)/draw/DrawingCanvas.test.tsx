@@ -11,15 +11,17 @@ const mockGetDataUrl = vi.fn(() => 'data:image/png;base64,test') as ReturnType<t
 const mockLoadImage = vi.fn();
 
 // useResponsiveCanvas 모킹
-
-vi.mock('@/hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: null,
-    isLoading: false,
-    isAuthenticated: false,
-    signIn: vi.fn(),
-    signUp: vi.fn(),
-    signOut: vi.fn(),
+vi.mock('@/hooks/useActor', () => ({
+  useActor: () => ({
+    actor: {
+      id: 'guest:tester',
+      userId: null,
+      guestId: 'tester',
+      username: 'guest-tester',
+      displayName: 'Tester',
+      avatarUrl: null,
+      isGuest: true,
+    },
   }),
 }));
 

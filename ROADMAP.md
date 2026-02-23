@@ -31,15 +31,21 @@
 - [ ] **안정성**
   - [ ] 배틀 세션 중 이탈/재접속/중복 접속 시 상태 일관성 보장
   - [ ] 주요 API 오류 코드/메시지 표준화 및 재시도 정책 적용
+  - [x] PAI-77 1차 hotfix: `proxy.ts` -> `middleware.ts` 복원으로 prod entry `MIDDLEWARE_INVOCATION_FAILED` 복구 시도
 - [ ] **보안**
   - [ ] Supabase RLS, API 입력 검증, 권한 검증 재점검
   - [ ] 환경 변수 및 서비스 키 노출 방지 점검
+    - [x] 1차 자동 스캔 도입 (`npm run check:secrets`, `scripts/secret-scan.mjs`)
 - [ ] **관측성(Observability)**
   - [ ] API/Socket 에러 로깅, 요청 추적 ID, 핵심 지표 대시보드 구축
+    - [x] PAI-9 1차: API 공통 핸들러 응답에 `x-request-id` 헤더 주입 + 관측 유틸/테스트 추가
   - [ ] 알림 규칙(5xx 급증, 소켓 오류율 급증, 저장 실패율 상승) 설정
+  - [x] 성능 예산 CI 임계치 템플릿 추가 (`docs/sprint/performance-budget-ci-thresholds.json`, `npm run perf:budget`)
+  - [x] API p95 리포트 템플릿 추가 (`docs/sprint/api-p95-report-template.md`, `npm run api:p95:report`)
 - [ ] **운영 준비**
   - [ ] 배포 체크리스트/런북/롤백 절차 문서화
   - [ ] 장애 대응 연락 체계 및 온콜 역할 정의
+    - [x] 온콜/연락체계 템플릿 추가 (`docs/runbooks/oncall-contact-plan.md`, `npm run oncall:plan`)
 
 ## 2. Phase A - 안정화 (1~2주)
 
@@ -49,6 +55,7 @@
 ### 주요 작업
 - [ ] **모바일 최적화** (`src/app/(main)/draw`, `src/components/canvas`)
   - [ ] 터치 입력 정확도 및 지연 시간 개선
+  - [x] 히스토리 메모리 튜닝 1차 완료 (동일 dataURL 중복 저장 방지, 스토어 단위 테스트 추가)
   - [ ] 저사양 디바이스 렌더링/메모리 사용량 튜닝
 - [ ] **battle 안정성 강화** (`src/app/(main)/battle`, `src/components/battle`, `src/hooks/useBattle.ts`, `socket-server/server.js`)
   - [ ] 재연결/복구 로직 강화 (방 상태, 타이머, 투표 상태)
@@ -93,6 +100,8 @@
 ### 소프트 런치
 - [ ] 제한된 사용자 그룹 대상 공개
 - [ ] 핵심 지표 추적
+  - [x] 소프트런치 KPI 스펙 템플릿 추가 (`docs/sprint/soft-launch-kpi-spec.md`, `npm run kpi:spec`)
+  - [x] 런치 회고/백로그 재우선순위 템플릿 추가 (`docs/sprint/launch-retro-backlog-reprioritization.md`, `npm run retro:sheet`)
   - [ ] 회원가입 전환율
   - [ ] 드로잉 저장 성공률
   - [ ] 배틀 완주율
@@ -107,6 +116,7 @@
 - [ ] 핵심 경로 성공률 98% 이상
 - [ ] 성능 예산(LCP/TTI/API p95) 충족
 - [ ] 운영 런북 및 온콜 대응 리허설 완료
+- [x] GA 승격 체크리스트 템플릿 추가 (`docs/sprint/ga-promotion-gate-checklist.md`, `npm run ga:gate`)
 
 ## 6. Workstream별 TODO
 
@@ -118,22 +128,32 @@
 ### Backend/API
 - [ ] API 응답/에러 스키마 통일 (`src/app/api/**`, `src/lib/api-handler.ts`)
 - [ ] 인증/권한/입력 검증 강화 (`src/app/api/users/**`, `src/app/api/paintings/**`, `src/app/api/battle/**`)
-  - [x] PAI-28 hotfix: auth 로그인/회원가입 링크 redirect 파라미터 재조합+이중 인코딩 복원 처리 (`src/lib/auth/redirect.ts`)
+  - [x] PAI-28 1차: 좋아요 API path param UUID 검증 추가 (`src/app/api/paintings/[id]/like/route.ts`) 및 params 유틸 테스트 보강
+  - [x] PAI-28 2차: 보호 경로 로그인 리다이렉트에 query string 보존 (`src/lib/supabase/middleware.ts`) 및 회귀 테스트 추가
+  - [x] PAI-28 3차: auth 화면 링크 리다이렉트 파라미터 URL 인코딩 표준화 (`src/lib/auth/redirect.ts`)
+  - [x] PAI-28 4차: auth 링크를 query object 기반으로 구성해 redirect 파라미터 직렬화 안정화
+  - [x] PAI-28 5차: auth 링크 redirect를 URLSearchParams 문자열 직렬화로 재고정 (nested query 보존)
+  - [x] PAI-28 6차: 잘못 분리된 redirect 쿼리(mode 등) 재조합 로직 추가 (`resolveRedirectTarget`)
+  - [x] PAI-28 7차: auth cross-link redirect 이중 인코딩/복원으로 nested query 보존 강화
 - [ ] 핵심 API 성능 모니터링 지표 추가
 
 ### Realtime(Socket)
 - [ ] 재연결 및 상태 복구 로직 보강 (`socket-server/server.js`, `src/hooks/useBattle.ts`)
 - [ ] 이벤트 ACK/타임아웃/중복 처리 정책 정의
+  - [x] PAI-33 1차: 소켓 메트릭 표준 헬퍼 추가 (`src/lib/socket/metrics.ts`) 및 임계치 단위 테스트 작성
 - [ ] 배틀 단계 전이(waiting/in_progress/finished) 검증 자동화
 
 ### DB/Supabase
 - [ ] 마이그레이션 정합성 점검 (`supabase/migrations/*.sql`)
 - [ ] 인덱스/RLS/스토리지 정책 재점검
+  - [x] PAI-30 1차: RLS/Storage 감사 체크리스트 템플릿 추가 (`docs/security/rls-storage-audit-checklist.md`, `scripts/generate-rls-storage-audit-checklist.mjs`)
 - [ ] 운영 데이터 백업/복구 주기 확정
 
 ### QA
 - [ ] E2E 핵심 시나리오 자동화(로그인→드로잉→저장→피드→좋아요/댓글→배틀)
+  - [x] PAI-36 1차: 랜딩 핵심 CTA 네비게이션 렌더링 테스트 추가 (`src/app/page.test.tsx`)
 - [ ] 회귀 테스트 체크리스트 운영
+  - [x] 기본 시트 자동 생성기 도입 (`npm run qa:sheet`, `docs/qa/regression-sheet.md`)
 - [ ] 릴리즈 전 수동 점검 시트 유지
 
 ### DevOps

@@ -7,7 +7,7 @@ type CookieToSet = {
   options?: Record<string, unknown>;
 };
 
-const PROTECTED_PATHS = ['/draw', '/battle', '/profile'];
+const PROTECTED_PATHS: string[] = [];
 const AUTH_PATHS = ['/login', '/register'];
 
 function isPathMatch(pathname: string, basePath: string) {
@@ -34,13 +34,6 @@ export async function updateSession(request: NextRequest) {
     console.error(
       '[middleware] Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Skipping session sync.'
     );
-
-    if (isProtectedPath) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('redirect', request.nextUrl.pathname);
-      return NextResponse.redirect(url);
-    }
 
     return NextResponse.next({ request });
   }
@@ -74,10 +67,7 @@ export async function updateSession(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (isProtectedPath && !user) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('redirect', request.nextUrl.pathname);
-      return NextResponse.redirect(url);
+      return NextResponse.next({ request });
     }
 
     if (isAuthPath && user) {
@@ -87,13 +77,6 @@ export async function updateSession(request: NextRequest) {
     }
   } catch (error) {
     console.error('[middleware] Session sync failed. Falling back safely.', error);
-
-    if (isProtectedPath) {
-      const url = request.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('redirect', request.nextUrl.pathname);
-      return NextResponse.redirect(url);
-    }
 
     return NextResponse.next({ request });
   }

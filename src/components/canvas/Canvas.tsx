@@ -31,6 +31,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(
       height = CANVAS_CONFIG.DEFAULT_HEIGHT,
       className,
       backgroundColor = '#FFFFFF',
+      onDrawEnd,
     },
     ref
   ) => {
@@ -49,7 +50,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(
       getDataUrl,
       loadImage,
       fill,
-    } = useCanvas({ width, height, backgroundColor });
+    } = useCanvas({ width, height, backgroundColor, onDrawEnd });
 
     // 외부에서 접근 가능한 메서드 노출
     useImperativeHandle(ref, () => ({

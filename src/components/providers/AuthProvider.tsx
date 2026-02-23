@@ -12,7 +12,7 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const { setUser, setLoading, logout } = useAuthStore();
+  const { setUser, logout } = useAuthStore();
 
   useEffect(() => {
     if (!getSupabasePublicEnv()) {
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [setUser, setLoading, logout]);
+  }, [setUser, logout]);
 
   return <>{children}</>;
 }

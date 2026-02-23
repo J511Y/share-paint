@@ -9,12 +9,11 @@ import {
   CanvasActions,
   SavePaintingModal,
 } from '@/components/canvas';
-import { RandomTopicSelector } from '@/components/topic';
 import type { CanvasHandle } from '@/components/canvas';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useResponsiveCanvas } from '@/hooks/useResponsiveCanvas';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
+import { useActor } from '@/hooks/useActor';
 
 interface DrawingCanvasProps {
   className?: string;
@@ -23,8 +22,8 @@ interface DrawingCanvasProps {
 export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const canvasRef = useRef<CanvasHandle>(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
-  const [selectedTopic, setSelectedTopic] = useState('');
-  const { user } = useAuth();
+  const drawingTopic = '';
+  const { actor } = useActor();
 
   const { width, height } = useResponsiveCanvas();
   const canUndo = useCanvasStore((state) => state.canUndo());
@@ -53,12 +52,13 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   }, []);
 
   const handleSave = useCallback(() => {
-    if (!user) {
-      alert('로그인 후 저장할 수 있습니다.');
+    if (!actor) {
+      alert('게스트 정보를 준비하는 중입니다. 잠시 후 다시 시도해주세요.');
       return;
     }
+
     setIsSaveModalOpen(true);
-  }, [user]);
+  }, [actor]);
 
   const getCanvasData = useCallback(() => {
     return canvasRef.current?.getDataUrl() || null;
@@ -139,6 +139,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         isOpen={isSaveModalOpen}
         onClose={() => setIsSaveModalOpen(false)}
         getDataUrl={getCanvasData}
+        initialTopic={drawingTopic}
       />
     </main>
   );

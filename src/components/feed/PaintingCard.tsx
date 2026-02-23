@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 interface PaintingWithProfile extends Omit<Painting, 'profile'> {
   profile: Profile | null;
-  isLiked?: boolean; // 현재 사용자가 좋아요를 눌렀는지 여부
+  isLiked?: boolean;
 }
 
 interface PaintingCardProps {
@@ -24,6 +24,9 @@ export function PaintingCard({ painting }: PaintingCardProps) {
     painting.isLiked || false,
     painting.likes_count
   );
+
+  const fallbackName = painting.guest_name || '게스트 작가';
+  const fallbackInitial = fallbackName[0]?.toUpperCase() || 'G';
 
   return (
     <Card className="overflow-hidden transition-shadow hover:shadow-md h-full flex flex-col">
@@ -54,18 +57,18 @@ export function PaintingCard({ painting }: PaintingCardProps) {
         </div>
 
         {/* 작성자 */}
-        {painting.profile && (
+        {painting.profile ? (
           <Link
             href={`/profile/${painting.profile.username}`}
             className="mb-3 flex items-center gap-2 hover:opacity-80 w-fit"
           >
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-xs font-medium text-purple-600 overflow-hidden relative">
               {painting.profile.avatar_url ? (
-                <Image 
-                  src={painting.profile.avatar_url} 
-                  alt={painting.profile.username} 
+                <Image
+                  src={painting.profile.avatar_url}
+                  alt={painting.profile.username}
                   fill
-                  className="object-cover" 
+                  className="object-cover"
                   sizes="24px"
                 />
               ) : (
@@ -76,6 +79,13 @@ export function PaintingCard({ painting }: PaintingCardProps) {
               {painting.profile.display_name || painting.profile.username}
             </span>
           </Link>
+        ) : (
+          <div className="mb-3 flex items-center gap-2 w-fit">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-600">
+              {fallbackInitial}
+            </div>
+            <span className="text-sm font-medium text-gray-700 truncate">{fallbackName}</span>
+          </div>
         )}
 
         <div className="mt-auto pt-3 border-t border-gray-100 flex items-center justify-between text-sm text-gray-500">

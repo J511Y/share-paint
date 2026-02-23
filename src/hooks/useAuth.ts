@@ -66,7 +66,7 @@ export function useAuth() {
           setUser(profile);
         } else if (event === 'SIGNED_OUT') {
           logout();
-          router.push('/login');
+          router.push('/feed');
         }
       }
     );

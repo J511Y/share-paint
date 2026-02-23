@@ -1,0 +1,39 @@
+name: Deploy Socket Server
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'socket-server/**'
+      - '.github/workflows/socket-deploy.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  socket-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: socket-server/package-lock.json
+
+      - name: Install socket dependencies
+        run: npm ci
+        working-directory: socket-server
+
+      - name: Validate socket server syntax
+        run: node --check socket-server/server.js
+
+      - name: Deployment placeholder
+        run: |
+          echo "Integrate Railway/Fly/Render deploy command here."
+          echo "Current branch: ${{ github.ref_name }}"

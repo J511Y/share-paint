@@ -134,6 +134,27 @@ describe('canvasStore', () => {
         // 첫 번째 항목이 삭제되었는지 확인
         expect(history[0]).toBe('data:image/png;base64,test1')
       })
+
+      it('현재 스냅샷과 동일한 dataUrl은 중복 저장하지 않는다', () => {
+        useCanvasStore.getState().addToHistory(dataUrl1)
+        useCanvasStore.getState().addToHistory(dataUrl1)
+
+        const { history, historyIndex } = useCanvasStore.getState()
+        expect(history).toEqual([dataUrl1])
+        expect(historyIndex).toBe(0)
+      })
+
+      it('undo 이후 동일 스냅샷 추가는 no-op으로 동작한다', () => {
+        useCanvasStore.getState().addToHistory(dataUrl1)
+        useCanvasStore.getState().addToHistory(dataUrl2)
+        useCanvasStore.getState().undo()
+
+        useCanvasStore.getState().addToHistory(dataUrl1)
+
+        const { history, historyIndex } = useCanvasStore.getState()
+        expect(history).toEqual([dataUrl1, dataUrl2])
+        expect(historyIndex).toBe(0)
+      })
     })
 
     describe('undo', () => {

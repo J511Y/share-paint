@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { SavePaintingModal } from '@/components/canvas/SavePaintingModal';
 import type { BattleResult } from '@/types/battle';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
+import { useActor } from '@/hooks/useActor';
 
 interface BattleResultProps {
   result: BattleResult;
@@ -17,7 +17,7 @@ interface BattleResultProps {
 }
 
 export function BattleResultView({ result, onVote, hasVoted }: BattleResultProps) {
-  const { user } = useAuth();
+  const { actor } = useActor();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
@@ -27,7 +27,7 @@ export function BattleResultView({ result, onVote, hasVoted }: BattleResultProps
     }
   };
 
-  const myPainting = result.paintings.find(p => p.userId === user?.id);
+  const myPainting = result.paintings.find((p) => p.userId === actor?.id);
 
   return (
     <div className="p-6 h-full overflow-y-auto relative">
@@ -81,7 +81,7 @@ export function BattleResultView({ result, onVote, hasVoted }: BattleResultProps
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-20">
         {result.paintings.map((painting) => {
-          const isMe = user?.id === painting.userId;
+          const isMe = actor?.id === painting.userId;
           // 투표 모드일 때는 선택 가능, 결과 모드일 때는 선택 불가
           const isSelectable = !result.winner && !hasVoted && !isMe;
           const isSelected = selectedId === painting.userId;

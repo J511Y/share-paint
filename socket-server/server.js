@@ -32,6 +32,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // In-memory battle state for realtime coordination.
 const battles = {};
 const socketToUser = new Map();
+const socketRateBuckets = new Map();
 
 // battles[battleId] = {
 //   timer: NodeJS.Timeout,
@@ -43,24 +44,51 @@ const socketToUser = new Map();
 //   votes: { voterId: targetUserId },
 // }
 
+function isGuestId(value) {
+  return typeof value === 'string' && /^[a-zA-Z0-9:-]{8,128}$/.test(value);
+}
+
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake?.auth?.token;
-    if (!token) {
-      return next(new Error('Unauthorized: missing access token'));
+    const guestId = socket.handshake?.auth?.guestId;
+    const guestName = socket.handshake?.auth?.guestName;
+
+    if (token) {
+      const { data, error } = await supabase.auth.getUser(token);
+      if (error || !data?.user) {
+        return next(new Error('Unauthorized: invalid access token'));
+      }
+
+      socket.data.user = {
+        id: data.user.id,
+        email: data.user.email || null,
+      };
+
+      socket.data.actor = {
+        type: 'user',
+        id: data.user.id,
+        email: data.user.email || null,
+      };
+
+      return next();
     }
 
-    const { data, error } = await supabase.auth.getUser(token);
-    if (error || !data?.user) {
-      return next(new Error('Unauthorized: invalid access token'));
+    if (isGuestId(guestId)) {
+      socket.data.actor = {
+        type: 'guest',
+        id: `guest:${guestId}`,
+        guestId,
+        displayName:
+          typeof guestName === 'string' && guestName.trim().length > 0
+            ? guestName.trim().slice(0, 24)
+            : `게스트 ${guestId.slice(0, 4)}`,
+      };
+
+      return next();
     }
 
-    socket.data.user = {
-      id: data.user.id,
-      email: data.user.email || null,
-    };
-
-    return next();
+    return next(new Error('Unauthorized: missing access token or guest identity'));
   } catch (err) {
     return next(new Error('Unauthorized'));
   }
@@ -79,7 +107,29 @@ function getBattleState(battleId) {
   return battles[battleId] || null;
 }
 
+function allowSocketAction(actorId, action, limit, windowMs) {
+  const key = `${actorId}:${action}`;
+  const now = Date.now();
+  const existing = socketRateBuckets.get(key) || [];
+  const recent = existing.filter((ts) => now - ts < windowMs);
+
+  if (recent.length >= limit) {
+    socketRateBuckets.set(key, recent);
+    return false;
+  }
+
+  recent.push(now);
+  socketRateBuckets.set(key, recent);
+  return true;
+}
+
 function getSafeUsername(socket, userId) {
+  const actor = socket.data.actor;
+
+  if (actor?.type === 'guest') {
+    return actor.displayName || `guest-${actor.guestId.slice(0, 6)}`;
+  }
+
   const email = socket.data.user?.email || '';
   return email || `user-${userId.slice(0, 6)}`;
 }
@@ -113,16 +163,24 @@ function normalizeBattleResult(battle) {
 }
 
 io.on('connection', (socket) => {
-  const authUser = socket.data.user;
-  socketToUser.set(socket.id, authUser.id);
+  const actor = socket.data.actor;
+  const actorId = actor?.id;
 
-  console.log('User connected:', socket.id);
+  if (!actorId) {
+    socket.disconnect(true);
+    return;
+  }
+
+  socketToUser.set(socket.id, actorId);
+
+  console.log('User connected:', socket.id, actorId);
 
   socket.on('join_battle', (data) => {
     const { battleId, user = {} } = data || {};
     const userId = getUserId(socket);
 
     if (!battleId || !userId) return;
+    if (!allowSocketAction(userId, 'join_battle', 20, 60 * 1000)) return;
 
     const safeUser = {
       ...user,
@@ -219,6 +277,7 @@ io.on('connection', (socket) => {
     const { battleId, content = '', type = 'message' } = data;
     const userId = getUserId(socket);
     if (!isBattleParticipant(socket, battleId) || !userId) return;
+    if (!allowSocketAction(userId, 'chat_message', 25, 30 * 1000)) return;
 
     io.to(battleId).emit('battle_event', {
       type: 'chat',
@@ -248,6 +307,7 @@ io.on('connection', (socket) => {
   socket.on('canvas_update', ({ battleId, imageData }) => {
     const senderId = getUserId(socket);
     if (!isBattleParticipant(socket, battleId) || !senderId) return;
+    if (!allowSocketAction(senderId, 'canvas_update', 120, 30 * 1000)) return;
 
     const battle = getBattleState(battleId);
     if (!battle) return;
@@ -271,6 +331,7 @@ io.on('connection', (socket) => {
   socket.on('vote', ({ battleId, paintingUserId }) => {
     const voterId = getUserId(socket);
     if (!isBattleParticipant(socket, battleId) || !voterId) return;
+    if (!allowSocketAction(voterId, 'vote', 10, 10 * 1000)) return;
     if (!battleId || !paintingUserId || voterId === paintingUserId) return;
 
     const battle = getBattleState(battleId);
@@ -296,6 +357,10 @@ io.on('connection', (socket) => {
 
   socket.on('start_battle', async ({ battleId }) => {
     if (!battleId) return;
+
+    const requesterId = getUserId(socket);
+    if (!requesterId || !allowSocketAction(requesterId, 'start_battle', 5, 60 * 1000)) return;
+
     console.log(`Starting battle ${battleId}`);
 
     try {
@@ -308,7 +373,10 @@ io.on('connection', (socket) => {
       if (error || !battle) {
         throw new Error('Battle not found');
       }
-      if (battle.host_id !== authUser.id) {
+      const isHostUser = actor?.type === 'user' && battle.host_id === actor.id;
+      const isHostGuest = actor?.type === 'guest' && battle.host_guest_id === actor.guestId;
+
+      if (!isHostUser && !isHostGuest) {
         throw new Error('Forbidden: only host can start battle');
       }
 
@@ -400,6 +468,14 @@ io.on('connection', (socket) => {
     console.log('User disconnected:', socket.id);
 
     socketToUser.delete(socket.id);
+
+    if (userId) {
+      for (const key of socketRateBuckets.keys()) {
+        if (key.startsWith(`${userId}:`)) {
+          socketRateBuckets.delete(key);
+        }
+      }
+    }
 
     for (const roomId of socket.rooms) {
       if (roomId === socket.id) continue;
