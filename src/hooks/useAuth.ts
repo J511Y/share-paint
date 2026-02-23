@@ -3,9 +3,13 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { getSupabasePublicEnv } from '@/lib/supabase/env';
 import { useAuthStore } from '@/stores/authStore';
 import { ApiProfileSchema } from '@/lib/validation/schemas';
 import type { Database, Profile } from '@/types/database';
+
+const AUTH_UNAVAILABLE_ERROR_MESSAGE =
+  '인증 서비스 설정이 누락되어 로그인을 사용할 수 없습니다.';
 
 export function useAuth() {
   const router = useRouter();
@@ -13,6 +17,11 @@ export function useAuth() {
     useAuthStore();
 
   useEffect(() => {
+    if (!getSupabasePublicEnv()) {
+      setUser(null);
+      return;
+    }
+
     const supabase = createClient();
 
     const getProfile = async (userId: string): Promise<Profile | null> => {
@@ -62,13 +71,16 @@ export function useAuth() {
       }
     );
 
-
     return () => {
       subscription.unsubscribe();
     };
-  }, [setUser, setLoading, logout, router]);
+  }, [setUser, logout, router]);
 
   const signIn = async (email: string, password: string) => {
+    if (!getSupabasePublicEnv()) {
+      throw new Error(AUTH_UNAVAILABLE_ERROR_MESSAGE);
+    }
+
     const supabase = createClient();
     setLoading(true);
 
@@ -99,6 +111,10 @@ export function useAuth() {
     username: string,
     displayName?: string
   ) => {
+    if (!getSupabasePublicEnv()) {
+      throw new Error(AUTH_UNAVAILABLE_ERROR_MESSAGE);
+    }
+
     const supabase = createClient();
     setLoading(true);
 
@@ -133,6 +149,11 @@ export function useAuth() {
   };
 
   const signOut = async () => {
+    if (!getSupabasePublicEnv()) {
+      logout();
+      return;
+    }
+
     const supabase = createClient();
     await supabase.auth.signOut();
   };
