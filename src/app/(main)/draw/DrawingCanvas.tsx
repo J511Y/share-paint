@@ -25,6 +25,7 @@ import {
 } from '@/components/canvas';
 import type { CanvasHandle } from '@/components/canvas';
 import { Button } from '@/components/ui/Button';
+import { InfoDisclosure } from '@/components/ui/InfoDisclosure';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { useResponsiveCanvas } from '@/hooks/useResponsiveCanvas';
 import { cn } from '@/lib/utils';
@@ -341,15 +342,22 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   return (
     <main className={cn('w-full', className)} role="main">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">그림 그리기</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          연필/마커/브러시/형광펜/지우개를 빠르게 오가며, 필요할 때만 상세 패널을 열어
-          흐름을 끊지 않고 그려보세요.
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">그림 그리기</h1>
+            <p className="mt-1 text-sm text-gray-600">빠른 도구로 바로 그리고 필요할 때만 상세 설정을 열어보세요.</p>
+          </div>
+          <InfoDisclosure label="드로잉 안내 보기" title="드로잉 안내">
+            <ul className="list-disc space-y-1 pl-4">
+              <li>연필/마커/브러시/형광펜/지우개를 빠르게 전환할 수 있어요.</li>
+              <li>게스트도 저장 및 공유가 가능하며 계정 연결은 선택사항입니다.</li>
+              <li>문제가 생기면 상단에서 게스트 ID를 재발급한 뒤 다시 시도해보세요.</li>
+            </ul>
+          </InfoDisclosure>
+        </div>
         {actor?.isGuest && (
           <p className="mt-1 text-xs text-emerald-700">
-            게스트로 저장 시 현재 게스트 이름으로 게시됩니다. 필요하면 상단에서 게스트 ID를
-            재발급하세요.
+            게스트 모드로 작업 중 · 저장 시 현재 게스트 이름으로 게시됩니다.
           </p>
         )}
       </div>

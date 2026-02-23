@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getSupabasePublicEnv } from '@/lib/supabase/env';
 import { FeedContent } from './FeedContent';
 import { FeedSkeleton } from './FeedSkeleton';
+import { InfoDisclosure } from '@/components/ui/InfoDisclosure';
 
 export const metadata = {
   title: '피드',
@@ -44,12 +45,19 @@ export default async function FeedPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">피드</h1>
-          <p className="mt-1 text-xs text-emerald-700">
-            게스트로도 피드 탐색/좋아요/댓글 참여가 가능합니다. 문제가 있으면 상단에서 게스트 ID를 재발급하세요.
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">피드</h1>
+            <p className="mt-1 text-sm text-gray-600">작품을 탐색하고 반응해보세요.</p>
+          </div>
+          <InfoDisclosure label="피드 안내 보기" title="피드 이용 안내">
+            <ul className="list-disc space-y-1 pl-4">
+              <li>게스트로도 좋아요/댓글 참여가 가능합니다.</li>
+              <li>반응 요청이 과도하면 잠시 제한될 수 있습니다.</li>
+              <li>문제가 있으면 상단에서 게스트 ID를 재발급하세요.</li>
+            </ul>
+          </InfoDisclosure>
         </div>
         <Link href="/login" className="text-xs text-gray-500 hover:text-gray-700">
           계정 연결 (선택)

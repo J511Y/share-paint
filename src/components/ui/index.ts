@@ -9,3 +9,4 @@ export {
   CardFooter,
 } from './Card';
 export { ToastProvider, useToast } from './Toast';
+export { InfoDisclosure } from './InfoDisclosure';
