@@ -11,9 +11,7 @@ export default function RegisterPage() {
             <div className="mx-auto h-4 w-56 rounded bg-gray-200" />
           </div>
           <div className="space-y-4">
-            <div className="h-12 rounded-lg bg-gray-200" />
-            <div className="h-12 rounded-lg bg-gray-200" />
-            <div className="h-12 rounded-lg bg-gray-200" />
+            <div className="h-10 rounded-lg bg-gray-200" />
             <div className="h-12 rounded-lg bg-gray-200" />
             <div className="h-12 rounded-lg bg-gray-200" />
             <div className="h-12 rounded-lg bg-gray-200" />
