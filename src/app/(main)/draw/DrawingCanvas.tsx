@@ -72,6 +72,11 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         <p className="text-sm text-gray-600 mt-1">
           도구를 선택하고 캔버스에 그림을 그려보세요
         </p>
+        {actor?.isGuest && (
+          <p className="mt-1 text-xs text-emerald-700">
+            게스트로 저장 시 현재 게스트 이름으로 게시됩니다. 필요하면 상단에서 게스트 ID를 재발급하세요.
+          </p>
+        )}
       </div>
 
       {/* 메인 컨테이너: 반응형 레이아웃 */}
