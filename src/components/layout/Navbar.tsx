@@ -103,6 +103,15 @@ export function Navbar() {
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
                   게스트 모드 · {actor?.displayName || '방문자'}
                 </span>
+                <button
+                  onClick={() => {
+                    resetGuestIdentity();
+                    window.location.reload();
+                  }}
+                  className="rounded-md px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100"
+                >
+                  게스트 ID 재발급
+                </button>
                 <Link href="/login">
                   <Button variant="ghost" size="sm">
                     계정 연결
