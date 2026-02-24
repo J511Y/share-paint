@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit -p tsconfig.typecheck.json",
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e:critical": "vitest run tests/e2e",
