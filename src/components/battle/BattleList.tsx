@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, Lock, Users } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -34,13 +34,16 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
   const [loading, setLoading] = useState(!initialBattles.length);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [pollIntervalMs, setPollIntervalMs] = useState(10000);
+  const [showRecoveredNotice, setShowRecoveredNotice] = useState(false);
+  const hadRecentFailureRef = useRef(false);
 
-  const fetchBattles = async () => {
+  const fetchBattles = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetch('/api/battle?status=waiting');
 
       if (!res.ok) {
+        hadRecentFailureRef.current = true;
         setFetchError(BATTLE_LIST_FETCH_ERROR);
         setPollIntervalMs((prev) => (prev >= 60000 ? 60000 : prev === 10000 ? 30000 : 60000));
         return;
@@ -48,22 +51,35 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
 
       const data = await parseJsonResponse(res, BattleArraySchema);
       setBattles(data);
+      setShowRecoveredNotice(hadRecentFailureRef.current);
+      hadRecentFailureRef.current = false;
       setFetchError(null);
       setPollIntervalMs(10000);
     } catch {
+      hadRecentFailureRef.current = true;
       setFetchError(BATTLE_LIST_FETCH_ERROR);
       setPollIntervalMs((prev) => (prev >= 60000 ? 60000 : prev === 10000 ? 30000 : 60000));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchBattles();
     // 정상 10초 -> 장애 시 30초 -> 장기 장애 시 60초로 백오프
     const interval = setInterval(fetchBattles, pollIntervalMs);
     return () => clearInterval(interval);
-  }, [pollIntervalMs]);
+  }, [fetchBattles, pollIntervalMs]);
+
+  useEffect(() => {
+    if (!showRecoveredNotice) return;
+
+    const timer = setTimeout(() => {
+      setShowRecoveredNotice(false);
+    }, 3500);
+
+    return () => clearTimeout(timer);
+  }, [showRecoveredNotice]);
 
   if (loading && battles.length === 0) {
     return (
@@ -78,6 +94,12 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
   if (battles.length === 0) {
     return (
       <div className="space-y-3">
+        {showRecoveredNotice && (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+            연결이 복구됐어요. 대결방 목록을 최신 상태로 갱신했습니다.
+          </div>
+        )}
+
         {fetchError && (
           <div
             role="alert"
@@ -116,6 +138,12 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
 
   return (
     <div className="space-y-3">
+      {showRecoveredNotice && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+          연결이 복구됐어요. 대결방 목록을 최신 상태로 갱신했습니다.
+        </div>
+      )}
+
       {fetchError && (
         <div
           role="alert"

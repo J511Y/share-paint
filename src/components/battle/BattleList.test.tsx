@@ -66,4 +66,5 @@ describe('BattleList', () => {
       expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
   });
+
 });
