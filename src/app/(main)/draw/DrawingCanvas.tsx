@@ -53,6 +53,7 @@ const isEditableTarget = (target: EventTarget | null) => {
 };
 
 const clampSize = (size: number) => Math.max(1, Math.min(80, size));
+const clampOpacity = (opacity: number) => Math.max(0.05, Math.min(1, opacity));
 
 const quickTools = [
   {
@@ -135,9 +136,11 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const previousPresetRef = useRef<DrawingPresetId>('pencil');
   const lastActivePresetRef = useRef<DrawingPresetId>('pencil');
   const brushSize = useCanvasStore((state) => state.brush.size);
+  const brushOpacity = useCanvasStore((state) => state.brush.opacity);
   const setTool = useCanvasStore((state) => state.setTool);
   const setPreset = useCanvasStore((state) => state.setPreset);
   const setBrushSize = useCanvasStore((state) => state.setBrushSize);
+  const setBrushOpacity = useCanvasStore((state) => state.setBrushOpacity);
   const canUndo = useCanvasStore((state) => state.canUndo());
   const canRedo = useCanvasStore((state) => state.canRedo());
 
@@ -317,6 +320,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         setIsShortcutHelpOpen(true);
       } else if (key === 'f') {
         setTool('fill');
+      } else if (event.altKey && event.key === '[') {
+        event.preventDefault();
+        setBrushOpacity(clampOpacity(brushOpacity - 0.05));
+      } else if (event.altKey && event.key === ']') {
+        event.preventDefault();
+        setBrushOpacity(clampOpacity(brushOpacity + 0.05));
       } else if (event.key === '[') {
         setBrushSize(clampSize(brushSize - 1));
       } else if (event.key === ']') {
@@ -331,10 +340,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     };
   }, [
     activePreset,
+    brushOpacity,
     brushSize,
     handleRedo,
     handleSave,
     handleUndo,
+    setBrushOpacity,
     setBrushSize,
     setPreset,
     setTool,
@@ -607,6 +618,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                     <li>?: 단축키 패널 열기</li>
                     <li>F: 영역 채우기</li>
                     <li>[ / ]: 굵기 줄이기/늘리기</li>
+                    <li>⌥/Alt + [ / ]: 농도 줄이기/늘리기</li>
                     <li>⌘/Ctrl + Z, Shift+Z, Y: 실행취소/다시실행</li>
                   </ul>
                 </section>

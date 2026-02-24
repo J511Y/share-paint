@@ -302,6 +302,16 @@ describe('DrawingCanvas', () => {
     expect(mockSetBrushSize).toHaveBeenCalledWith(6);
   });
 
+  it('Alt + [ ] 단축키로 브러시 농도를 조절한다', () => {
+    render(<DrawingCanvas />);
+
+    fireEvent.keyDown(window, { key: ']', altKey: true });
+    expect(mockStoreState.setBrushOpacity).toHaveBeenCalledWith(1);
+
+    fireEvent.keyDown(window, { key: '[', altKey: true });
+    expect(mockStoreState.setBrushOpacity).toHaveBeenCalledWith(0.95);
+  });
+
   it('Q 단축키로 직전 펜 프리셋으로 토글한다', () => {
     const { rerender } = render(<DrawingCanvas />);
 
