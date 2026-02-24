@@ -14,6 +14,8 @@ interface InfoDisclosureProps {
 
 const PANEL_WIDTH = 320;
 const VIEWPORT_GUTTER = 8;
+const PANEL_ANIMATION_CLASS =
+  'transition-all duration-150 ease-out motion-reduce:transition-none data-[state=closed]:pointer-events-none data-[state=closed]:-translate-y-1 data-[state=closed]:opacity-0 data-[state=open]:pointer-events-auto data-[state=open]:translate-y-0 data-[state=open]:opacity-100';
 
 export function InfoDisclosure({
   label = '안내 보기',
@@ -111,7 +113,11 @@ export function InfoDisclosure({
       {open && typeof document !== 'undefined' && createPortal(
           <section
             id={panelId}
-            className="fixed z-50 max-h-[60vh] overflow-y-auto rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900 shadow-lg"
+            data-state={open ? 'open' : 'closed'}
+            className={cn(
+              'fixed z-50 max-h-[60vh] overflow-y-auto rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900 shadow-lg',
+              PANEL_ANIMATION_CLASS
+            )}
             style={{ top: position.top, left: position.left, width: position.width }}
           >
             <div className="mb-1 flex items-center justify-between gap-2">
