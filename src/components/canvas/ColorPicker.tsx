@@ -88,6 +88,21 @@ export function ColorPicker({ className }: ColorPickerProps) {
     );
   };
 
+  const moveFavoriteColor = (targetHex: string, direction: 'left' | 'right') => {
+    const currentIndex = favoriteColors.findIndex(
+      (color) => normalizeHex(color) === normalizeHex(targetHex)
+    );
+
+    if (currentIndex < 0) return;
+
+    const nextIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+    if (nextIndex < 0 || nextIndex >= favoriteColors.length) return;
+
+    const next = [...favoriteColors];
+    [next[currentIndex], next[nextIndex]] = [next[nextIndex], next[currentIndex]];
+    persistFavoriteColors(next);
+  };
+
   const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBrushColor(e.target.value);
   };
@@ -179,6 +194,9 @@ export function ColorPicker({ className }: ColorPickerProps) {
           <div className="grid grid-cols-6 gap-2">
             {favoriteColors.map((hex, index) => {
               const isSelected = isColorSelected(hex);
+              const canMoveLeft = index > 0;
+              const canMoveRight = index < favoriteColors.length - 1;
+
               return (
                 <div key={`${hex}-${index}`} className="relative">
                   <button
@@ -200,6 +218,28 @@ export function ColorPicker({ className }: ColorPickerProps) {
                       />
                     )}
                   </button>
+
+                  <div className="absolute -bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-gray-200 bg-white px-1 py-0.5 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => moveFavoriteColor(hex, 'left')}
+                      disabled={!canMoveLeft}
+                      aria-label={`즐겨찾기 ${hex} 왼쪽으로 이동`}
+                      className="inline-flex h-4 w-4 items-center justify-center rounded text-[10px] text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      ←
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveFavoriteColor(hex, 'right')}
+                      disabled={!canMoveRight}
+                      aria-label={`즐겨찾기 ${hex} 오른쪽으로 이동`}
+                      className="inline-flex h-4 w-4 items-center justify-center rounded text-[10px] text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      →
+                    </button>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => removeFavoriteColor(hex)}

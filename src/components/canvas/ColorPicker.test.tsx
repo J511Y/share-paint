@@ -107,4 +107,16 @@ describe('ColorPicker', () => {
 
     expect(screen.queryByRole('button', { name: /즐겨찾기 색상 #EF4444/i })).not.toBeInTheDocument();
   });
+
+  it('즐겨찾기를 좌우 이동해 순서를 재정렬한다', async () => {
+    localStorage.setItem('paintshare.favorite.colors.v1', JSON.stringify(['#EF4444', '#3B82F6']));
+    const user = userEvent.setup();
+
+    render(<ColorPicker />);
+
+    await user.click(screen.getByRole('button', { name: /즐겨찾기 #EF4444 오른쪽으로 이동/i }));
+
+    const order = JSON.parse(localStorage.getItem('paintshare.favorite.colors.v1') || '[]');
+    expect(order).toEqual(['#3B82F6', '#EF4444']);
+  });
 });
