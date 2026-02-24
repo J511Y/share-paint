@@ -614,13 +614,20 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
       <div data-testid="drawing-container" className="relative">
         {!isMobile && (
-          <div
-            data-testid="quick-bar-desktop"
-            role="toolbar"
-            aria-label="빠른 실행 도구"
-            className="sticky top-20 z-20 mb-4 inline-flex max-w-full items-center gap-2 overflow-x-auto rounded-xl border border-gray-200 bg-white/95 p-2 shadow-sm backdrop-blur"
-          >
-            {quickBarButtons}
+          <div className="sticky top-20 z-20 mb-4 space-y-2">
+            <div
+              data-testid="quick-bar-desktop"
+              role="toolbar"
+              aria-label="빠른 실행 도구"
+              className="inline-flex max-w-full items-center gap-2 overflow-x-auto rounded-xl border border-gray-200 bg-white/95 p-2 shadow-sm backdrop-blur"
+            >
+              {quickBarButtons}
+            </div>
+            {showMicroHints && !isShortcutHelpOpen && (
+              <p className="rounded-lg border border-purple-100 bg-purple-50 px-3 py-1.5 text-xs text-purple-800">
+                빠른 팁: <span className="font-semibold">단축키</span> 버튼에서 1~5, F, [ ] 조작을 바로 확인할 수 있어요.
+              </p>
+            )}
           </div>
         )}
 
@@ -676,13 +683,20 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             className="fixed inset-x-0 z-40 flex justify-center px-2"
             style={{ bottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
           >
-            <div
-              data-testid="quick-bar-mobile"
-              role="toolbar"
-              aria-label="빠른 실행 도구"
-              className="inline-flex w-full max-w-md items-center justify-start gap-2 overflow-x-auto rounded-2xl border border-gray-200 bg-white p-2 shadow-lg"
-            >
-              {quickBarButtons}
+            <div className="w-full max-w-md space-y-1.5">
+              {showMicroHints && !isShortcutHelpOpen && (
+                <p className="rounded-xl border border-purple-100 bg-purple-50 px-3 py-1.5 text-[11px] text-purple-800">
+                  팁: 단축키 버튼에서 1~5, F, [ ] 조작을 확인해보세요.
+                </p>
+              )}
+              <div
+                data-testid="quick-bar-mobile"
+                role="toolbar"
+                aria-label="빠른 실행 도구"
+                className="inline-flex w-full items-center justify-start gap-2 overflow-x-auto rounded-2xl border border-gray-200 bg-white p-2 shadow-lg"
+              >
+                {quickBarButtons}
+              </div>
             </div>
           </div>
         )}

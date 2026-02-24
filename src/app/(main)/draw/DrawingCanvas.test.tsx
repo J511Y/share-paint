@@ -239,6 +239,7 @@ describe('DrawingCanvas', () => {
     expect(screen.getByText(/− \/ \+ 와 크기 칩/i)).toBeInTheDocument();
     expect(screen.getByText(/빠른 팔레트에서 탭하고/i)).toBeInTheDocument();
     expect(screen.getByText(/불투명도 칩과 슬라이더/i)).toBeInTheDocument();
+    expect(screen.getByText(/빠른 팁:/i)).toBeInTheDocument();
   });
 
   it('다운로드 버튼 클릭 시 이미지를 다운로드한다', async () => {
