@@ -112,6 +112,7 @@ vi.mock('@/components/canvas/SavePaintingModal', () => ({
 describe('DrawingCanvas (tldraw shell)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     mockShapeIds = new Set(['shape:1']);
     mockCanUndo = true;
     mockCanRedo = false;
@@ -166,6 +167,26 @@ describe('DrawingCanvas (tldraw shell)', () => {
 
     await user.click(screen.getByRole('button', { name: '그리기' }));
     expect(mockSetCurrentTool).toHaveBeenLastCalledWith('draw');
+  });
+
+  it('shows shortcut help panel and hides NEW badge after open', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    expect(await screen.findByText('NEW')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '단축키' }));
+
+    expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
+    expect(screen.queryByText('NEW')).not.toBeInTheDocument();
+  });
+
+  it('? 단축키로 shortcut help를 연다', () => {
+    render(<DrawingCanvas />);
+
+    fireEvent.keyDown(window, { key: '?', shiftKey: true });
+
+    expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
   });
 
   it('applies color and size styles', async () => {

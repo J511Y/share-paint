@@ -8,7 +8,7 @@ import {
   type TLDefaultColorStyle,
   type TLDefaultSizeStyle,
 } from '@tldraw/tldraw';
-import { Download, Eraser, PenLine, Redo2, Save, Undo2 } from 'lucide-react';
+import { Download, Eraser, Keyboard, PenLine, Redo2, Save, Undo2 } from 'lucide-react';
 import { SavePaintingModal } from '@/components/canvas/SavePaintingModal';
 import { TldrawCanvasStage } from '@/components/tldraw';
 import { Button } from '@/components/ui/Button';
@@ -54,6 +54,8 @@ const SIZE_OPTIONS: Array<{ id: TLDefaultSizeStyle; label: string }> = [
   { id: 'xl', label: '두껍게' },
 ];
 
+const SHORTCUT_HELP_SEEN_STORAGE_KEY = 'paintshare.draw.shortcut-help.seen.v1';
+
 export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const { actor } = useActor();
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -65,6 +67,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const [compatibilityHint, setCompatibilityHint] = useState<string | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false);
+  const [showShortcutNudge, setShowShortcutNudge] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem(SHORTCUT_HELP_SEEN_STORAGE_KEY) !== '1';
+  });
+  const shortcutRootRef = useRef<HTMLDivElement | null>(null);
   const detachDraftPersistenceRef = useRef<null | (() => void)>(null);
   const detachHistorySyncRef = useRef<null | (() => void)>(null);
 
@@ -183,6 +191,89 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     }
   }, [exportCurrentDrawing]);
 
+  const openShortcutHelp = useCallback(() => {
+    setIsShortcutHelpOpen(true);
+    setShowShortcutNudge(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(SHORTCUT_HELP_SEEN_STORAGE_KEY, '1');
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isTypingTarget =
+        event.target instanceof HTMLElement &&
+        (event.target.tagName === 'INPUT' ||
+          event.target.tagName === 'TEXTAREA' ||
+          event.target.isContentEditable);
+      if (isTypingTarget) return;
+
+      const key = event.key.toLowerCase();
+      const metaPressed = event.metaKey || event.ctrlKey;
+
+      if (metaPressed && key === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          editor?.redo();
+        } else {
+          editor?.undo();
+        }
+        return;
+      }
+
+      if (key === 'y') {
+        event.preventDefault();
+        editor?.redo();
+        return;
+      }
+
+      if (key === 'e') {
+        event.preventDefault();
+        applyTool('eraser');
+        return;
+      }
+
+      if (key === 'd') {
+        event.preventDefault();
+        applyTool('draw');
+        return;
+      }
+
+      if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
+        event.preventDefault();
+        openShortcutHelp();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [applyTool, editor, openShortcutHelp]);
+
+  useEffect(() => {
+    if (!isShortcutHelpOpen) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!shortcutRootRef.current) return;
+      if (!shortcutRootRef.current.contains(event.target as Node)) {
+        setIsShortcutHelpOpen(false);
+      }
+    };
+
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsShortcutHelpOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onEscape);
+    };
+  }, [isShortcutHelpOpen]);
+
   const handleEditorMount = useCallback((mountedEditor: Editor) => {
     setEditor(mountedEditor);
     setCompatibilityHint(null);
@@ -263,6 +354,46 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         aria-label="드로잉 주요 도구"
         className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white p-3"
       >
+        <div ref={shortcutRootRef} className="relative mr-1">
+          <button
+            type="button"
+            aria-label="단축키"
+            aria-expanded={isShortcutHelpOpen}
+            aria-controls="draw-shortcut-help"
+            onClick={() => {
+              if (isShortcutHelpOpen) {
+                setIsShortcutHelpOpen(false);
+              } else {
+                openShortcutHelp();
+              }
+            }}
+            className="inline-flex min-h-[36px] items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+          >
+            <Keyboard className="h-3.5 w-3.5" />
+            단축키
+            {showShortcutNudge && (
+              <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-700">
+                NEW
+              </span>
+            )}
+          </button>
+
+          {isShortcutHelpOpen && (
+            <section
+              id="draw-shortcut-help"
+              className="absolute left-0 top-[calc(100%+0.5rem)] z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg"
+            >
+              <p className="mb-2 font-semibold text-gray-900">키보드 빠른 조작</p>
+              <ul className="space-y-1">
+                <li>D: 그리기 도구</li>
+                <li>E: 지우개 도구</li>
+                <li>?: 단축키 패널 열기</li>
+                <li>Ctrl/Cmd + Z: 실행취소</li>
+                <li>Shift + Ctrl/Cmd + Z, Y: 다시실행</li>
+              </ul>
+            </section>
+          )}
+        </div>
         <button
           type="button"
           aria-label="그리기"
