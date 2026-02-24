@@ -25,9 +25,9 @@ export default function BattleLobbyPage() {
             </ul>
           </InfoDisclosure>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto md:flex-nowrap">
           <BattleConnectivityIndicator />
-          <Button onClick={() => setIsCreateModalOpen(true)}>
+          <Button onClick={() => setIsCreateModalOpen(true)} className="min-h-[40px] whitespace-nowrap">
             <Plus className="w-5 h-5 mr-1" />
             방 만들기
           </Button>
