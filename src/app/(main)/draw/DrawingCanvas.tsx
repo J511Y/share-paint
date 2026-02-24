@@ -99,6 +99,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const [compatibilityHint, setCompatibilityHint] = useState<string | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [hasDrawableShapes, setHasDrawableShapes] = useState(false);
   const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false);
   const [showShortcutNudge, setShowShortcutNudge] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -299,7 +300,6 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
     const shapeIds = Array.from(editor.getCurrentPageShapeIds());
     if (shapeIds.length === 0) {
-      alert('지울 그림이 없습니다.');
       return;
     }
 
@@ -475,6 +475,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
     setCanUndo(mountedEditor.getCanUndo());
     setCanRedo(mountedEditor.getCanRedo());
+    setHasDrawableShapes(mountedEditor.getCurrentPageShapeIds().size > 0);
 
     detachDraftPersistenceRef.current?.();
     detachDraftPersistenceRef.current = attachTldrawDraftPersistence(mountedEditor);
@@ -483,6 +484,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     detachHistorySyncRef.current = mountedEditor.store.listen(() => {
       setCanUndo(mountedEditor.getCanUndo());
       setCanRedo(mountedEditor.getCanRedo());
+      setHasDrawableShapes(mountedEditor.getCurrentPageShapeIds().size > 0);
     });
   }, []);
 
@@ -632,6 +634,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           variant="outline"
           size="sm"
           onClick={handleClearCanvas}
+          disabled={!hasDrawableShapes}
           leftIcon={<Trash2 className="h-4 w-4" />}
           aria-label="캔버스 비우기"
         >
@@ -643,6 +646,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           variant="primary"
           size="sm"
           onClick={handleSave}
+          disabled={!hasDrawableShapes}
           leftIcon={<Save className="h-4 w-4" />}
           aria-label="저장"
         >
@@ -654,6 +658,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           variant="secondary"
           size="sm"
           onClick={handleExport}
+          disabled={!hasDrawableShapes}
           leftIcon={<Download className="h-4 w-4" />}
           aria-label="내보내기"
         >

@@ -337,17 +337,13 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(anchor.click).toHaveBeenCalled();
   });
 
-  it('alerts when trying to save without drawable shapes', async () => {
+  it('disables save/export/clear actions when canvas is empty', () => {
     mockShapeIds = new Set();
-    const user = userEvent.setup();
     render(<DrawingCanvas />);
 
-    await user.click(screen.getByRole('button', { name: '저장' }));
-
-    await waitFor(() => {
-      expect(globalThis.alert).toHaveBeenCalledWith('저장할 그림이 없습니다.');
-    });
-    expect(screen.queryByTestId('mock-save-modal')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '저장' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '내보내기' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '캔버스 비우기' })).toBeDisabled();
   });
 
   it('disables redo button when no redo history', () => {
