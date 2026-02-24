@@ -334,6 +334,18 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         return;
       }
 
+      if (key === '[' || key === '-' || key === '_') {
+        event.preventDefault();
+        handleSizeDelta(-1);
+        return;
+      }
+
+      if (key === ']' || key === '=' || key === '+') {
+        event.preventDefault();
+        handleSizeDelta(1);
+        return;
+      }
+
       if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
         event.preventDefault();
         openShortcutHelp();
@@ -342,7 +354,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [applyPreset, editor, openShortcutHelp]);
+  }, [applyPreset, editor, handleSizeDelta, openShortcutHelp]);
 
   useEffect(() => {
     if (!isShortcutHelpOpen) return;
@@ -503,6 +515,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               <li>3: 브러시</li>
               <li>4: 형광펜</li>
               <li>5 / E: 지우개</li>
+              <li>[ / ] 또는 - / + : 브러시 굵기 조절</li>
               <li>Ctrl/Cmd + Z: 실행취소</li>
               <li>Shift + Ctrl/Cmd + Z, Y: 다시실행</li>
             </ul>

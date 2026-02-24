@@ -203,6 +203,16 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(mockSetCurrentTool).toHaveBeenLastCalledWith('draw');
   });
 
+  it('브러시 크기 단축키([, ])로 굵기를 빠르게 조절한다', () => {
+    render(<DrawingCanvas />);
+
+    fireEvent.keyDown(window, { key: ']' });
+    expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'size' }, 'l');
+
+    fireEvent.keyDown(window, { key: '[' });
+    expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'size' }, 'm');
+  });
+
   it('applies color and size styles', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);
