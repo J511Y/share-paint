@@ -33,6 +33,7 @@ export function ColorPicker({ className }: ColorPickerProps) {
   const setBrushColor = useCanvasStore((state) => state.setBrushColor);
 
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [draggingFavorite, setDraggingFavorite] = useState<string | null>(null);
   const [favoriteColors, setFavoriteColors] = useState<string[]>(() => {
     if (typeof window === 'undefined') return [];
 
@@ -100,6 +101,22 @@ export function ColorPicker({ className }: ColorPickerProps) {
 
     const next = [...favoriteColors];
     [next[currentIndex], next[nextIndex]] = [next[nextIndex], next[currentIndex]];
+    persistFavoriteColors(next);
+  };
+
+  const reorderFavoriteColor = (fromHex: string, toHex: string) => {
+    const fromIndex = favoriteColors.findIndex(
+      (color) => normalizeHex(color) === normalizeHex(fromHex)
+    );
+    const toIndex = favoriteColors.findIndex(
+      (color) => normalizeHex(color) === normalizeHex(toHex)
+    );
+
+    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+
+    const next = [...favoriteColors];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
     persistFavoriteColors(next);
   };
 
@@ -187,7 +204,8 @@ export function ColorPicker({ className }: ColorPickerProps) {
       </div>
 
       <div>
-        <p className="mb-2 text-xs font-semibold text-gray-600">즐겨찾기</p>
+        <p className="mb-1 text-xs font-semibold text-gray-600">즐겨찾기</p>
+        <p className="mb-2 text-[11px] text-gray-500">드래그하거나 ←/→ 버튼으로 순서를 바꿀 수 있어요.</p>
         {favoriteColors.length === 0 ? (
           <p className="text-xs text-gray-500">현재 색상을 즐겨찾기에 추가해 빠르게 꺼내 쓰세요.</p>
         ) : (
@@ -198,9 +216,28 @@ export function ColorPicker({ className }: ColorPickerProps) {
               const canMoveRight = index < favoriteColors.length - 1;
 
               return (
-                <div key={`${hex}-${index}`} className="relative">
+                <div
+                  key={`${hex}-${index}`}
+                  className="relative"
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                  }}
+                  onDrop={() => {
+                    if (!draggingFavorite) return;
+                    reorderFavoriteColor(draggingFavorite, hex);
+                    setDraggingFavorite(null);
+                  }}
+                >
                   <button
                     type="button"
+                    draggable
+                    onDragStart={(event) => {
+                      if (event.dataTransfer) {
+                        event.dataTransfer.effectAllowed = 'move';
+                      }
+                      setDraggingFavorite(hex);
+                    }}
+                    onDragEnd={() => setDraggingFavorite(null)}
                     onClick={() => setBrushColor(hex)}
                     aria-label={isSelected ? `즐겨찾기 색상 ${hex} 선택됨` : `즐겨찾기 색상 ${hex}`}
                     className={cn(

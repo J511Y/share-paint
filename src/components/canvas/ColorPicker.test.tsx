@@ -119,4 +119,24 @@ describe('ColorPicker', () => {
     const order = JSON.parse(localStorage.getItem('paintshare.favorite.colors.v1') || '[]');
     expect(order).toEqual(['#3B82F6', '#EF4444']);
   });
+
+  it('즐겨찾기 드래그 앤 드롭으로 순서를 재정렬한다', () => {
+    localStorage.setItem(
+      'paintshare.favorite.colors.v1',
+      JSON.stringify(['#EF4444', '#3B82F6', '#22C55E'])
+    );
+
+    render(<ColorPicker />);
+
+    const dragButton = screen.getByRole('button', { name: /즐겨찾기 색상 #22C55E/i });
+    const dropTarget = screen.getByRole('button', { name: /즐겨찾기 색상 #EF4444/i });
+    const dropZone = dropTarget.parentElement as HTMLElement;
+
+    fireEvent.dragStart(dragButton);
+    fireEvent.dragOver(dropZone);
+    fireEvent.drop(dropZone);
+
+    const order = JSON.parse(localStorage.getItem('paintshare.favorite.colors.v1') || '[]');
+    expect(order).toEqual(['#22C55E', '#EF4444', '#3B82F6']);
+  });
 });
