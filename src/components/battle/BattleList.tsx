@@ -33,6 +33,7 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
   const [battles, setBattles] = useState<BattleListItem[]>(initialBattles);
   const [loading, setLoading] = useState(!initialBattles.length);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [pollIntervalMs, setPollIntervalMs] = useState(10000);
 
   const fetchBattles = async () => {
     try {
@@ -41,14 +42,17 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
 
       if (!res.ok) {
         setFetchError(BATTLE_LIST_FETCH_ERROR);
+        setPollIntervalMs((prev) => (prev >= 60000 ? 60000 : prev === 10000 ? 30000 : 60000));
         return;
       }
 
       const data = await parseJsonResponse(res, BattleArraySchema);
       setBattles(data);
       setFetchError(null);
+      setPollIntervalMs(10000);
     } catch {
       setFetchError(BATTLE_LIST_FETCH_ERROR);
+      setPollIntervalMs((prev) => (prev >= 60000 ? 60000 : prev === 10000 ? 30000 : 60000));
     } finally {
       setLoading(false);
     }
@@ -56,11 +60,10 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
 
   useEffect(() => {
     fetchBattles();
-    // 정상 시 10초, 오류 시 30초 백오프로 폴링
-    const intervalMs = fetchError ? 30000 : 10000;
-    const interval = setInterval(fetchBattles, intervalMs);
+    // 정상 10초 -> 장애 시 30초 -> 장기 장애 시 60초로 백오프
+    const interval = setInterval(fetchBattles, pollIntervalMs);
     return () => clearInterval(interval);
-  }, [fetchError]);
+  }, [pollIntervalMs]);
 
   if (loading && battles.length === 0) {
     return (
@@ -85,7 +88,7 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
               <span>{fetchError}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-amber-700">자동 재시도 30초</span>
+              <span className="text-[11px] text-amber-700">자동 재시도 {Math.round(pollIntervalMs / 1000)}초</span>
               <Button size="sm" variant="outline" onClick={fetchBattles} className="min-h-[36px]">
                 다시 시도
               </Button>
@@ -123,7 +126,7 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
             <span>{fetchError}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-amber-700">자동 재시도 30초</span>
+            <span className="text-[11px] text-amber-700">자동 재시도 {Math.round(pollIntervalMs / 1000)}초</span>
             <Button size="sm" variant="outline" onClick={fetchBattles} className="min-h-[36px]">
               다시 시도
             </Button>

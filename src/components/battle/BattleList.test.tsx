@@ -50,4 +50,20 @@ describe('BattleList', () => {
       expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
   });
+
+  it('연속 실패 시 자동 재시도 주기를 60초로 늘린다', async () => {
+    const fetchMock = vi.spyOn(global, 'fetch').mockRejectedValue(new Error('network error'));
+    const user = userEvent.setup();
+
+    render(<BattleList initialBattles={[]} />);
+
+    await screen.findByText('자동 재시도 30초');
+
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('자동 재시도 60초')).toBeInTheDocument();
+      expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
 });
