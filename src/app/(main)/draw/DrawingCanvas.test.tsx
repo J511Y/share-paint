@@ -169,6 +169,20 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(mockSetCurrentTool).toHaveBeenLastCalledWith('draw');
   });
 
+
+  it('현재 드로잉 설정 요약이 프리셋 변경에 맞춰 갱신된다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    expect(screen.getByText('현재 도구: 연필')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '형광펜' }));
+
+    expect(screen.getByText('현재 도구: 형광펜')).toBeInTheDocument();
+    expect(screen.getByText('색상: 노랑')).toBeInTheDocument();
+    expect(screen.getByText('굵기 레벨: 4')).toBeInTheDocument();
+  });
+
   it('shows shortcut help panel and hides NEW badge after open', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);

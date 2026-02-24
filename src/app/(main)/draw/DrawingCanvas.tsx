@@ -178,6 +178,11 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     [recentColors]
   );
 
+
+  const activePresetLabel = PRESET_CONFIG[activePreset].label;
+  const activeColorLabel = findColorOption(activeColor)?.label ?? activeColor;
+  const activeSizeLevel = SIZE_STEPS.findIndex((size) => size.id === activeSize) + 1;
+
   const applyPreset = useCallback(
     (preset: DrawingPreset) => {
       const config = PRESET_CONFIG[preset];
@@ -593,6 +598,16 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         >
           내보내기
         </Button>
+
+      </section>
+
+      <section
+        aria-label="현재 드로잉 설정"
+        className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700"
+      >
+        <span className="rounded-full bg-white px-2 py-1 font-semibold text-gray-900">현재 도구: {activePresetLabel}</span>
+        <span className="rounded-full bg-white px-2 py-1">색상: {activeColorLabel}</span>
+        <span className="rounded-full bg-white px-2 py-1">굵기 레벨: {activeSizeLevel}</span>
       </section>
 
       <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-3">
