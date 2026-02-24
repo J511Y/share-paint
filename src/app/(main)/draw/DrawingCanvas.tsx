@@ -90,6 +90,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const [activePreset, setActivePreset] = useState<DrawingPreset>('pencil');
   const [activeColor, setActiveColor] = useState<TLDefaultColorStyle>('black');
   const [recentColors, setRecentColors] = useState<TLDefaultColorStyle[]>(['black']);
+  const [previousColor, setPreviousColor] = useState<TLDefaultColorStyle>('black');
   const [activeSize, setActiveSize] = useState<TLDefaultSizeStyle>('m');
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [preparedDataUrl, setPreparedDataUrl] = useState<string | null>(null);
@@ -167,10 +168,11 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
   const applyColorWithRecent = useCallback(
     (color: TLDefaultColorStyle) => {
+      setPreviousColor((prev) => (color === activeColor ? prev : activeColor));
       applyColor(color);
       pushRecentColor(color);
     },
-    [applyColor, pushRecentColor]
+    [activeColor, applyColor, pushRecentColor]
   );
 
   const recentColorOptions = useMemo(
@@ -178,6 +180,17 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     [recentColors]
   );
 
+
+
+  const previousColorLabel = findColorOption(previousColor)?.label ?? previousColor;
+
+  const swapToPreviousColor = useCallback(() => {
+    if (previousColor === activeColor) return;
+    const nextColor = previousColor;
+    setPreviousColor(activeColor);
+    applyColor(nextColor);
+    pushRecentColor(nextColor);
+  }, [activeColor, applyColor, previousColor, pushRecentColor]);
 
   const activePresetLabel = PRESET_CONFIG[activePreset].label;
   const activeColorLabel = findColorOption(activeColor)?.label ?? activeColor;
@@ -339,6 +352,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         return;
       }
 
+      if (key === 'x') {
+        event.preventDefault();
+        swapToPreviousColor();
+        return;
+      }
+
       if (key === '[' || key === '-' || key === '_') {
         event.preventDefault();
         handleSizeDelta(-1);
@@ -359,7 +378,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [applyPreset, editor, handleSizeDelta, openShortcutHelp]);
+  }, [applyPreset, editor, handleSizeDelta, openShortcutHelp, swapToPreviousColor]);
 
   useEffect(() => {
     if (!isShortcutHelpOpen) return;
@@ -520,6 +539,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               <li>3: 브러시</li>
               <li>4: 형광펜</li>
               <li>5 / E: 지우개</li>
+              <li>X: 이전 색상으로 전환</li>
               <li>[ / ] 또는 - / + : 브러시 굵기 조절</li>
               <li>Ctrl/Cmd + Z: 실행취소</li>
               <li>Shift + Ctrl/Cmd + Z, Y: 다시실행</li>
@@ -648,6 +668,21 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               ))}
             </div>
           </div>
+
+
+          <button
+            type="button"
+            onClick={swapToPreviousColor}
+            aria-label="이전 색상으로 전환"
+            className="inline-flex min-h-[36px] items-center gap-2 self-start rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+          >
+            <span
+              className="h-4 w-4 rounded-full border border-gray-300"
+              style={{ backgroundColor: findColorOption(previousColor)?.swatch ?? '#111827' }}
+              aria-hidden="true"
+            />
+            이전 색상: {previousColorLabel}
+          </button>
         </div>
 
         <div className="space-y-2">

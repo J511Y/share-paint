@@ -251,6 +251,19 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'color' }, 'blue');
   });
 
+  it('X 단축키로 이전 색상으로 전환한다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: '색상 파랑' }));
+    await user.click(screen.getByRole('button', { name: '색상 빨강' }));
+
+    fireEvent.keyDown(window, { key: 'x' });
+
+    expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'color' }, 'blue');
+  });
+
+
   it('supports undo and redo actions', async () => {
     mockCanRedo = true;
     const user = userEvent.setup();
