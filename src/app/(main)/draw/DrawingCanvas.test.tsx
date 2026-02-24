@@ -253,7 +253,8 @@ describe('DrawingCanvas', () => {
     expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: 'Escape' });
-    expect(screen.queryByText('키보드 빠른 조작')).not.toBeInTheDocument();
+    const shortcutPanel = screen.getByText('키보드 빠른 조작').closest('section');
+    expect(shortcutPanel).toHaveAttribute('aria-hidden', 'true');
     expect(trigger).toHaveFocus();
   });
 
@@ -265,7 +266,8 @@ describe('DrawingCanvas', () => {
     expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
 
     await user.click(screen.getByRole('heading', { name: '그림 그리기' }));
-    expect(screen.queryByText('키보드 빠른 조작')).not.toBeInTheDocument();
+    const shortcutPanel = screen.getByText('키보드 빠른 조작').closest('section');
+    expect(shortcutPanel).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('단축키 패널 오픈 시 닫기 버튼에 포커스를 둔다', async () => {

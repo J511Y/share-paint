@@ -678,11 +678,16 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                 )}
               </button>
 
-              {isShortcutHelpOpen && (
-                <section
-                  id={shortcutPanelId}
-                  className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg"
-                >
+              <section
+                id={shortcutPanelId}
+                aria-hidden={!isShortcutHelpOpen}
+                className={cn(
+                  'absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg transition-all duration-150 ease-out',
+                  isShortcutHelpOpen
+                    ? 'pointer-events-auto translate-y-0 opacity-100'
+                    : 'pointer-events-none -translate-y-1 opacity-0'
+                )}
+              >
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="font-semibold text-gray-900">키보드 빠른 조작</p>
                     <button
@@ -706,7 +711,6 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                     <li>⌘/Ctrl + Z, Shift+Z, Y: 실행취소/다시실행</li>
                   </ul>
                 </section>
-              )}
 
               <InfoDisclosure label="드로잉 안내 보기" title="드로잉 안내">
                 <ul className="list-disc space-y-1 pl-4">
