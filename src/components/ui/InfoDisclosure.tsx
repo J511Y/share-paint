@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,9 +19,35 @@ export function InfoDisclosure({
 }: InfoDisclosureProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
 
   return (
-    <div className={cn('space-y-2', className)}>
+    <div ref={rootRef} className={cn('space-y-2', className)}>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -38,7 +64,17 @@ export function InfoDisclosure({
           id={panelId}
           className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900"
         >
-          <p className="mb-1 font-semibold">{title}</p>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="font-semibold">{title}</p>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="안내 닫기"
+              className="inline-flex h-5 w-5 items-center justify-center rounded text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              ×
+            </button>
+          </div>
           <div>{children}</div>
         </section>
       )}

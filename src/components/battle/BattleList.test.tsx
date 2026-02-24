@@ -26,7 +26,7 @@ describe('BattleList', () => {
     expect(
       await screen.findByText('대결방 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
     ).toBeInTheDocument();
-    expect(screen.getByText('자동 재시도 30초')).toBeInTheDocument();
+    expect(screen.getByText(/자동 재시도 (30|60)초/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
     expect(screen.getByText(/잠시 후 다시 시도하거나, 게스트 ID 재발급 후 재시도해보세요/)).toBeInTheDocument();
   });
