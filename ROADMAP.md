@@ -136,6 +136,7 @@
   - [x] PAI-28 6차: 잘못 분리된 redirect 쿼리(mode 등) 재조합 로직 추가 (`resolveRedirectTarget`)
   - [x] PAI-28 7차: auth cross-link redirect 이중 인코딩/복원으로 nested query 보존 강화
 - [ ] 핵심 API 성능 모니터링 지표 추가
+  - [x] PAI-32 1차: API 로그 표준 필드 빌더 추가 및 공통 핸들러 로그 컨텍스트 정규화 (`src/lib/observability/api-log-fields.ts`, `src/lib/api-handler.ts`)
 
 ### Realtime(Socket)
 - [ ] 재연결 및 상태 복구 로직 보강 (`socket-server/server.js`, `src/hooks/useBattle.ts`)
