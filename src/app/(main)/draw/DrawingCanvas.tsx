@@ -532,7 +532,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   return (
     <main className={cn('w-full', isMobile && '-mt-2', className)} role="main">
       <div className={cn('space-y-2', isMobile ? 'mb-2' : 'mb-4')}>
-        <div className="flex items-start justify-between gap-3" data-testid="drawing-header">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3" data-testid="drawing-header">
           <div className="min-w-0">
             <h1
               className={cn(

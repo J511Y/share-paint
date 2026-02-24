@@ -15,6 +15,8 @@ describe('InfoDisclosure', () => {
 
     const button = screen.getByRole('button', { name: '안내 열기' });
     expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveClass('h-8');
+    expect(button).toHaveClass('w-8');
     expect(screen.queryByText('숨김 정보')).not.toBeInTheDocument();
 
     await user.click(button);

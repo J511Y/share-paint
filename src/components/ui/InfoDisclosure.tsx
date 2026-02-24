@@ -28,7 +28,7 @@ export function InfoDisclosure({
         aria-label={label}
         aria-expanded={open}
         aria-controls={panelId}
-        className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 sm:h-7 sm:w-7"
       >
         <Info className="h-4 w-4" />
       </button>

@@ -45,7 +45,7 @@ export default async function FeedPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="flex items-start gap-2">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">피드</h1>
