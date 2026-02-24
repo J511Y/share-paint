@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DefaultColorStyle,
   DefaultSizeStyle,
@@ -78,11 +78,18 @@ const PRESET_CONFIG: Record<DrawingPreset, { label: string; tool: 'draw' | 'eras
 
 const SHORTCUT_HELP_SEEN_STORAGE_KEY = 'paintshare.draw.shortcut-help.seen.v1';
 
+
+const RECENT_COLOR_LIMIT = 5;
+
+const findColorOption = (id: TLDefaultColorStyle) =>
+  COLOR_OPTIONS.find((option) => option.id === id);
+
 export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const { actor } = useActor();
   const [editor, setEditor] = useState<Editor | null>(null);
   const [activePreset, setActivePreset] = useState<DrawingPreset>('pencil');
   const [activeColor, setActiveColor] = useState<TLDefaultColorStyle>('black');
+  const [recentColors, setRecentColors] = useState<TLDefaultColorStyle[]>(['black']);
   const [activeSize, setActiveSize] = useState<TLDefaultSizeStyle>('m');
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [preparedDataUrl, setPreparedDataUrl] = useState<string | null>(null);
@@ -150,6 +157,27 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     [editor]
   );
 
+
+  const pushRecentColor = useCallback((color: TLDefaultColorStyle) => {
+    setRecentColors((prev) => {
+      const next = [color, ...prev.filter((item) => item !== color)];
+      return next.slice(0, RECENT_COLOR_LIMIT);
+    });
+  }, []);
+
+  const applyColorWithRecent = useCallback(
+    (color: TLDefaultColorStyle) => {
+      applyColor(color);
+      pushRecentColor(color);
+    },
+    [applyColor, pushRecentColor]
+  );
+
+  const recentColorOptions = useMemo(
+    () => recentColors.map((id) => findColorOption(id)).filter(Boolean) as ColorOption[],
+    [recentColors]
+  );
+
   const applyPreset = useCallback(
     (preset: DrawingPreset) => {
       const config = PRESET_CONFIG[preset];
@@ -157,10 +185,10 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       applyTool(config.tool);
       applySize(config.size);
       if (config.color) {
-        applyColor(config.color);
+        applyColorWithRecent(config.color);
       }
     },
-    [applyColor, applySize, applyTool]
+    [applyColorWithRecent, applySize, applyTool]
   );
 
   const handleSizeDelta = useCallback(
@@ -564,7 +592,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                 type="button"
                 aria-label={`색상 ${color.label}`}
                 aria-pressed={activeColor === color.id}
-                onClick={() => applyColor(color.id)}
+                onClick={() => applyColorWithRecent(color.id)}
                 className={cn(
                   'h-8 w-8 rounded-full border-2 transition-transform focus:outline-none focus:ring-2 focus:ring-purple-500',
                   activeColor === color.id
@@ -574,6 +602,23 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                 style={{ backgroundColor: color.swatch }}
               />
             ))}
+
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-xs font-semibold text-gray-600">최근 사용 색상</h3>
+            <div className="flex flex-wrap gap-2">
+              {recentColorOptions.map((color) => (
+                <button
+                  key={`recent-${color.id}`}
+                  type="button"
+                  aria-label={`최근 색상 ${color.label}`}
+                  onClick={() => applyColorWithRecent(color.id)}
+                  className="h-7 w-7 rounded-full border border-gray-200 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  style={{ backgroundColor: color.swatch }}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
