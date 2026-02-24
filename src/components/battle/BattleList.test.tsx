@@ -26,6 +26,7 @@ describe('BattleList', () => {
     expect(
       await screen.findByText('대결방 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.')
     ).toBeInTheDocument();
+    expect(screen.getByText('자동 재시도 30초')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument();
   });
 
@@ -45,7 +46,7 @@ describe('BattleList', () => {
     await user.click(retryButton);
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
     });
   });
 });

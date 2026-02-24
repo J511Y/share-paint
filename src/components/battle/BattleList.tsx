@@ -55,10 +55,11 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
 
   useEffect(() => {
     fetchBattles();
-    // 폴링으로 목록 갱신 (10초마다)
-    const interval = setInterval(fetchBattles, 10000);
+    // 정상 시 10초, 오류 시 30초 백오프로 폴링
+    const intervalMs = fetchError ? 30000 : 10000;
+    const interval = setInterval(fetchBattles, intervalMs);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchError]);
 
   if (loading && battles.length === 0) {
     return (
@@ -82,9 +83,12 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
               <AlertCircle className="h-4 w-4" />
               <span>{fetchError}</span>
             </div>
-            <Button size="sm" variant="outline" onClick={fetchBattles} className="min-h-[36px]">
-              다시 시도
-            </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-amber-700">자동 재시도 30초</span>
+              <Button size="sm" variant="outline" onClick={fetchBattles} className="min-h-[36px]">
+                다시 시도
+              </Button>
+            </div>
           </div>
         )}
 
@@ -117,9 +121,12 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
             <AlertCircle className="h-4 w-4" />
             <span>{fetchError}</span>
           </div>
-          <Button size="sm" variant="outline" onClick={fetchBattles} className="min-h-[36px]">
-            다시 시도
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-amber-700">자동 재시도 30초</span>
+            <Button size="sm" variant="outline" onClick={fetchBattles} className="min-h-[36px]">
+              다시 시도
+            </Button>
+          </div>
         </div>
       )}
 
