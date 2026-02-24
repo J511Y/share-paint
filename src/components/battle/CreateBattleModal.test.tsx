@@ -33,4 +33,25 @@ describe('CreateBattleModal', () => {
     expect(errorToastMock).toHaveBeenCalled();
     expect(pushMock).not.toHaveBeenCalled();
   });
+
+  it('저수준 네트워크 에러 문구는 사용자 친화 문구로 정규화한다', async () => {
+    vi.spyOn(global, 'fetch').mockRejectedValue(
+      new Error("Failed to execute 'set' on 'Headers': String contains non ISO-8859-1 code point.")
+    );
+
+    const user = userEvent.setup();
+
+    render(<CreateBattleModal isOpen onClose={vi.fn()} />);
+
+    await user.type(screen.getByPlaceholderText('같이 그림 그리실 분!'), '테스트 배틀');
+    await user.click(screen.getByRole('button', { name: '만들기' }));
+
+    expect(await screen.findByText('대결방을 만들지 못했어요.')).toBeInTheDocument();
+    expect(
+      screen.getByText('대결방 생성에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    ).toBeInTheDocument();
+    expect(errorToastMock).toHaveBeenCalledWith(
+      '대결방 생성에 실패했습니다. 잠시 후 다시 시도해주세요.'
+    );
+  });
 });

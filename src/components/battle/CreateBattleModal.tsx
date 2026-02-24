@@ -15,6 +15,29 @@ interface CreateBattleModalProps {
   onClose: () => void;
 }
 
+const DEFAULT_CREATE_BATTLE_ERROR =
+  '대결방 생성에 실패했습니다. 잠시 후 다시 시도해주세요.';
+
+function normalizeCreateBattleErrorMessage(message: string) {
+  const normalized = message.trim();
+
+  if (!normalized) {
+    return DEFAULT_CREATE_BATTLE_ERROR;
+  }
+
+  if (
+    normalized.includes('ByteString') ||
+    normalized.includes('Failed to fetch') ||
+    normalized.includes('NetworkError') ||
+    normalized.includes("Failed to execute 'set' on 'Headers'") ||
+    normalized.includes('non ISO-8859-1')
+  ) {
+    return DEFAULT_CREATE_BATTLE_ERROR;
+  }
+
+  return normalized;
+}
+
 export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
   const router = useRouter();
   const toast = useToast();
@@ -47,10 +70,10 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
       );
 
       if (!res.ok) {
-        let errorMessage = '대결방 생성에 실패했습니다.';
+        let errorMessage = DEFAULT_CREATE_BATTLE_ERROR;
         try {
           const apiError = await parseJsonResponse(res, ApiErrorSchema);
-          errorMessage = apiError.message;
+          errorMessage = normalizeCreateBattleErrorMessage(apiError.message);
         } catch {
           // no-op
         }
@@ -60,7 +83,9 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
       const battle = await parseJsonResponse(res, ApiBattleSchema);
       router.push(`/battle/${battle.id}`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : '대결방 생성에 실패했습니다.';
+      const message = normalizeCreateBattleErrorMessage(
+        error instanceof Error ? error.message : DEFAULT_CREATE_BATTLE_ERROR
+      );
       setSubmitError(message);
       toast.error(message);
     } finally {
