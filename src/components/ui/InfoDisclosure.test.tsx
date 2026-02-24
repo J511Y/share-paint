@@ -56,4 +56,22 @@ describe('InfoDisclosure', () => {
 
     expect(screen.queryByText('숨김 정보')).not.toBeInTheDocument();
   });
+
+  it('외부 영역 클릭 시 패널을 닫는다', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <div>
+        <button type="button">outside</button>
+        <InfoDisclosure label="안내 열기" title="테스트 안내">
+          <p>숨김 정보</p>
+        </InfoDisclosure>
+      </div>
+    );
+
+    await user.click(screen.getByRole('button', { name: '안내 열기' }));
+    await user.click(screen.getByRole('button', { name: 'outside' }));
+
+    expect(screen.queryByText('숨김 정보')).not.toBeInTheDocument();
+  });
 });

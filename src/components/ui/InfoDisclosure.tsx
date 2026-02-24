@@ -62,7 +62,7 @@ export function InfoDisclosure({
       {open && (
         <section
           id={panelId}
-          className="absolute right-0 top-9 z-30 w-[min(20rem,calc(100vw-1.5rem))] rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900 shadow-lg"
+          className="absolute right-0 top-9 z-30 w-[min(22rem,calc(100vw-1rem))] max-h-[60vh] overflow-y-auto rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900 shadow-lg sm:w-80"
         >
           <div className="mb-1 flex items-center justify-between gap-2">
             <p className="font-semibold">{title}</p>
