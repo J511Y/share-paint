@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import type { BattleListItem } from '@/types/api-contracts';
 import { BattleArraySchema, BattleParticipantCountSchema } from '@/lib/validation/schemas';
 import { parseJsonResponse } from '@/lib/validation/http';
+import { BATTLE_LIST_FETCH_ERROR, BATTLE_RECOVERY_HINT } from './copy';
 
 interface BattleListProps {
   initialBattles?: BattleListItem[];
@@ -39,7 +40,7 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
       const res = await fetch('/api/battle?status=waiting');
 
       if (!res.ok) {
-        setFetchError('대결방 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+        setFetchError(BATTLE_LIST_FETCH_ERROR);
         return;
       }
 
@@ -47,7 +48,7 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
       setBattles(data);
       setFetchError(null);
     } catch {
-      setFetchError('대결방 목록을 불러오지 못했어요. 잠시 후 다시 시도해주세요.');
+      setFetchError(BATTLE_LIST_FETCH_ERROR);
     } finally {
       setLoading(false);
     }
@@ -96,7 +97,7 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
           <h3 className="text-lg font-medium text-gray-900">진행 중인 대결이 없습니다</h3>
           <p className="text-gray-500 mt-1">새로운 대결방을 만들어보세요!</p>
           <p className="text-xs text-emerald-700 mt-2">
-            게스트도 바로 참가할 수 있어요. 문제가 있으면 상단에서 게스트 ID를 재발급한 뒤 다시 시도하세요.
+            게스트도 바로 참가할 수 있어요. 문제가 있으면 {BATTLE_RECOVERY_HINT}
           </p>
           {onCreateBattle && (
             <div className="mt-4">

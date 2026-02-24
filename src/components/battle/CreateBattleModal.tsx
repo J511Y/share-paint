@@ -9,20 +9,18 @@ import { useToast } from '@/components/ui/Toast';
 import { ApiBattleSchema, ApiErrorSchema } from '@/lib/validation/schemas';
 import { parseJsonResponse } from '@/lib/validation/http';
 import { withGuestHeaders } from '@/lib/guest/client';
+import { BATTLE_CREATE_ERROR_DEFAULT, BATTLE_RECOVERY_HINT } from './copy';
 
 interface CreateBattleModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const DEFAULT_CREATE_BATTLE_ERROR =
-  '대결방 생성에 실패했습니다. 잠시 후 다시 시도해주세요.';
-
 function normalizeCreateBattleErrorMessage(message: string) {
   const normalized = message.trim();
 
   if (!normalized) {
-    return DEFAULT_CREATE_BATTLE_ERROR;
+    return BATTLE_CREATE_ERROR_DEFAULT;
   }
 
   if (
@@ -32,7 +30,7 @@ function normalizeCreateBattleErrorMessage(message: string) {
     normalized.includes("Failed to execute 'set' on 'Headers'") ||
     normalized.includes('non ISO-8859-1')
   ) {
-    return DEFAULT_CREATE_BATTLE_ERROR;
+    return BATTLE_CREATE_ERROR_DEFAULT;
   }
 
   return normalized;
@@ -70,7 +68,7 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
       );
 
       if (!res.ok) {
-        let errorMessage = DEFAULT_CREATE_BATTLE_ERROR;
+        let errorMessage = BATTLE_CREATE_ERROR_DEFAULT;
         try {
           const apiError = await parseJsonResponse(res, ApiErrorSchema);
           errorMessage = normalizeCreateBattleErrorMessage(apiError.message);
@@ -84,7 +82,7 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
       router.push(`/battle/${battle.id}`);
     } catch (error) {
       const message = normalizeCreateBattleErrorMessage(
-        error instanceof Error ? error.message : DEFAULT_CREATE_BATTLE_ERROR
+        error instanceof Error ? error.message : BATTLE_CREATE_ERROR_DEFAULT
       );
       setSubmitError(message);
       toast.error(message);
@@ -116,7 +114,7 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
               <div>
                 <p className="font-semibold">대결방을 만들지 못했어요.</p>
                 <p>{submitError}</p>
-                <p className="mt-1 text-[11px] text-amber-700">잠시 후 다시 시도하거나, 게스트 ID 재발급 후 재시도해보세요.</p>
+                <p className="mt-1 text-[11px] text-amber-700">{BATTLE_RECOVERY_HINT}</p>
               </div>
             </div>
           )}
