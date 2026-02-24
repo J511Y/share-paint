@@ -3,7 +3,11 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { floodFillCanvas } from '@/lib/canvas/floodFill';
-import { getCanvasCoordinates } from '@/lib/canvas/coordinates';
+import {
+  getCanvasCoordinates,
+  type CanvasInputEvent,
+  type CanvasPoint,
+} from '@/lib/canvas/coordinates';
 
 interface UseCanvasOptions {
   width: number;
@@ -11,6 +15,16 @@ interface UseCanvasOptions {
   backgroundColor?: string;
   onDrawEnd?: (dataUrl: string) => void;
 }
+
+const distanceSquared = (from: CanvasPoint, to: CanvasPoint): number => {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  return dx * dx + dy * dy;
+};
+
+const getMinPointDistance = (brushSize: number): number => {
+  return Math.max(0.7, Math.min(1.6, brushSize * 0.08));
+};
 
 export function useCanvas({
   width,
@@ -20,12 +34,12 @@ export function useCanvas({
 }: UseCanvasOptions) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
-  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPointRef = useRef<CanvasPoint | null>(null);
+  const hasActiveStrokeRef = useRef(false);
 
   const {
     tool,
     brush,
-    isDrawing,
     setIsDrawing,
     addToHistory,
     undo: storeUndo,
@@ -116,26 +130,28 @@ export function useCanvas({
     }
   }, [tool, brush]);
 
-  // 좌표 계산 (터치/마우스)
-  const getCoordinates = useCallback(
-    (event: MouseEvent | TouchEvent): { x: number; y: number } | null => {
-      const canvas = canvasRef.current;
-      if (!canvas) return null;
+  // 좌표 계산 (터치/마우스/포인터)
+  const getCoordinates = useCallback((event: CanvasInputEvent): CanvasPoint | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
 
-      return getCanvasCoordinates(event, canvas);
-    },
-    []
-  );
+    return getCanvasCoordinates(event, canvas);
+  }, []);
 
   // 드로잉 시작
   const startDrawing = useCallback(
-    (event: MouseEvent | TouchEvent) => {
-      const coords = getCoordinates(event);
-      if (!coords || !contextRef.current) return;
+    (event: CanvasInputEvent) => {
+      if (hasActiveStrokeRef.current) return;
 
-      contextRef.current.beginPath();
-      contextRef.current.moveTo(coords.x, coords.y);
+      const coords = getCoordinates(event);
+      const context = contextRef.current;
+      if (!coords || !context) return;
+
+      context.beginPath();
+      context.moveTo(coords.x, coords.y);
+
       lastPointRef.current = coords;
+      hasActiveStrokeRef.current = true;
       setIsDrawing(true);
     },
     [getCoordinates, setIsDrawing]
@@ -143,22 +159,38 @@ export function useCanvas({
 
   // 드로잉 중
   const draw = useCallback(
-    (event: MouseEvent | TouchEvent) => {
-      if (!isDrawing || !contextRef.current || !lastPointRef.current) return;
+    (
+      event: CanvasInputEvent,
+      coalescedEvents: readonly CanvasInputEvent[] = []
+    ) => {
+      const context = contextRef.current;
+      const lastPoint = lastPointRef.current;
 
-      const coords = getCoordinates(event);
-      if (!coords) return;
+      if (!hasActiveStrokeRef.current || !context || !lastPoint) return;
 
-      contextRef.current.lineTo(coords.x, coords.y);
-      contextRef.current.stroke();
-      lastPointRef.current = coords;
+      const inputEvents = coalescedEvents.length > 0 ? coalescedEvents : [event];
+      const minDistanceSquared = Math.pow(getMinPointDistance(brush.size), 2);
+
+      for (const inputEvent of inputEvents) {
+        const coords = getCoordinates(inputEvent);
+        if (!coords || !lastPointRef.current) continue;
+
+        const tooClose = distanceSquared(lastPointRef.current, coords) < minDistanceSquared;
+        if (tooClose) {
+          continue;
+        }
+
+        context.lineTo(coords.x, coords.y);
+        context.stroke();
+        lastPointRef.current = coords;
+      }
     },
-    [isDrawing, getCoordinates]
+    [brush.size, getCoordinates]
   );
 
   // 드로잉 종료
   const stopDrawing = useCallback(() => {
-    if (!isDrawing) return;
+    if (!hasActiveStrokeRef.current) return;
 
     const canvas = canvasRef.current;
     if (canvas) {
@@ -169,8 +201,9 @@ export function useCanvas({
 
     contextRef.current?.closePath();
     lastPointRef.current = null;
+    hasActiveStrokeRef.current = false;
     setIsDrawing(false);
-  }, [isDrawing, setIsDrawing, addToHistory, onDrawEnd]);
+  }, [setIsDrawing, addToHistory, onDrawEnd]);
 
   // 캔버스 클리어
   const clearCanvas = useCallback(() => {

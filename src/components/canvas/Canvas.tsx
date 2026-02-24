@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 import { useCanvas } from '@/hooks/useCanvas';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { CANVAS_CONFIG } from '@/constants/config';
@@ -53,6 +53,8 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(
       fill,
     } = useCanvas({ width, height, backgroundColor, onDrawEnd });
 
+    const activePointerIdRef = useRef<number | null>(null);
+
     // 외부에서 접근 가능한 메서드 노출
     useImperativeHandle(ref, () => ({
       clearCanvas,
@@ -64,85 +66,81 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(
       loadImage,
     }));
 
-    // 클릭 핸들러 (fill 도구용)
-    const handleClick = useCallback(
-      (e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (tool !== 'fill') return;
-
+    const getFillCoordinates = useCallback(
+      (e: React.PointerEvent<HTMLCanvasElement>) => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas) return null;
 
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-        const x = Math.floor((e.clientX - rect.left) * scaleX);
-        const y = Math.floor((e.clientY - rect.top) * scaleY);
 
-        fill(x, y);
+        return {
+          x: Math.floor((e.clientX - rect.left) * scaleX),
+          y: Math.floor((e.clientY - rect.top) * scaleY),
+        };
       },
-      [tool, canvasRef, fill]
+      [canvasRef]
     );
 
-    // 마우스 이벤트 핸들러
-    const handleMouseDown = useCallback(
-      (e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (tool === 'fill') return;
+    const releasePointerCapture = useCallback((canvas: HTMLCanvasElement, pointerId: number) => {
+      if (!canvas.hasPointerCapture(pointerId)) return;
+
+      try {
+        canvas.releasePointerCapture(pointerId);
+      } catch {
+        // no-op: 이미 해제된 포인터인 경우
+      }
+    }, []);
+
+    const handlePointerDown = useCallback(
+      (e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!e.isPrimary) return;
+
+        if (tool === 'fill') {
+          const fillCoords = getFillCoordinates(e);
+          if (!fillCoords) return;
+
+          fill(fillCoords.x, fillCoords.y);
+          return;
+        }
+
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+        const canvas = e.currentTarget;
+        canvas.setPointerCapture(e.pointerId);
+        activePointerIdRef.current = e.pointerId;
+
         startDrawing(e.nativeEvent);
       },
-      [tool, startDrawing]
+      [tool, getFillCoordinates, fill, startDrawing]
     );
 
-    const handleMouseMove = useCallback(
-      (e: React.MouseEvent<HTMLCanvasElement>) => {
-        draw(e.nativeEvent);
+    const handlePointerMove = useCallback(
+      (e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (activePointerIdRef.current !== e.pointerId) return;
+
+        const coalescedEvents = e.nativeEvent.getCoalescedEvents?.() ?? [];
+        draw(e.nativeEvent, coalescedEvents);
       },
       [draw]
     );
 
-    const handleMouseUp = useCallback(() => {
-      stopDrawing();
-    }, [stopDrawing]);
+    const endPointerStroke = useCallback(
+      (e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (activePointerIdRef.current !== e.pointerId) return;
 
-    const handleMouseLeave = useCallback(() => {
-      stopDrawing();
-    }, [stopDrawing]);
-
-    // 네이티브 터치 이벤트 핸들러 (passive: false로 등록)
-    useEffect(() => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const handleTouchStart = (e: TouchEvent) => {
-        e.preventDefault();
-        // 멀티터치 방지: 첫 번째 터치만 처리
-        if (e.touches.length > 1) return;
-        if (tool === 'fill') return;
-        startDrawing(e);
-      };
-
-      const handleTouchMove = (e: TouchEvent) => {
-        e.preventDefault();
-        // 멀티터치 방지
-        if (e.touches.length > 1) return;
-        draw(e);
-      };
-
-      const handleTouchEnd = (e: TouchEvent) => {
-        e.preventDefault();
         stopDrawing();
-      };
+        releasePointerCapture(e.currentTarget, e.pointerId);
+        activePointerIdRef.current = null;
+      },
+      [releasePointerCapture, stopDrawing]
+    );
 
-      // passive: false로 등록하여 스크롤 방지 가능
-      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-
-      return () => {
-        canvas.removeEventListener('touchstart', handleTouchStart);
-        canvas.removeEventListener('touchmove', handleTouchMove);
-        canvas.removeEventListener('touchend', handleTouchEnd);
-      };
-    }, [canvasRef, tool, startDrawing, draw, stopDrawing]);
+    const handleLostPointerCapture = useCallback(() => {
+      activePointerIdRef.current = null;
+      stopDrawing();
+    }, [stopDrawing]);
 
     return (
       <canvas
@@ -161,11 +159,11 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(
           className
         )}
         style={{ touchAction: 'none' }}
-        onClick={handleClick}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={endPointerStroke}
+        onPointerCancel={endPointerStroke}
+        onLostPointerCapture={handleLostPointerCapture}
       />
     );
   }

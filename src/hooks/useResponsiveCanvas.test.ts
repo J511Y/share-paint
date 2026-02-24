@@ -218,6 +218,52 @@ describe('useResponsiveCanvas', () => {
     });
   });
 
+  describe('모바일 높이 우선 모드', () => {
+    it('prioritizeViewportHeight 옵션으로 모바일 높이를 뷰포트 기준으로 키운다', () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+      Object.defineProperty(window, 'innerHeight', {
+        writable: true,
+        configurable: true,
+        value: 812,
+      });
+
+      const { result } = renderHook(() =>
+        useResponsiveCanvas({ prioritizeViewportHeight: true })
+      );
+
+      // 기존 비율 기반 높이(257px)보다 충분히 큰 높이를 확보
+      expect(result.current.isMobile).toBe(true);
+      expect(result.current.width).toBe(343);
+      expect(result.current.height).toBe(487);
+      expect(result.current.height).toBeGreaterThan(400);
+    });
+
+    it('작은 화면에서도 reservedHeight를 반영해 높이를 안전하게 계산한다', () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 320,
+      });
+      Object.defineProperty(window, 'innerHeight', {
+        writable: true,
+        configurable: true,
+        value: 480,
+      });
+
+      const { result } = renderHook(() =>
+        useResponsiveCanvas({ prioritizeViewportHeight: true })
+      );
+
+      expect(result.current.isMobile).toBe(true);
+      expect(result.current.width).toBe(288);
+      expect(result.current.height).toBe(270);
+    });
+  });
+
   describe('정리 (cleanup)', () => {
     it('컴포넌트 언마운트 시 이벤트 리스너를 제거한다', () => {
       Object.defineProperty(window, 'innerWidth', {
