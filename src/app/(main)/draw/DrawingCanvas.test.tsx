@@ -293,6 +293,16 @@ describe('DrawingCanvas', () => {
     expect(mockSetBrushSize).toHaveBeenCalledWith(6);
   });
 
+  it('Q 단축키로 직전 펜 프리셋으로 토글한다', () => {
+    const { rerender } = render(<DrawingCanvas />);
+
+    (mockStoreState as { activePreset: string }).activePreset = 'marker';
+    rerender(<DrawingCanvas />);
+
+    fireEvent.keyDown(window, { key: 'q' });
+    expect(mockSetPreset).toHaveBeenCalledWith('pencil');
+  });
+
   it('모바일에서는 모바일 퀵바를 표시하고 헤더를 압축한다', async () => {
     const { useResponsiveCanvas } = await import('@/hooks/useResponsiveCanvas');
     vi.mocked(useResponsiveCanvas).mockReturnValue({

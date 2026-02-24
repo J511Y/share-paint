@@ -132,6 +132,8 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
   const activeTool = useCanvasStore((state) => state.tool);
   const activePreset = useCanvasStore((state) => state.activePreset);
+  const previousPresetRef = useRef<DrawingPresetId>('pencil');
+  const lastActivePresetRef = useRef<DrawingPresetId>('pencil');
   const brushSize = useCanvasStore((state) => state.brush.size);
   const setTool = useCanvasStore((state) => state.setTool);
   const setPreset = useCanvasStore((state) => state.setPreset);
@@ -148,6 +150,16 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const tipsPanelId = useId();
   const shortcutPanelId = useId();
   const drawingTopic = '';
+
+  useEffect(() => {
+    const currentPreset = activePreset as DrawingPresetId;
+    const previousActive = lastActivePresetRef.current;
+
+    if (currentPreset !== previousActive) {
+      previousPresetRef.current = previousActive;
+      lastActivePresetRef.current = currentPreset;
+    }
+  }, [activePreset]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -295,6 +307,11 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         setPreset('highlighter');
       } else if (key === '5') {
         setPreset('eraser');
+      } else if (key === 'q') {
+        const previousPreset = previousPresetRef.current;
+        if (previousPreset !== (activePreset as DrawingPresetId)) {
+          setPreset(previousPreset);
+        }
       } else if (key === 'f') {
         setTool('fill');
       } else if (event.key === '[') {
@@ -310,6 +327,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [
+    activePreset,
     brushSize,
     handleRedo,
     handleSave,
@@ -582,6 +600,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                   <p className="mb-2 font-semibold text-gray-900">키보드 빠른 조작</p>
                   <ul className="space-y-1">
                     <li>1~5: 펜 프리셋 전환</li>
+                    <li>Q: 직전 펜 프리셋 토글</li>
                     <li>F: 영역 채우기</li>
                     <li>[ / ]: 굵기 줄이기/늘리기</li>
                     <li>⌘/Ctrl + Z, Shift+Z, Y: 실행취소/다시실행</li>
@@ -634,7 +653,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             </div>
             {showMicroHints && !isShortcutHelpOpen && (
               <p className="rounded-lg border border-purple-100 bg-purple-50 px-3 py-1.5 text-xs text-purple-800">
-                빠른 팁: <span className="font-semibold">단축키</span> 버튼에서 1~5, F, [ ] 조작을 바로 확인할 수 있어요.
+                빠른 팁: <span className="font-semibold">단축키</span> 버튼에서 1~5, Q, F, [ ] 조작을 바로 확인할 수 있어요.
               </p>
             )}
           </div>
@@ -695,7 +714,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             <div className="w-full max-w-md space-y-1.5">
               {showMicroHints && !isShortcutHelpOpen && (
                 <p className="rounded-xl border border-purple-100 bg-purple-50 px-3 py-1.5 text-[11px] text-purple-800">
-                  팁: 단축키 버튼에서 1~5, F, [ ] 조작을 확인해보세요.
+                  팁: 단축키 버튼에서 1~5, Q, F, [ ] 조작을 확인해보세요.
                 </p>
               )}
               <div
