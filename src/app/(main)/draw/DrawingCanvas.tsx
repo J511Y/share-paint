@@ -22,6 +22,7 @@ import {
 import { SavePaintingModal } from '@/components/canvas/SavePaintingModal';
 import { TldrawCanvasStage } from '@/components/tldraw';
 import { Button } from '@/components/ui/Button';
+import { InfoDisclosure } from '@/components/ui/InfoDisclosure';
 import { useActor } from '@/hooks/useActor';
 import { useResponsiveCanvas } from '@/hooks/useResponsiveCanvas';
 import {
@@ -394,12 +395,26 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   return (
     <main className={cn('w-full space-y-4', className)} role="main">
       <header className="space-y-2" data-testid="drawing-header">
-        <h1 className={cn('font-bold text-gray-900', isMobile ? 'text-xl' : 'text-2xl')}>
-          그림 그리기
-        </h1>
-        <p className="text-sm text-gray-600">
-          노트앱처럼 도구를 빠르게 전환하세요. 1~5 키로 연필·마커·브러시·형광펜·지우개를 즉시 바꿀 수 있습니다.
-        </p>
+        <div className="flex items-start gap-2">
+          <div>
+            <h1 className={cn('font-bold text-gray-900', isMobile ? 'text-xl' : 'text-2xl')}>
+              그림 그리기
+            </h1>
+            <p className="text-sm text-gray-600">빠른 도구 전환으로 바로 스케치해보세요.</p>
+          </div>
+
+          <InfoDisclosure
+            className="shrink-0 self-start"
+            label="드로잉 안내 보기"
+            title="드로잉 사용 팁"
+          >
+            <ul className="list-disc space-y-1 pl-4">
+              <li>1~5 키로 연필·마커·브러시·형광펜·지우개를 즉시 전환할 수 있어요.</li>
+              <li>D 키는 연필, E 키는 지우개로 바로 이동합니다.</li>
+              <li>저장/내보내기는 PNG 파이프라인과 호환됩니다.</li>
+            </ul>
+          </InfoDisclosure>
+        </div>
 
         {actor?.isGuest && (
           <p className="text-xs text-emerald-700">
