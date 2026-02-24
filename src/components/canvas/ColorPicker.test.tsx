@@ -96,4 +96,15 @@ describe('ColorPicker', () => {
 
     expect(screen.getByRole('button', { name: /즐겨찾기 색상 #EF4444/i })).toBeInTheDocument();
   });
+
+  it('즐겨찾기 제거 버튼으로 항목을 삭제한다', async () => {
+    localStorage.setItem('paintshare.favorite.colors.v1', JSON.stringify(['#EF4444']));
+    const user = userEvent.setup();
+
+    render(<ColorPicker />);
+
+    await user.click(screen.getByRole('button', { name: /즐겨찾기 #EF4444 제거/i }));
+
+    expect(screen.queryByRole('button', { name: /즐겨찾기 색상 #EF4444/i })).not.toBeInTheDocument();
+  });
 });

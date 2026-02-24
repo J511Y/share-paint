@@ -81,6 +81,13 @@ export function ColorPicker({ className }: ColorPickerProps) {
     persistFavoriteColors(pushFavoriteColor(favoriteColors, normalizedBrushColor));
   };
 
+  const removeFavoriteColor = (targetHex: string) => {
+    const normalized = normalizeHex(targetHex);
+    persistFavoriteColors(
+      favoriteColors.filter((color) => normalizeHex(color) !== normalized)
+    );
+  };
+
   const handleCustomColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setBrushColor(e.target.value);
   };
@@ -173,26 +180,35 @@ export function ColorPicker({ className }: ColorPickerProps) {
             {favoriteColors.map((hex, index) => {
               const isSelected = isColorSelected(hex);
               return (
-                <button
-                  key={`${hex}-${index}`}
-                  type="button"
-                  onClick={() => setBrushColor(hex)}
-                  aria-label={isSelected ? `즐겨찾기 색상 ${hex} 선택됨` : `즐겨찾기 색상 ${hex}`}
-                  className={cn(
-                    colorButtonClass,
-                    isSelected ? 'border-purple-600 ring-2 ring-purple-300' : 'border-gray-300'
-                  )}
-                  style={{ backgroundColor: hex }}
-                >
-                  {isSelected && (
-                    <Check
-                      className={cn(
-                        'absolute inset-0 m-auto h-4 w-4',
-                        isLightColor(hex) ? 'text-gray-800' : 'text-white'
-                      )}
-                    />
-                  )}
-                </button>
+                <div key={`${hex}-${index}`} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setBrushColor(hex)}
+                    aria-label={isSelected ? `즐겨찾기 색상 ${hex} 선택됨` : `즐겨찾기 색상 ${hex}`}
+                    className={cn(
+                      colorButtonClass,
+                      isSelected ? 'border-purple-600 ring-2 ring-purple-300' : 'border-gray-300'
+                    )}
+                    style={{ backgroundColor: hex }}
+                  >
+                    {isSelected && (
+                      <Check
+                        className={cn(
+                          'absolute inset-0 m-auto h-4 w-4',
+                          isLightColor(hex) ? 'text-gray-800' : 'text-white'
+                        )}
+                      />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeFavoriteColor(hex)}
+                    aria-label={`즐겨찾기 ${hex} 제거`}
+                    className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full border border-gray-200 bg-white text-[10px] font-bold text-gray-600 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    ×
+                  </button>
+                </div>
               );
             })}
           </div>
