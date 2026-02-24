@@ -8,7 +8,17 @@ import {
   type TLDefaultColorStyle,
   type TLDefaultSizeStyle,
 } from '@tldraw/tldraw';
-import { Download, Eraser, Keyboard, PenLine, Redo2, Save, Undo2 } from 'lucide-react';
+import {
+  Download,
+  Eraser,
+  Keyboard,
+  Minus,
+  PenLine,
+  Plus,
+  Redo2,
+  Save,
+  Undo2,
+} from 'lucide-react';
 import { SavePaintingModal } from '@/components/canvas/SavePaintingModal';
 import { TldrawCanvasStage } from '@/components/tldraw';
 import { Button } from '@/components/ui/Button';
@@ -31,6 +41,8 @@ interface DrawingCanvasProps {
   className?: string;
 }
 
+type DrawingPreset = 'pencil' | 'marker' | 'brush' | 'highlighter' | 'eraser';
+
 interface ColorOption {
   id: TLDefaultColorStyle;
   label: string;
@@ -39,6 +51,7 @@ interface ColorOption {
 
 const COLOR_OPTIONS: ColorOption[] = [
   { id: 'black', label: '검정', swatch: '#111827' },
+  { id: 'grey', label: '회색', swatch: '#6B7280' },
   { id: 'red', label: '빨강', swatch: '#DC2626' },
   { id: 'orange', label: '주황', swatch: '#F97316' },
   { id: 'yellow', label: '노랑', swatch: '#EAB308' },
@@ -47,19 +60,27 @@ const COLOR_OPTIONS: ColorOption[] = [
   { id: 'violet', label: '보라', swatch: '#7C3AED' },
 ];
 
-const SIZE_OPTIONS: Array<{ id: TLDefaultSizeStyle; label: string }> = [
-  { id: 's', label: '얇게' },
-  { id: 'm', label: '보통' },
-  { id: 'l', label: '굵게' },
-  { id: 'xl', label: '두껍게' },
+const SIZE_STEPS: Array<{ id: TLDefaultSizeStyle; label: string }> = [
+  { id: 's', label: '1' },
+  { id: 'm', label: '2' },
+  { id: 'l', label: '3' },
+  { id: 'xl', label: '4' },
 ];
+
+const PRESET_CONFIG: Record<DrawingPreset, { label: string; tool: 'draw' | 'eraser'; size: TLDefaultSizeStyle; color?: TLDefaultColorStyle }> = {
+  pencil: { label: '연필', tool: 'draw', size: 's', color: 'black' },
+  marker: { label: '마커', tool: 'draw', size: 'm' },
+  brush: { label: '브러시', tool: 'draw', size: 'l' },
+  highlighter: { label: '형광펜', tool: 'draw', size: 'xl', color: 'yellow' },
+  eraser: { label: '지우개', tool: 'eraser', size: 'l' },
+};
 
 const SHORTCUT_HELP_SEEN_STORAGE_KEY = 'paintshare.draw.shortcut-help.seen.v1';
 
 export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const { actor } = useActor();
   const [editor, setEditor] = useState<Editor | null>(null);
-  const [activeTool, setActiveTool] = useState<'draw' | 'eraser'>('draw');
+  const [activePreset, setActivePreset] = useState<DrawingPreset>('pencil');
   const [activeColor, setActiveColor] = useState<TLDefaultColorStyle>('black');
   const [activeSize, setActiveSize] = useState<TLDefaultSizeStyle>('m');
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -92,7 +113,6 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
   const applyTool = useCallback(
     (tool: 'draw' | 'eraser') => {
-      setActiveTool(tool);
       if (!editor) return;
       editor.setCurrentTool(tool);
     },
@@ -127,6 +147,28 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       });
     },
     [editor]
+  );
+
+  const applyPreset = useCallback(
+    (preset: DrawingPreset) => {
+      const config = PRESET_CONFIG[preset];
+      setActivePreset(preset);
+      applyTool(config.tool);
+      applySize(config.size);
+      if (config.color) {
+        applyColor(config.color);
+      }
+    },
+    [applyColor, applySize, applyTool]
+  );
+
+  const handleSizeDelta = useCallback(
+    (direction: -1 | 1) => {
+      const currentIndex = SIZE_STEPS.findIndex((item) => item.id === activeSize);
+      const nextIndex = Math.max(0, Math.min(SIZE_STEPS.length - 1, currentIndex + direction));
+      applySize(SIZE_STEPS[nextIndex]?.id ?? 'm');
+    },
+    [activeSize, applySize]
   );
 
   const exportCurrentDrawing = useCallback(async (): Promise<string | null> => {
@@ -227,15 +269,39 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         return;
       }
 
-      if (key === 'e') {
+      if (key === '1') {
         event.preventDefault();
-        applyTool('eraser');
+        applyPreset('pencil');
+        return;
+      }
+
+      if (key === '2') {
+        event.preventDefault();
+        applyPreset('marker');
+        return;
+      }
+
+      if (key === '3') {
+        event.preventDefault();
+        applyPreset('brush');
+        return;
+      }
+
+      if (key === '4') {
+        event.preventDefault();
+        applyPreset('highlighter');
+        return;
+      }
+
+      if (key === '5' || key === 'e') {
+        event.preventDefault();
+        applyPreset('eraser');
         return;
       }
 
       if (key === 'd') {
         event.preventDefault();
-        applyTool('draw');
+        applyPreset('pencil');
         return;
       }
 
@@ -247,7 +313,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [applyTool, editor, openShortcutHelp]);
+  }, [applyPreset, editor, openShortcutHelp]);
 
   useEffect(() => {
     if (!isShortcutHelpOpen) return;
@@ -280,7 +346,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
     mountedEditor.setCurrentTool('draw');
     mountedEditor.setStyleForNextShapes(DefaultColorStyle, 'black');
-    mountedEditor.setStyleForNextShapes(DefaultSizeStyle, 'm');
+    mountedEditor.setStyleForNextShapes(DefaultSizeStyle, 's');
 
     const persistedSnapshot = loadTldrawDraftSnapshot();
 
@@ -332,8 +398,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           그림 그리기
         </h1>
         <p className="text-sm text-gray-600">
-          tldraw 기반 편집기로 업그레이드되었습니다. 작업 초안은 브라우저에 자동 저장되며,
-          저장/내보내기는 기존 PNG 파이프라인과 호환됩니다.
+          노트앱처럼 도구를 빠르게 전환하세요. 1~5 키로 연필·마커·브러시·형광펜·지우개를 즉시 바꿀 수 있습니다.
         </p>
 
         {actor?.isGuest && (
@@ -382,53 +447,48 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             id="draw-shortcut-help"
             aria-hidden={!isShortcutHelpOpen}
             className={cn(
-              'absolute left-0 top-[calc(100%+0.5rem)] z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg transition-all duration-150 ease-out',
+              'absolute left-0 top-[calc(100%+0.5rem)] z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg transition-all duration-150 ease-out motion-reduce:transition-none',
               isShortcutHelpOpen
                 ? 'pointer-events-auto translate-y-0 opacity-100'
                 : 'pointer-events-none -translate-y-1 opacity-0'
             )}
           >
-              <p className="mb-2 font-semibold text-gray-900">키보드 빠른 조작</p>
-              <ul className="space-y-1">
-                <li>D: 그리기 도구</li>
-                <li>E: 지우개 도구</li>
-                <li>?: 단축키 패널 열기</li>
-                <li>Ctrl/Cmd + Z: 실행취소</li>
-                <li>Shift + Ctrl/Cmd + Z, Y: 다시실행</li>
-              </ul>
-            </section>
+            <p className="mb-2 font-semibold text-gray-900">키보드 빠른 조작</p>
+            <ul className="space-y-1">
+              <li>1: 연필</li>
+              <li>2: 마커</li>
+              <li>3: 브러시</li>
+              <li>4: 형광펜</li>
+              <li>5 / E: 지우개</li>
+              <li>Ctrl/Cmd + Z: 실행취소</li>
+              <li>Shift + Ctrl/Cmd + Z, Y: 다시실행</li>
+            </ul>
+          </section>
         </div>
-        <button
-          type="button"
-          aria-label="그리기"
-          aria-pressed={activeTool === 'draw'}
-          onClick={() => applyTool('draw')}
-          className={cn(
-            'inline-flex min-h-[42px] items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold transition-colors',
-            activeTool === 'draw'
-              ? 'border-purple-600 bg-purple-600 text-white'
-              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-          )}
-        >
-          <PenLine className="h-4 w-4" />
-          그리기
-        </button>
 
-        <button
-          type="button"
-          aria-label="지우개"
-          aria-pressed={activeTool === 'eraser'}
-          onClick={() => applyTool('eraser')}
-          className={cn(
-            'inline-flex min-h-[42px] items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold transition-colors',
-            activeTool === 'eraser'
-              ? 'border-purple-600 bg-purple-600 text-white'
-              : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-          )}
-        >
-          <Eraser className="h-4 w-4" />
-          지우개
-        </button>
+        {(['pencil', 'marker', 'brush', 'highlighter', 'eraser'] as DrawingPreset[]).map((preset) => {
+          const presetConfig = PRESET_CONFIG[preset];
+          const isActive = activePreset === preset;
+
+          return (
+            <button
+              key={preset}
+              type="button"
+              aria-label={presetConfig.label}
+              aria-pressed={isActive}
+              onClick={() => applyPreset(preset)}
+              className={cn(
+                'inline-flex min-h-[42px] items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold transition-colors',
+                isActive
+                  ? 'border-purple-600 bg-purple-600 text-white'
+                  : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+              )}
+            >
+              {preset === 'eraser' ? <Eraser className="h-4 w-4" /> : <PenLine className="h-4 w-4" />}
+              {presetConfig.label}
+            </button>
+          );
+        })}
 
         <div className="mx-1 h-6 w-px bg-gray-200" aria-hidden="true" />
 
@@ -503,13 +563,51 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         </div>
 
         <div className="space-y-2">
-          <h2 className="text-xs font-semibold text-gray-600">굵기</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold text-gray-600">브러시 굵기</h2>
+            <span className="text-xs font-semibold text-gray-900">레벨 {SIZE_STEPS.findIndex((s) => s.id === activeSize) + 1}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleSizeDelta(-1)}
+              aria-label="브러시 크기 줄이기"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+
+            <input
+              type="range"
+              min={0}
+              max={SIZE_STEPS.length - 1}
+              step={1}
+              value={Math.max(0, SIZE_STEPS.findIndex((size) => size.id === activeSize))}
+              onChange={(event) => {
+                const index = Number(event.target.value);
+                applySize(SIZE_STEPS[index]?.id ?? 'm');
+              }}
+              aria-label="브러시 크기"
+              className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-purple-600"
+            />
+
+            <button
+              type="button"
+              onClick={() => handleSizeDelta(1)}
+              aria-label="브러시 크기 늘리기"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+
           <div className="flex flex-wrap gap-2">
-            {SIZE_OPTIONS.map((size) => (
+            {SIZE_STEPS.map((size, index) => (
               <button
                 key={size.id}
                 type="button"
-                aria-label={`굵기 ${size.label}`}
+                aria-label={`굵기 레벨 ${index + 1}`}
                 aria-pressed={activeSize === size.id}
                 onClick={() => applySize(size.id)}
                 className={cn(

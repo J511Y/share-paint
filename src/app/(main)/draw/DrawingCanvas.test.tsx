@@ -158,14 +158,14 @@ describe('DrawingCanvas (tldraw shell)', () => {
     });
   });
 
-  it('switches draw and eraser tools', async () => {
+  it('switches presets and tool modes', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);
 
     await user.click(screen.getByRole('button', { name: '지우개' }));
     expect(mockSetCurrentTool).toHaveBeenLastCalledWith('eraser');
 
-    await user.click(screen.getByRole('button', { name: '그리기' }));
+    await user.click(screen.getByRole('button', { name: '연필' }));
     expect(mockSetCurrentTool).toHaveBeenLastCalledWith('draw');
   });
 
@@ -181,6 +181,7 @@ describe('DrawingCanvas (tldraw shell)', () => {
 
     expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
     expect(panel).toHaveAttribute('aria-hidden', 'false');
+    expect(panel).toHaveClass('motion-reduce:transition-none');
     expect(screen.queryByText('NEW')).not.toBeInTheDocument();
   });
 
@@ -192,6 +193,16 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
   });
 
+  it('숫자 단축키로 프리셋을 빠르게 전환한다', () => {
+    render(<DrawingCanvas />);
+
+    fireEvent.keyDown(window, { key: '5' });
+    expect(mockSetCurrentTool).toHaveBeenLastCalledWith('eraser');
+
+    fireEvent.keyDown(window, { key: '2' });
+    expect(mockSetCurrentTool).toHaveBeenLastCalledWith('draw');
+  });
+
   it('applies color and size styles', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);
@@ -199,7 +210,7 @@ describe('DrawingCanvas (tldraw shell)', () => {
     await user.click(screen.getByRole('button', { name: '색상 빨강' }));
     expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'color' }, 'red');
 
-    await user.click(screen.getByRole('button', { name: '굵기 굵게' }));
+    await user.click(screen.getByRole('button', { name: '굵기 레벨 3' }));
     expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'size' }, 'l');
   });
 
