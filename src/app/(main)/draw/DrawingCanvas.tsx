@@ -121,7 +121,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const [showMicroHints, setShowMicroHints] = useState(false);
   const { actor } = useActor();
 
-  const { width, height, isMobile } = useResponsiveCanvas();
+  const { width, height, isMobile } = useResponsiveCanvas({
+    padding: 20,
+    prioritizeViewportHeight: true,
+    mobileViewportHeightRatio: 0.6,
+    mobileReservedHeight: 210,
+  });
 
   const activeTool = useCanvasStore((state) => state.tool);
   const activePreset = useCanvasStore((state) => state.activePreset);
@@ -525,60 +530,83 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   );
 
   return (
-    <main className={cn('w-full', className)} role="main">
-      <div className="mb-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">그림 그리기</h1>
-            <p className="mt-1 text-sm text-gray-600">빠른 바에서 펜을 고르고 바로 그린 뒤, 필요할 때만 상세 설정을 열어보세요.</p>
-          </div>
-          <div className="relative flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsShortcutHelpOpen((prev) => !prev)}
-              aria-expanded={isShortcutHelpOpen}
-              aria-controls={shortcutPanelId}
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+    <main className={cn('w-full', isMobile && '-mt-2', className)} role="main">
+      <div className={cn('space-y-2', isMobile ? 'mb-2' : 'mb-4')}>
+        <div className="flex items-start justify-between gap-3" data-testid="drawing-header">
+          <div className="min-w-0">
+            <h1
+              className={cn(
+                'font-bold text-gray-900',
+                isMobile ? 'text-lg leading-tight' : 'text-2xl'
+              )}
             >
-              <Keyboard className="h-4 w-4" />
-              단축키
-            </button>
-
-            {isShortcutHelpOpen && (
-              <section
-                id={shortcutPanelId}
-                className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg"
+              그림 그리기
+            </h1>
+            {!isMobile && (
+              <p
+                data-testid="drawing-subtitle"
+                className="mt-1 text-sm text-gray-600"
               >
-                <p className="mb-2 font-semibold text-gray-900">키보드 빠른 조작</p>
-                <ul className="space-y-1">
-                  <li>1~5: 펜 프리셋 전환</li>
-                  <li>F: 영역 채우기</li>
-                  <li>[ / ]: 굵기 줄이기/늘리기</li>
-                  <li>⌘/Ctrl + Z, Shift+Z, Y: 실행취소/다시실행</li>
-                </ul>
-              </section>
+                빠른 바에서 펜을 고르고 바로 그린 뒤, 필요할 때만 상세 설정을 열어보세요.
+              </p>
             )}
-
-            <InfoDisclosure label="드로잉 안내 보기" title="드로잉 안내">
-              <ul className="list-disc space-y-1 pl-4">
-                <li>기본 펜/마커/브러시/형광 펜/지우개를 빠르게 전환할 수 있어요.</li>
-                <li>게스트도 저장 및 공유가 가능하며 계정 연결은 선택사항입니다.</li>
-                <li>문제가 생기면 상단에서 게스트 ID를 재발급한 뒤 다시 시도해보세요.</li>
-              </ul>
-            </InfoDisclosure>
           </div>
+
+          {!isMobile && (
+            <div className="relative flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsShortcutHelpOpen((prev) => !prev)}
+                aria-expanded={isShortcutHelpOpen}
+                aria-controls={shortcutPanelId}
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <Keyboard className="h-4 w-4" />
+                단축키
+              </button>
+
+              {isShortcutHelpOpen && (
+                <section
+                  id={shortcutPanelId}
+                  className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg"
+                >
+                  <p className="mb-2 font-semibold text-gray-900">키보드 빠른 조작</p>
+                  <ul className="space-y-1">
+                    <li>1~5: 펜 프리셋 전환</li>
+                    <li>F: 영역 채우기</li>
+                    <li>[ / ]: 굵기 줄이기/늘리기</li>
+                    <li>⌘/Ctrl + Z, Shift+Z, Y: 실행취소/다시실행</li>
+                  </ul>
+                </section>
+              )}
+
+              <InfoDisclosure label="드로잉 안내 보기" title="드로잉 안내">
+                <ul className="list-disc space-y-1 pl-4">
+                  <li>기본 펜/마커/브러시/형광 펜/지우개를 빠르게 전환할 수 있어요.</li>
+                  <li>게스트도 저장 및 공유가 가능하며 계정 연결은 선택사항입니다.</li>
+                  <li>문제가 생기면 상단에서 게스트 ID를 재발급한 뒤 다시 시도해보세요.</li>
+                </ul>
+              </InfoDisclosure>
+            </div>
+          )}
         </div>
 
-        <div className="mt-3 rounded-xl border border-purple-100 bg-purple-50 p-3">
-          <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div
+          data-testid="active-tool-banner"
+          className={cn(
+            'rounded-xl border border-purple-100 bg-purple-50',
+            isMobile ? 'px-2 py-1.5' : 'p-3'
+          )}
+        >
+          <div className={cn('flex items-center gap-2', isMobile ? 'text-[11px]' : 'text-xs')}>
             <span className="rounded-full bg-purple-100 px-2 py-1 font-semibold text-purple-700">현재 도구</span>
             <p className="font-semibold text-purple-900">{activeToolMeta.label}</p>
-            <p className="text-purple-800">· {activeToolMeta.hint}</p>
+            {!isMobile && <p className="text-purple-800">· {activeToolMeta.hint}</p>}
           </div>
         </div>
 
         {actor?.isGuest && (
-          <p className="mt-1 text-xs text-emerald-700">
+          <p className={cn('text-emerald-700', isMobile ? 'text-[11px]' : 'text-xs')}>
             게스트 모드로 작업 중 · 저장 시 현재 게스트 이름으로 게시됩니다.
           </p>
         )}
@@ -604,9 +632,14 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         >
           <section
             data-testid="canvas-area"
-            className={cn('flex flex-col gap-4', isMobile && 'pb-28')}
+            className={cn('flex flex-col gap-3', isMobile && 'pb-24')}
           >
-            <div className="bg-white rounded-lg shadow-sm p-4 flex justify-center overflow-auto">
+            <div
+              className={cn(
+                'flex justify-center overflow-auto rounded-lg bg-white shadow-sm',
+                isMobile ? 'p-1.5' : 'p-4'
+              )}
+            >
               <Canvas
                 ref={canvasRef}
                 width={width}
@@ -631,7 +664,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           <section
             id={detailPanelId}
             data-testid="detail-panel-mobile"
-            className="fixed inset-x-3 bottom-20 z-30 max-h-[65vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-5 shadow-lg"
+            className="fixed inset-x-3 bottom-20 z-30 max-h-[70vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-lg"
             aria-label="상세 드로잉 설정"
           >
             <div className="space-y-4">{detailPanelContent}</div>
@@ -639,7 +672,10 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         )}
 
         {isMobile && (
-          <div className="fixed inset-x-0 bottom-3 z-40 flex justify-center px-3">
+          <div
+            className="fixed inset-x-0 z-40 flex justify-center px-2"
+            style={{ bottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+          >
             <div
               data-testid="quick-bar-mobile"
               role="toolbar"

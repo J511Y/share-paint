@@ -283,11 +283,11 @@ describe('DrawingCanvas', () => {
     expect(mockSetBrushSize).toHaveBeenCalledWith(6);
   });
 
-  it('모바일에서는 모바일 퀵바를 표시한다', async () => {
+  it('모바일에서는 모바일 퀵바를 표시하고 헤더를 압축한다', async () => {
     const { useResponsiveCanvas } = await import('@/hooks/useResponsiveCanvas');
     vi.mocked(useResponsiveCanvas).mockReturnValue({
       width: 343,
-      height: 257,
+      height: 487,
       isMobile: true,
     });
 
@@ -295,20 +295,22 @@ describe('DrawingCanvas', () => {
 
     expect(screen.getByTestId('quick-bar-mobile')).toBeInTheDocument();
     expect(screen.queryByTestId('detail-panel-mobile')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('drawing-subtitle')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '단축키' })).not.toBeInTheDocument();
 
     const pencilButton = screen.getByRole('button', { name: '기본 펜' });
     expect(pencilButton).toHaveClass('min-h-[44px]');
 
     const canvas = screen.getByTestId('mock-canvas');
     expect(canvas).toHaveAttribute('data-width', '343');
-    expect(canvas).toHaveAttribute('data-height', '257');
+    expect(canvas).toHaveAttribute('data-height', '487');
   });
 
   it('모바일에서 토글 버튼으로 상세 패널을 연다', async () => {
     const { useResponsiveCanvas } = await import('@/hooks/useResponsiveCanvas');
     vi.mocked(useResponsiveCanvas).mockReturnValue({
       width: 343,
-      height: 257,
+      height: 487,
       isMobile: true,
     });
 

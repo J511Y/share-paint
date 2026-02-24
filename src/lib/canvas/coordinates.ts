@@ -3,6 +3,8 @@ export interface CanvasPoint {
   y: number;
 }
 
+export type CanvasInputEvent = MouseEvent | TouchEvent | PointerEvent;
+
 const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
 };
@@ -12,7 +14,7 @@ const getTouchPoint = (event: TouchEvent): Touch | null => {
 };
 
 export function getCanvasCoordinates(
-  event: MouseEvent | TouchEvent,
+  event: CanvasInputEvent,
   canvas: HTMLCanvasElement
 ): CanvasPoint | null {
   const rect = canvas.getBoundingClientRect();

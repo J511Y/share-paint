@@ -53,6 +53,21 @@ describe('getCanvasCoordinates', () => {
     expect(point).toEqual({ x: 0, y: 0 });
   });
 
+  it('converts pointer coordinates into canvas space', () => {
+    const canvas = createCanvas();
+    const event = {
+      clientX: 250,
+      clientY: 125,
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+    } as PointerEvent;
+
+    const point = getCanvasCoordinates(event, canvas);
+
+    expect(point).toEqual({ x: 300, y: 150 });
+  });
+
   it('returns null when bounding rect is invalid', () => {
     const canvas = {
       width: 800,

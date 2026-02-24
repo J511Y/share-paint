@@ -55,6 +55,26 @@ const createMockCanvasElement = (): HTMLCanvasElement => {
 
 const mockCanvas = createMockCanvasElement()
 
+const createMouseEvent = (clientX: number, clientY: number) =>
+  ({ clientX, clientY } as MouseEvent)
+
+const mountInitializedCanvasHook = () => {
+  const { result, rerender } = renderHook(
+    ({ width }) => useCanvas({ width, height: 100 }),
+    { initialProps: { width: 100 } }
+  )
+
+  act(() => {
+    result.current.canvasRef.current = mockCanvas
+  })
+
+  act(() => {
+    rerender({ width: 101 })
+  })
+
+  return { result }
+}
+
 describe('useCanvas', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -223,6 +243,33 @@ describe('useCanvas', () => {
       )
 
       expect(typeof result.current.loadImage).toBe('function')
+    })
+  })
+
+  describe('스트로크 시작/중복 입력 방지', () => {
+    it('활성 스트로크 중 중복 startDrawing 호출을 무시한다', () => {
+      const { result } = mountInitializedCanvasHook()
+
+      act(() => {
+        result.current.startDrawing(createMouseEvent(10, 10))
+        result.current.startDrawing(createMouseEvent(10, 10))
+      })
+
+      expect(mockContext.beginPath).toHaveBeenCalledTimes(1)
+      expect(mockContext.moveTo).toHaveBeenCalledTimes(1)
+    })
+
+    it('최소 거리 미만 포인트는 draw에서 중복 처리하지 않는다', () => {
+      const { result } = mountInitializedCanvasHook()
+
+      act(() => {
+        result.current.startDrawing(createMouseEvent(10, 10))
+        result.current.draw(createMouseEvent(10.2, 10.2))
+        result.current.draw(createMouseEvent(14, 14))
+      })
+
+      expect(mockContext.lineTo).toHaveBeenCalledTimes(1)
+      expect(mockContext.stroke).toHaveBeenCalledTimes(1)
     })
   })
 })
