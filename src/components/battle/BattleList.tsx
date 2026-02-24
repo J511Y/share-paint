@@ -9,6 +9,7 @@ import type { BattleListItem } from '@/types/api-contracts';
 import { BattleArraySchema, BattleParticipantCountSchema } from '@/lib/validation/schemas';
 import { parseJsonResponse } from '@/lib/validation/http';
 import { BATTLE_LIST_FETCH_ERROR, BATTLE_RECOVERY_HINT } from './copy';
+import { emitBattleConnectivity } from '@/lib/observability/battle-connectivity';
 
 interface BattleListProps {
   initialBattles?: BattleListItem[];
@@ -43,6 +44,9 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
       const res = await fetch('/api/battle?status=waiting');
 
       if (!res.ok) {
+        if (!hadRecentFailureRef.current) {
+          emitBattleConnectivity('degraded', { retryMs: pollIntervalMs });
+        }
         hadRecentFailureRef.current = true;
         setFetchError(BATTLE_LIST_FETCH_ERROR);
         setPollIntervalMs((prev) => (prev >= 60000 ? 60000 : prev === 10000 ? 30000 : 60000));
@@ -52,17 +56,23 @@ export function BattleList({ initialBattles = [], onCreateBattle }: BattleListPr
       const data = await parseJsonResponse(res, BattleArraySchema);
       setBattles(data);
       setShowRecoveredNotice(hadRecentFailureRef.current);
+      if (hadRecentFailureRef.current) {
+        emitBattleConnectivity('recovered', { retryMs: pollIntervalMs });
+      }
       hadRecentFailureRef.current = false;
       setFetchError(null);
       setPollIntervalMs(10000);
     } catch {
+      if (!hadRecentFailureRef.current) {
+        emitBattleConnectivity('degraded', { retryMs: pollIntervalMs });
+      }
       hadRecentFailureRef.current = true;
       setFetchError(BATTLE_LIST_FETCH_ERROR);
       setPollIntervalMs((prev) => (prev >= 60000 ? 60000 : prev === 10000 ? 30000 : 60000));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pollIntervalMs]);
 
   useEffect(() => {
     fetchBattles();

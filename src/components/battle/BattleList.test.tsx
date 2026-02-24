@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BattleList } from './BattleList';
+import { BATTLE_CONNECTIVITY_EVENT } from '@/lib/observability/battle-connectivity';
 
 vi.mock('next/link', () => ({
   default: ({ href, children }: { href: string; children: React.ReactNode }) => (
@@ -64,6 +65,29 @@ describe('BattleList', () => {
     await waitFor(() => {
       expect(screen.getByText('자동 재시도 60초')).toBeInTheDocument();
       expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  it('장애/복구 시 연결 상태 커스텀 이벤트를 발행한다', async () => {
+    vi.spyOn(global, 'fetch')
+      .mockRejectedValueOnce(new Error('network error'))
+      .mockResolvedValue({ ok: true, json: async () => [] } as Response);
+
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const user = userEvent.setup();
+
+    render(<BattleList initialBattles={[]} />);
+
+    await screen.findByRole('button', { name: '다시 시도' });
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    await waitFor(() => {
+      const telemetryEvents = dispatchSpy.mock.calls
+        .map(([event]) => event)
+        .filter((event): event is CustomEvent => event instanceof CustomEvent && event.type === BATTLE_CONNECTIVITY_EVENT);
+
+      expect(telemetryEvents.some((event) => event.detail?.status === 'degraded')).toBe(true);
+      expect(telemetryEvents.some((event) => event.detail?.status === 'recovered')).toBe(true);
     });
   });
 
