@@ -1,5 +1,5 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { BattleConnectivityIndicator } from './BattleConnectivityIndicator';
 import { BATTLE_CONNECTIVITY_EVENT } from '@/lib/observability/battle-connectivity';
 
@@ -40,5 +40,28 @@ describe('BattleConnectivityIndicator', () => {
     await waitFor(() => {
       expect(screen.getByText('연결 상태: 복구됨')).toBeInTheDocument();
     });
+  });
+
+  it('복구 상태는 일정 시간 후 정상 상태로 복귀한다', async () => {
+    vi.useFakeTimers();
+
+    render(<BattleConnectivityIndicator />);
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(BATTLE_CONNECTIVITY_EVENT, {
+          detail: { status: 'recovered', retryMs: 10000, at: Date.now() },
+        })
+      );
+    });
+
+    expect(screen.getByText('연결 상태: 복구됨')).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    expect(screen.getByText('연결 상태: 정상')).toBeInTheDocument();
+    vi.useRealTimers();
   });
 });

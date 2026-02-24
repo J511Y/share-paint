@@ -9,6 +9,8 @@ type ConnectivityState = {
   retryMs: number;
 } | null;
 
+const RECOVERED_BADGE_TTL_MS = 6000;
+
 export function BattleConnectivityIndicator() {
   const [state, setState] = useState<ConnectivityState>(null);
 
@@ -24,9 +26,22 @@ export function BattleConnectivityIndicator() {
     return () => window.removeEventListener(BATTLE_CONNECTIVITY_EVENT, handler);
   }, []);
 
+  useEffect(() => {
+    if (state?.status !== 'recovered') return;
+
+    const timer = setTimeout(() => {
+      setState(null);
+    }, RECOVERED_BADGE_TTL_MS);
+
+    return () => clearTimeout(timer);
+  }, [state]);
+
   if (!state) {
     return (
-      <span className="rounded-full border border-gray-200 bg-white px-2 py-1 text-xs text-gray-500">
+      <span
+        aria-live="polite"
+        className="rounded-full border border-gray-200 bg-white px-2 py-1 text-xs text-gray-500"
+      >
         연결 상태: 정상
       </span>
     );
@@ -36,13 +51,21 @@ export function BattleConnectivityIndicator() {
 
   return (
     <span
+      aria-live="polite"
       className={cn(
-        'rounded-full border px-2 py-1 text-xs',
+        'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs',
         degraded
           ? 'border-amber-200 bg-amber-50 text-amber-700'
           : 'border-emerald-200 bg-emerald-50 text-emerald-700'
       )}
     >
+      <span
+        className={cn(
+          'inline-block h-1.5 w-1.5 rounded-full',
+          degraded ? 'animate-pulse bg-amber-500' : 'bg-emerald-500'
+        )}
+        aria-hidden="true"
+      />
       {degraded
         ? `연결 상태: 불안정 (자동 재시도 ${Math.round(state.retryMs / 1000)}초)`
         : '연결 상태: 복구됨'}
