@@ -41,6 +41,7 @@ interface DrawingCanvasProps {
 const MICRO_HINT_DISMISS_STORAGE_KEY = 'paintshare.draw.microhints.dismissed.v2';
 const MICRO_HINT_LAST_SHOWN_AT_KEY = 'paintshare.draw.microhints.last-shown-at.v1';
 const MICRO_HINT_COOLDOWN_MS = 1000 * 60 * 60 * 12;
+const SHORTCUT_HELP_SEEN_STORAGE_KEY = 'paintshare.draw.shortcut-help.seen.v1';
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -122,6 +123,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const [isTipsOpen, setIsTipsOpen] = useState(false);
   const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false);
   const [showMicroHints, setShowMicroHints] = useState(false);
+  const [showShortcutNudge, setShowShortcutNudge] = useState(false);
   const { actor } = useActor();
 
   const { width, height, isMobile } = useResponsiveCanvas({
@@ -170,10 +172,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     const dismissed = localStorage.getItem(MICRO_HINT_DISMISS_STORAGE_KEY) === '1';
     const lastShownAt = Number(localStorage.getItem(MICRO_HINT_LAST_SHOWN_AT_KEY) || '0');
     const isCoolingDown = Date.now() - lastShownAt < MICRO_HINT_COOLDOWN_MS;
+    const hasSeenShortcutHelp = localStorage.getItem(SHORTCUT_HELP_SEEN_STORAGE_KEY) === '1';
 
     const shouldShow = !dismissed && !isCoolingDown;
     const frameId = window.requestAnimationFrame(() => {
       setShowMicroHints(shouldShow);
+      setShowShortcutNudge(!hasSeenShortcutHelp);
       if (shouldShow) {
         localStorage.setItem(MICRO_HINT_LAST_SHOWN_AT_KEY, String(Date.now()));
       }
@@ -214,6 +218,14 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
     setIsSaveModalOpen(true);
   }, [actor]);
+
+  const openShortcutHelp = useCallback(() => {
+    setIsShortcutHelpOpen(true);
+    setShowShortcutNudge(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(SHORTCUT_HELP_SEEN_STORAGE_KEY, '1');
+    }
+  }, []);
 
   const getCanvasData = useCallback(() => {
     return canvasRef.current?.getDataUrl() || null;
@@ -323,7 +335,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         }
       } else if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
         event.preventDefault();
-        setIsShortcutHelpOpen(true);
+        openShortcutHelp();
       } else if (key === 'f') {
         setTool('fill');
       } else if (event.altKey && event.key === '[') {
@@ -351,6 +363,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     handleRedo,
     handleSave,
     handleUndo,
+    openShortcutHelp,
     setBrushOpacity,
     setBrushSize,
     setPreset,
@@ -603,13 +616,24 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             <div className="relative flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setIsShortcutHelpOpen((prev) => !prev)}
+                onClick={() => {
+                  if (isShortcutHelpOpen) {
+                    setIsShortcutHelpOpen(false);
+                  } else {
+                    openShortcutHelp();
+                  }
+                }}
                 aria-expanded={isShortcutHelpOpen}
                 aria-controls={shortcutPanelId}
                 className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <Keyboard className="h-4 w-4" />
                 단축키
+                {showShortcutNudge && (
+                  <span className="inline-flex h-5 items-center rounded-full bg-purple-100 px-1.5 text-[10px] font-bold text-purple-700">
+                    NEW
+                  </span>
+                )}
               </button>
 
               {isShortcutHelpOpen && (

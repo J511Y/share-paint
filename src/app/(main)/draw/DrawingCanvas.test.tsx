@@ -221,14 +221,17 @@ describe('DrawingCanvas', () => {
     expect(screen.getByTestId('detail-panel-desktop')).toBeInTheDocument();
   });
 
-  it('단축키 도움말 버튼 클릭 시 툴팁을 표시한다', async () => {
+  it('단축키 도움말 버튼 클릭 시 툴팁을 표시하고 NEW 뱃지를 숨긴다', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);
 
-    await user.click(screen.getByRole('button', { name: '단축키' }));
+    expect(await screen.findByText('NEW')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /단축키/ }));
 
     expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
     expect(screen.getByText('1~5: 펜 프리셋 전환')).toBeInTheDocument();
+    expect(screen.queryByText('NEW')).not.toBeInTheDocument();
   });
 
   it('? 단축키로 단축키 패널을 연다', () => {
@@ -238,6 +241,7 @@ describe('DrawingCanvas', () => {
 
     expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
     expect(screen.getByText('?: 단축키 패널 열기')).toBeInTheDocument();
+    expect(screen.queryByText('NEW')).not.toBeInTheDocument();
   });
 
   it('초기 진입 시 마이크로 힌트를 보여준다', async () => {
