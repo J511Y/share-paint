@@ -23,7 +23,7 @@ describe('InfoDisclosure', () => {
     expect(button).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('테스트 안내')).toBeInTheDocument();
     expect(screen.getByText('숨김 정보')).toBeInTheDocument();
-    expect(screen.getByText('숨김 정보').closest('section')).toHaveClass('absolute');
+    expect(screen.getByText('숨김 정보').closest('section')).toHaveClass('fixed');
   });
 
   it('ESC 키로 패널을 닫는다', async () => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +12,9 @@ interface InfoDisclosureProps {
   children: React.ReactNode;
 }
 
+const PANEL_WIDTH = 320;
+const VIEWPORT_GUTTER = 8;
+
 export function InfoDisclosure({
   label = '안내 보기',
   title = '안내',
@@ -18,6 +22,7 @@ export function InfoDisclosure({
   children,
 }: InfoDisclosureProps) {
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0, width: PANEL_WIDTH });
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -39,11 +44,35 @@ export function InfoDisclosure({
   useEffect(() => {
     if (!open) return;
 
+    const computePosition = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+
+      const rect = trigger.getBoundingClientRect();
+      const maxWidth = Math.min(PANEL_WIDTH, window.innerWidth - VIEWPORT_GUTTER * 2);
+      const nextLeft = Math.min(
+        Math.max(VIEWPORT_GUTTER, rect.right - maxWidth),
+        window.innerWidth - maxWidth - VIEWPORT_GUTTER
+      );
+
+      setPosition({
+        top: rect.bottom + 8,
+        left: nextLeft,
+        width: maxWidth,
+      });
+    };
+
+    computePosition();
+
     const handlePointerDown = (event: PointerEvent) => {
-      if (!rootRef.current) return;
-      if (!rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      const target = event.target as Node;
+      const root = rootRef.current;
+      if (root?.contains(target)) return;
+
+      const panel = document.getElementById(panelId);
+      if (panel?.contains(target)) return;
+
+      setOpen(false);
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -52,14 +81,18 @@ export function InfoDisclosure({
       }
     };
 
+    window.addEventListener('resize', computePosition);
+    window.addEventListener('scroll', computePosition, true);
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
 
     return () => {
+      window.removeEventListener('resize', computePosition);
+      window.removeEventListener('scroll', computePosition, true);
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [open]);
+  }, [open, panelId]);
 
   return (
     <div ref={rootRef} className={cn('relative inline-flex flex-col items-end', className)}>
@@ -75,26 +108,28 @@ export function InfoDisclosure({
         <Info className="h-4 w-4" />
       </button>
 
-      {open && (
-        <section
-          id={panelId}
-          className="absolute right-0 top-9 z-30 w-[min(22rem,calc(100vw-1rem))] max-h-[60vh] overflow-y-auto rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900 shadow-lg sm:w-80"
-        >
-          <div className="mb-1 flex items-center justify-between gap-2">
-            <p className="font-semibold">{title}</p>
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="안내 닫기"
-              className="inline-flex h-5 w-5 items-center justify-center rounded text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              ×
-            </button>
-          </div>
-          <div>{children}</div>
-        </section>
-      )}
+      {open && typeof document !== 'undefined' && createPortal(
+          <section
+            id={panelId}
+            className="fixed z-50 max-h-[60vh] overflow-y-auto rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900 shadow-lg"
+            style={{ top: position.top, left: position.left, width: position.width }}
+          >
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <p className="font-semibold">{title}</p>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="안내 닫기"
+                className="inline-flex h-5 w-5 items-center justify-center rounded text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                ×
+              </button>
+            </div>
+            <div>{children}</div>
+          </section>,
+          document.body
+        )}
     </div>
   );
 }
