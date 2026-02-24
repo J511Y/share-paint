@@ -8,6 +8,7 @@ const mockSetStyleForNextShapes = vi.fn();
 const mockSetStyleForSelectedShapes = vi.fn();
 const mockUndo = vi.fn();
 const mockRedo = vi.fn();
+const mockDeleteShapes = vi.fn();
 const mockToImageDataUrl = vi.fn(async () => ({
   url: 'data:image/png;base64,mock',
   width: 100,
@@ -89,6 +90,7 @@ vi.mock('@/components/tldraw', async () => {
           loadSnapshot: mockLoadSnapshot,
           undo: mockUndo,
           redo: mockRedo,
+          deleteShapes: mockDeleteShapes,
           getCanUndo: () => mockCanUndo,
           getCanRedo: () => mockCanRedo,
           run: (fn: () => void) => fn(),
@@ -119,6 +121,7 @@ describe('DrawingCanvas (tldraw shell)', () => {
     mockLoadDrawingCompatDraft.mockReturnValue(null);
     mockLoadTldrawDraftSnapshot.mockReturnValue(null);
     vi.stubGlobal('alert', vi.fn());
+    vi.stubGlobal('confirm', vi.fn(() => true));
   });
 
   it('renders tldraw stage and guest-first notice', async () => {
@@ -274,6 +277,16 @@ describe('DrawingCanvas (tldraw shell)', () => {
 
     await user.click(screen.getByRole('button', { name: '다시실행' }));
     expect(mockRedo).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears all shapes after confirmation', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: '캔버스 비우기' }));
+
+    expect(globalThis.confirm).toHaveBeenCalled();
+    expect(mockDeleteShapes).toHaveBeenCalledWith(['shape:1']);
   });
 
   it('opens save modal with exported png data and persists compatibility envelope', async () => {

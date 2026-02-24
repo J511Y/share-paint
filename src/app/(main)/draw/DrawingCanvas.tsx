@@ -17,6 +17,7 @@ import {
   Plus,
   Redo2,
   Save,
+  Trash2,
   Undo2,
 } from 'lucide-react';
 import { SavePaintingModal } from '@/components/canvas/SavePaintingModal';
@@ -279,6 +280,22 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       alert('이미지 내보내기에 실패했습니다.');
     }
   }, [exportCurrentDrawing]);
+
+  const handleClearCanvas = useCallback(() => {
+    if (!editor) return;
+
+    const shapeIds = Array.from(editor.getCurrentPageShapeIds());
+    if (shapeIds.length === 0) {
+      alert('지울 그림이 없습니다.');
+      return;
+    }
+
+    const confirmed = window.confirm('현재 캔버스의 모든 그림을 지울까요? 이 작업은 실행취소할 수 있습니다.');
+    if (!confirmed) return;
+
+    editor.deleteShapes(shapeIds);
+  }, [editor]);
+
 
   const openShortcutHelp = useCallback(() => {
     setIsShortcutHelpOpen(true);
@@ -595,6 +612,17 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           aria-label="다시실행"
         >
           다시실행
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleClearCanvas}
+          leftIcon={<Trash2 className="h-4 w-4" />}
+          aria-label="캔버스 비우기"
+        >
+          비우기
         </Button>
 
         <Button
