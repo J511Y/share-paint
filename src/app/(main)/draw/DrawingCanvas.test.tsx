@@ -242,6 +242,15 @@ describe('DrawingCanvas', () => {
     expect(screen.getByText(/빠른 팁:/i)).toBeInTheDocument();
   });
 
+  it('최근에 마이크로 힌트를 본 경우 쿨다운 동안 숨긴다', () => {
+    localStorage.setItem('paintshare.draw.microhints.last-shown-at.v1', String(Date.now()));
+
+    render(<DrawingCanvas />);
+
+    expect(screen.queryByText('처음이면 이것만 기억하세요')).not.toBeInTheDocument();
+    expect(screen.queryByText(/빠른 팁:/i)).not.toBeInTheDocument();
+  });
+
   it('다운로드 버튼 클릭 시 이미지를 다운로드한다', async () => {
     const user = userEvent.setup();
     const mockLink = createMockAnchorElement();

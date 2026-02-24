@@ -39,6 +39,8 @@ interface DrawingCanvasProps {
 }
 
 const MICRO_HINT_DISMISS_STORAGE_KEY = 'paintshare.draw.microhints.dismissed.v2';
+const MICRO_HINT_LAST_SHOWN_AT_KEY = 'paintshare.draw.microhints.last-shown-at.v1';
+const MICRO_HINT_COOLDOWN_MS = 1000 * 60 * 60 * 12;
 
 const isEditableTarget = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) return false;
@@ -151,8 +153,15 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     if (typeof window === 'undefined') return;
 
     const dismissed = localStorage.getItem(MICRO_HINT_DISMISS_STORAGE_KEY) === '1';
+    const lastShownAt = Number(localStorage.getItem(MICRO_HINT_LAST_SHOWN_AT_KEY) || '0');
+    const isCoolingDown = Date.now() - lastShownAt < MICRO_HINT_COOLDOWN_MS;
+
+    const shouldShow = !dismissed && !isCoolingDown;
     const frameId = window.requestAnimationFrame(() => {
-      setShowMicroHints(!dismissed);
+      setShowMicroHints(shouldShow);
+      if (shouldShow) {
+        localStorage.setItem(MICRO_HINT_LAST_SHOWN_AT_KEY, String(Date.now()));
+      }
     });
 
     return () => {
