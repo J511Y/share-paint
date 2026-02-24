@@ -11,7 +11,7 @@ type ConnectivityState = {
 
 const RECOVERED_BADGE_TTL_MS = 6000;
 
-export function BattleConnectivityIndicator() {
+export function BattleConnectivityIndicator({ className }: { className?: string }) {
   const [state, setState] = useState<ConnectivityState>(null);
 
   useEffect(() => {
@@ -40,7 +40,10 @@ export function BattleConnectivityIndicator() {
     return (
       <span
         aria-live="polite"
-        className="rounded-full border border-gray-200 bg-white px-2 py-1 text-xs text-gray-500"
+        className={cn(
+          'rounded-full border border-gray-200 bg-white px-2 py-1 text-xs text-gray-500',
+          className
+        )}
       >
         연결 상태: 정상
       </span>
@@ -56,7 +59,8 @@ export function BattleConnectivityIndicator() {
         'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs',
         degraded
           ? 'border-amber-200 bg-amber-50 text-amber-700'
-          : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          : 'border-emerald-200 bg-emerald-50 text-emerald-700',
+        className
       )}
     >
       <span

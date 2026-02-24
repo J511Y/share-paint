@@ -5,9 +5,11 @@ import { BATTLE_CONNECTIVITY_EVENT } from '@/lib/observability/battle-connectivi
 
 describe('BattleConnectivityIndicator', () => {
   it('기본 상태에서 정상 연결 텍스트를 표시한다', () => {
-    render(<BattleConnectivityIndicator />);
+    render(<BattleConnectivityIndicator className="shrink-0" />);
 
-    expect(screen.getByText('연결 상태: 정상')).toBeInTheDocument();
+    const badge = screen.getByText('연결 상태: 정상');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveClass('shrink-0');
   });
 
   it('degraded 이벤트 수신 시 불안정 상태를 표시한다', async () => {
