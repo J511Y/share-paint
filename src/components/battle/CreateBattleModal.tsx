@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Lock, Users, Clock, Palette } from 'lucide-react';
+import { AlertCircle, Clock, Lock, Palette, Users, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
@@ -19,6 +19,7 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
   const router = useRouter();
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     time_limit: '300', // 5분
@@ -33,6 +34,7 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setSubmitError(null);
 
     try {
       const res = await fetch(
@@ -58,7 +60,9 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
       const battle = await parseJsonResponse(res, ApiBattleSchema);
       router.push(`/battle/${battle.id}`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '대결방 생성에 실패했습니다.');
+      const message = error instanceof Error ? error.message : '대결방 생성에 실패했습니다.';
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -78,6 +82,20 @@ export function CreateBattleModal({ isOpen, onClose }: CreateBattleModalProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {submitError && (
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-semibold">대결방을 만들지 못했어요.</p>
+                <p>{submitError}</p>
+                <p className="mt-1 text-[11px] text-amber-700">잠시 후 다시 시도하거나, 게스트 ID 재발급 후 재시도해보세요.</p>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               방 제목
