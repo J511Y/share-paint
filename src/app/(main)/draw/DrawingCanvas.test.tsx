@@ -173,11 +173,14 @@ describe('DrawingCanvas (tldraw shell)', () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);
 
+    const panel = screen.getByText('키보드 빠른 조작').closest('section');
+    expect(panel).toHaveAttribute('aria-hidden', 'true');
     expect(await screen.findByText('NEW')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '단축키' }));
 
     expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
+    expect(panel).toHaveAttribute('aria-hidden', 'false');
     expect(screen.queryByText('NEW')).not.toBeInTheDocument();
   });
 

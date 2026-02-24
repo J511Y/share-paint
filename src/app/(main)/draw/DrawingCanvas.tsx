@@ -378,11 +378,16 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             )}
           </button>
 
-          {isShortcutHelpOpen && (
-            <section
-              id="draw-shortcut-help"
-              className="absolute left-0 top-[calc(100%+0.5rem)] z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg"
-            >
+          <section
+            id="draw-shortcut-help"
+            aria-hidden={!isShortcutHelpOpen}
+            className={cn(
+              'absolute left-0 top-[calc(100%+0.5rem)] z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg transition-all duration-150 ease-out',
+              isShortcutHelpOpen
+                ? 'pointer-events-auto translate-y-0 opacity-100'
+                : 'pointer-events-none -translate-y-1 opacity-0'
+            )}
+          >
               <p className="mb-2 font-semibold text-gray-900">키보드 빠른 조작</p>
               <ul className="space-y-1">
                 <li>D: 그리기 도구</li>
@@ -392,7 +397,6 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                 <li>Shift + Ctrl/Cmd + Z, Y: 다시실행</li>
               </ul>
             </section>
-          )}
         </div>
         <button
           type="button"
