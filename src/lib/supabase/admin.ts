@@ -5,6 +5,10 @@ let adminClient: ReturnType<
   typeof createSupabaseClient<Database, 'public'>
 > | null = null;
 
+export function hasAdminClientEnv() {
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
 export function createAdminClient() {
   if (adminClient) return adminClient;
 

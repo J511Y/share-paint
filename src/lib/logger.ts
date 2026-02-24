@@ -1,4 +1,4 @@
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createAdminClient, hasAdminClientEnv } from '@/lib/supabase/admin';
 import type { Database } from '@/types/database';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -60,7 +60,17 @@ function formatLogForConsole(entry: LogEntry): string {
   return log;
 }
 
+let hasWarnedMissingAdminEnv = false;
+
 async function saveToSupabase(entry: LogEntry): Promise<void> {
+  if (!hasAdminClientEnv()) {
+    if (!hasWarnedMissingAdminEnv) {
+      hasWarnedMissingAdminEnv = true;
+      console.warn('[Logger] Skipping Supabase log persistence: missing admin env');
+    }
+    return;
+  }
+
   try {
     const supabase = createAdminClient();
 
