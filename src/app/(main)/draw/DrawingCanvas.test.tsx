@@ -231,6 +231,15 @@ describe('DrawingCanvas', () => {
     expect(screen.getByText('1~5: 펜 프리셋 전환')).toBeInTheDocument();
   });
 
+  it('? 단축키로 단축키 패널을 연다', () => {
+    render(<DrawingCanvas />);
+
+    fireEvent.keyDown(window, { key: '?', shiftKey: true });
+
+    expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
+    expect(screen.getByText('?: 단축키 패널 열기')).toBeInTheDocument();
+  });
+
   it('초기 진입 시 마이크로 힌트를 보여준다', async () => {
     render(<DrawingCanvas />);
 

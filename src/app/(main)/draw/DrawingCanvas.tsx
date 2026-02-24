@@ -312,6 +312,9 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         if (previousPreset !== (activePreset as DrawingPresetId)) {
           setPreset(previousPreset);
         }
+      } else if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
+        event.preventDefault();
+        setIsShortcutHelpOpen(true);
       } else if (key === 'f') {
         setTool('fill');
       } else if (event.key === '[') {
@@ -601,6 +604,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                   <ul className="space-y-1">
                     <li>1~5: 펜 프리셋 전환</li>
                     <li>Q: 직전 펜 프리셋 토글</li>
+                    <li>?: 단축키 패널 열기</li>
                     <li>F: 영역 채우기</li>
                     <li>[ / ]: 굵기 줄이기/늘리기</li>
                     <li>⌘/Ctrl + Z, Shift+Z, Y: 실행취소/다시실행</li>
