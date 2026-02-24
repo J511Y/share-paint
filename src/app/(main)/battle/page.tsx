@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { InfoDisclosure } from '@/components/ui/InfoDisclosure';
-import { BattleList, CreateBattleModal } from '@/components/battle';
+import { BattleConnectivityIndicator, BattleList, CreateBattleModal } from '@/components/battle';
 
 export default function BattleLobbyPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -25,10 +25,13 @@ export default function BattleLobbyPage() {
             </ul>
           </InfoDisclosure>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
-          <Plus className="w-5 h-5 mr-1" />
-          방 만들기
-        </Button>
+        <div className="flex items-center gap-2">
+          <BattleConnectivityIndicator />
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="w-5 h-5 mr-1" />
+            방 만들기
+          </Button>
+        </div>
       </div>
 
       <BattleList onCreateBattle={() => setIsCreateModalOpen(true)} />
