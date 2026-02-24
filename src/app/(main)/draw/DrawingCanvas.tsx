@@ -315,6 +315,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         if (previousPreset !== (activePreset as DrawingPresetId)) {
           setPreset(previousPreset);
         }
+      } else if (key === 'x') {
+        if ((activePreset as DrawingPresetId) === 'eraser') {
+          setPreset(previousPresetRef.current);
+        } else {
+          setPreset('eraser');
+        }
       } else if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
         event.preventDefault();
         setIsShortcutHelpOpen(true);
@@ -615,6 +621,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                   <ul className="space-y-1">
                     <li>1~5: 펜 프리셋 전환</li>
                     <li>Q: 직전 펜 프리셋 토글</li>
+                    <li>X: 지우개 빠른 토글</li>
                     <li>?: 단축키 패널 열기</li>
                     <li>F: 영역 채우기</li>
                     <li>[ / ]: 굵기 줄이기/늘리기</li>
