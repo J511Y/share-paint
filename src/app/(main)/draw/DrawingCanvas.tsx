@@ -155,6 +155,9 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const tipsPanelId = useId();
   const shortcutPanelId = useId();
   const shortcutRootRef = useRef<HTMLDivElement | null>(null);
+  const shortcutTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const shortcutCloseRef = useRef<HTMLButtonElement | null>(null);
+  const hasOpenedShortcutRef = useRef(false);
   const drawingTopic = '';
 
   useEffect(() => {
@@ -227,6 +230,18 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       localStorage.setItem(SHORTCUT_HELP_SEEN_STORAGE_KEY, '1');
     }
   }, []);
+
+  useEffect(() => {
+    if (isShortcutHelpOpen) {
+      hasOpenedShortcutRef.current = true;
+      shortcutCloseRef.current?.focus();
+      return;
+    }
+
+    if (hasOpenedShortcutRef.current) {
+      shortcutTriggerRef.current?.focus();
+    }
+  }, [isShortcutHelpOpen]);
 
   useEffect(() => {
     if (!isShortcutHelpOpen) return;
@@ -641,6 +656,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           {!isMobile && (
             <div ref={shortcutRootRef} className="relative flex items-center gap-2">
               <button
+                ref={shortcutTriggerRef}
                 type="button"
                 onClick={() => {
                   if (isShortcutHelpOpen) {
@@ -670,6 +686,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <p className="font-semibold text-gray-900">키보드 빠른 조작</p>
                     <button
+                      ref={shortcutCloseRef}
                       type="button"
                       onClick={() => setIsShortcutHelpOpen(false)}
                       aria-label="단축키 패널 닫기"
