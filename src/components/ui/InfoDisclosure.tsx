@@ -47,7 +47,7 @@ export function InfoDisclosure({
   }, [open]);
 
   return (
-    <div ref={rootRef} className={cn('space-y-2', className)}>
+    <div ref={rootRef} className={cn('relative inline-flex flex-col items-end', className)}>
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -62,7 +62,7 @@ export function InfoDisclosure({
       {open && (
         <section
           id={panelId}
-          className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900"
+          className="absolute right-0 top-9 z-30 w-[min(20rem,calc(100vw-1.5rem))] rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900 shadow-lg"
         >
           <div className="mb-1 flex items-center justify-between gap-2">
             <p className="font-semibold">{title}</p>
