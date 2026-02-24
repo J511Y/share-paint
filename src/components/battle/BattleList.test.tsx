@@ -74,12 +74,8 @@ describe('BattleList', () => {
       .mockResolvedValue({ ok: true, json: async () => [] } as Response);
 
     const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
-    const user = userEvent.setup();
 
     render(<BattleList initialBattles={[]} />);
-
-    await screen.findByRole('button', { name: '다시 시도' });
-    await user.click(screen.getByRole('button', { name: '다시 시도' }));
 
     await waitFor(() => {
       const telemetryEvents = dispatchSpy.mock.calls

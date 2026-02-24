@@ -244,6 +244,28 @@ describe('DrawingCanvas', () => {
     expect(screen.queryByText('NEW')).not.toBeInTheDocument();
   });
 
+  it('Esc 키로 단축키 패널을 닫는다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: /단축키/ }));
+    expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByText('키보드 빠른 조작')).not.toBeInTheDocument();
+  });
+
+  it('패널 바깥 클릭으로 단축키 패널을 닫는다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: /단축키/ }));
+    expect(screen.getByText('키보드 빠른 조작')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('heading', { name: '그림 그리기' }));
+    expect(screen.queryByText('키보드 빠른 조작')).not.toBeInTheDocument();
+  });
+
   it('초기 진입 시 마이크로 힌트를 보여준다', async () => {
     render(<DrawingCanvas />);
 

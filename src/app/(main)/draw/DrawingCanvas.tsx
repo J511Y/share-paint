@@ -154,6 +154,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const detailPanelId = useId();
   const tipsPanelId = useId();
   const shortcutPanelId = useId();
+  const shortcutRootRef = useRef<HTMLDivElement | null>(null);
   const drawingTopic = '';
 
   useEffect(() => {
@@ -226,6 +227,31 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       localStorage.setItem(SHORTCUT_HELP_SEEN_STORAGE_KEY, '1');
     }
   }, []);
+
+  useEffect(() => {
+    if (!isShortcutHelpOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!shortcutRootRef.current) return;
+      if (!shortcutRootRef.current.contains(event.target as Node)) {
+        setIsShortcutHelpOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsShortcutHelpOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isShortcutHelpOpen]);
 
   const getCanvasData = useCallback(() => {
     return canvasRef.current?.getDataUrl() || null;
@@ -613,7 +639,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           </div>
 
           {!isMobile && (
-            <div className="relative flex items-center gap-2">
+            <div ref={shortcutRootRef} className="relative flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => {
@@ -641,7 +667,17 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
                   id={shortcutPanelId}
                   className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-64 rounded-xl border border-gray-200 bg-white p-3 text-xs text-gray-700 shadow-lg"
                 >
-                  <p className="mb-2 font-semibold text-gray-900">키보드 빠른 조작</p>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <p className="font-semibold text-gray-900">키보드 빠른 조작</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsShortcutHelpOpen(false)}
+                      aria-label="단축키 패널 닫기"
+                      className="inline-flex h-5 w-5 items-center justify-center rounded text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      ×
+                    </button>
+                  </div>
                   <ul className="space-y-1">
                     <li>1~5: 펜 프리셋 전환</li>
                     <li>Q: 직전 펜 프리셋 토글</li>
