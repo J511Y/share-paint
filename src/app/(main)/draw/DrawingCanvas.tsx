@@ -89,6 +89,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const { actor } = useActor();
   const [editor, setEditor] = useState<Editor | null>(null);
   const [activePreset, setActivePreset] = useState<DrawingPreset>('pencil');
+  const [lastDrawPreset, setLastDrawPreset] = useState<Exclude<DrawingPreset, 'eraser'>>('pencil');
   const [activeColor, setActiveColor] = useState<TLDefaultColorStyle>('black');
   const [recentColors, setRecentColors] = useState<TLDefaultColorStyle[]>(['black']);
   const [previousColor, setPreviousColor] = useState<TLDefaultColorStyle>('black');
@@ -200,6 +201,9 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const applyPreset = useCallback(
     (preset: DrawingPreset) => {
       const config = PRESET_CONFIG[preset];
+      if (preset !== 'eraser') {
+        setLastDrawPreset(preset);
+      }
       setActivePreset(preset);
       applyTool(config.tool);
       applySize(config.size);
@@ -209,6 +213,15 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     },
     [applyColorWithRecent, applySize, applyTool]
   );
+
+  const toggleEraserPreset = useCallback(() => {
+    if (activePreset === 'eraser') {
+      applyPreset(lastDrawPreset);
+      return;
+    }
+
+    applyPreset('eraser');
+  }, [activePreset, applyPreset, lastDrawPreset]);
 
   const handleSizeDelta = useCallback(
     (direction: -1 | 1) => {
@@ -359,7 +372,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
       if (key === '5' || key === 'e') {
         event.preventDefault();
-        applyPreset('eraser');
+        toggleEraserPreset();
         return;
       }
 
@@ -395,7 +408,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [applyPreset, editor, handleSizeDelta, openShortcutHelp, swapToPreviousColor]);
+  }, [applyPreset, editor, handleSizeDelta, openShortcutHelp, swapToPreviousColor, toggleEraserPreset]);
 
   useEffect(() => {
     if (!isShortcutHelpOpen) return;
@@ -555,7 +568,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               <li>2: 마커</li>
               <li>3: 브러시</li>
               <li>4: 형광펜</li>
-              <li>5 / E: 지우개</li>
+              <li>5 / E: 지우개 (한 번 더 누르면 직전 펜으로 복귀)</li>
               <li>X: 이전 색상으로 전환</li>
               <li>[ / ] 또는 - / + : 브러시 굵기 조절</li>
               <li>Ctrl/Cmd + Z: 실행취소</li>
@@ -574,7 +587,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               type="button"
               aria-label={presetConfig.label}
               aria-pressed={isActive}
-              onClick={() => applyPreset(preset)}
+              onClick={() => (preset === 'eraser' ? toggleEraserPreset() : applyPreset(preset))}
               className={cn(
                 'inline-flex min-h-[42px] items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold transition-colors',
                 isActive

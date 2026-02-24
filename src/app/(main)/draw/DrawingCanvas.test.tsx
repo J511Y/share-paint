@@ -220,6 +220,19 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(mockSetCurrentTool).toHaveBeenLastCalledWith('draw');
   });
 
+  it('E 단축키를 연속 입력하면 지우개와 직전 펜 사이를 토글한다', () => {
+    render(<DrawingCanvas />);
+
+    fireEvent.keyDown(window, { key: '2' });
+    fireEvent.keyDown(window, { key: 'e' });
+    expect(mockSetCurrentTool).toHaveBeenLastCalledWith('eraser');
+
+    fireEvent.keyDown(window, { key: 'e' });
+    expect(mockSetCurrentTool).toHaveBeenLastCalledWith('draw');
+    expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'size' }, 'm');
+  });
+
+
   it('브러시 크기 단축키([, ])로 굵기를 빠르게 조절한다', () => {
     render(<DrawingCanvas />);
 
