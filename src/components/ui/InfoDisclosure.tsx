@@ -20,6 +20,21 @@ export function InfoDisclosure({
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const hasOpenedRef = useRef(false);
+
+  useEffect(() => {
+    if (open) {
+      hasOpenedRef.current = true;
+      closeButtonRef.current?.focus();
+      return;
+    }
+
+    if (hasOpenedRef.current) {
+      triggerRef.current?.focus();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -49,6 +64,7 @@ export function InfoDisclosure({
   return (
     <div ref={rootRef} className={cn('relative inline-flex flex-col items-end', className)}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-label={label}
@@ -67,6 +83,7 @@ export function InfoDisclosure({
           <div className="mb-1 flex items-center justify-between gap-2">
             <p className="font-semibold">{title}</p>
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={() => setOpen(false)}
               aria-label="안내 닫기"

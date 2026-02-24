@@ -42,7 +42,7 @@ describe('InfoDisclosure', () => {
     expect(screen.queryByText('숨김 정보')).not.toBeInTheDocument();
   });
 
-  it('닫기 버튼으로 패널을 닫는다', async () => {
+  it('닫기 버튼으로 패널을 닫고 트리거로 포커스를 되돌린다', async () => {
     const user = userEvent.setup();
 
     render(
@@ -51,10 +51,16 @@ describe('InfoDisclosure', () => {
       </InfoDisclosure>
     );
 
-    await user.click(screen.getByRole('button', { name: '안내 열기' }));
-    await user.click(screen.getByRole('button', { name: '안내 닫기' }));
+    const trigger = screen.getByRole('button', { name: '안내 열기' });
+    await user.click(trigger);
+
+    const closeButton = screen.getByRole('button', { name: '안내 닫기' });
+    expect(closeButton).toHaveFocus();
+
+    await user.click(closeButton);
 
     expect(screen.queryByText('숨김 정보')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 
   it('외부 영역 클릭 시 패널을 닫는다', async () => {
