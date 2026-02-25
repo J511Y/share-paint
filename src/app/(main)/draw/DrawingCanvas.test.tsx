@@ -360,6 +360,16 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(screen.getByRole('button', { name: '캔버스 비우기' })).toBeDisabled();
   });
 
+  it('빈 캔버스에서 다음 행동 안내 문구를 보여준다', () => {
+    mockShapeIds = new Set();
+    render(<DrawingCanvas />);
+
+    expect(
+      screen.getByText('아직 캔버스가 비어 있어요. 한 번 그리면 저장·내보내기·비우기를 사용할 수 있습니다.')
+    ).toBeInTheDocument();
+  });
+
+
   it('disables redo button when no redo history', () => {
     mockCanRedo = false;
     render(<DrawingCanvas />);

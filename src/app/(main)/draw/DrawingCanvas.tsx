@@ -675,19 +675,27 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
       <section
         aria-label="현재 드로잉 설정"
-        className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700"
+        className="space-y-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700"
       >
-        <span className="rounded-full bg-white px-2 py-1 font-semibold text-gray-900">현재 도구: {activePresetLabel}</span>
-        <span className="rounded-full bg-white px-2 py-1">색상: {activeColorLabel}</span>
-        <span className="rounded-full bg-white px-2 py-1">굵기 레벨: {activeSizeLevel}</span>
-        <button
-          type="button"
-          onClick={resetToDefaultPreset}
-          aria-label="기본 도구로 복귀"
-          className="rounded-full border border-gray-200 bg-white px-2 py-1 font-semibold text-gray-700 hover:bg-gray-100"
-        >
-          기본값으로
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-white px-2 py-1 font-semibold text-gray-900">현재 도구: {activePresetLabel}</span>
+          <span className="rounded-full bg-white px-2 py-1">색상: {activeColorLabel}</span>
+          <span className="rounded-full bg-white px-2 py-1">굵기 레벨: {activeSizeLevel}</span>
+          <button
+            type="button"
+            onClick={resetToDefaultPreset}
+            aria-label="기본 도구로 복귀"
+            className="rounded-full border border-gray-200 bg-white px-2 py-1 font-semibold text-gray-700 hover:bg-gray-100"
+          >
+            기본값으로
+          </button>
+        </div>
+
+        {!hasDrawableShapes && (
+          <p className="text-[11px] text-gray-600" role="status" aria-live="polite">
+            아직 캔버스가 비어 있어요. 한 번 그리면 저장·내보내기·비우기를 사용할 수 있습니다.
+          </p>
+        )}
       </section>
 
       <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-3">
