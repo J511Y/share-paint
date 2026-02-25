@@ -224,6 +224,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     applyPreset('eraser');
   }, [activePreset, applyPreset, lastDrawPreset]);
 
+  const resetToDefaultPreset = useCallback(() => {
+    setLastDrawPreset('pencil');
+    setPreviousColor('black');
+    applyPreset('pencil');
+  }, [applyPreset]);
+
   const handleSizeDelta = useCallback(
     (direction: -1 | 1) => {
       const currentIndex = SIZE_STEPS.findIndex((item) => item.id === activeSize);
@@ -674,6 +680,14 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         <span className="rounded-full bg-white px-2 py-1 font-semibold text-gray-900">현재 도구: {activePresetLabel}</span>
         <span className="rounded-full bg-white px-2 py-1">색상: {activeColorLabel}</span>
         <span className="rounded-full bg-white px-2 py-1">굵기 레벨: {activeSizeLevel}</span>
+        <button
+          type="button"
+          onClick={resetToDefaultPreset}
+          aria-label="기본 도구로 복귀"
+          className="rounded-full border border-gray-200 bg-white px-2 py-1 font-semibold text-gray-700 hover:bg-gray-100"
+        >
+          기본값으로
+        </button>
       </section>
 
       <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-3">

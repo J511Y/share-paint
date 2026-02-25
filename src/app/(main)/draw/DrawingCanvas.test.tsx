@@ -186,6 +186,20 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(screen.getByText('굵기 레벨: 4')).toBeInTheDocument();
   });
 
+  it('기본값으로 버튼이 기본 프리셋(연필)로 복귀시킨다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: '형광펜' }));
+    expect(screen.getByText('현재 도구: 형광펜')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '기본 도구로 복귀' }));
+
+    expect(screen.getByText('현재 도구: 연필')).toBeInTheDocument();
+    expect(mockSetCurrentTool).toHaveBeenLastCalledWith('draw');
+    expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'size' }, 's');
+  });
+
   it('shows shortcut help panel and hides NEW badge after open', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);
