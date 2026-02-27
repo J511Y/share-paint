@@ -69,12 +69,15 @@ const SIZE_STEPS: Array<{ id: TLDefaultSizeStyle; label: string }> = [
   { id: 'xl', label: '4' },
 ];
 
-const PRESET_CONFIG: Record<DrawingPreset, { label: string; tool: 'draw' | 'eraser'; size: TLDefaultSizeStyle; color?: TLDefaultColorStyle }> = {
-  pencil: { label: '연필', tool: 'draw', size: 's', color: 'black' },
-  marker: { label: '마커', tool: 'draw', size: 'm' },
-  brush: { label: '브러시', tool: 'draw', size: 'l' },
-  highlighter: { label: '형광펜', tool: 'draw', size: 'xl', color: 'yellow' },
-  eraser: { label: '지우개', tool: 'eraser', size: 'l' },
+const PRESET_CONFIG: Record<
+  DrawingPreset,
+  { label: string; tool: 'draw' | 'eraser'; size: TLDefaultSizeStyle; opacity: number; color?: TLDefaultColorStyle }
+> = {
+  pencil: { label: '연필', tool: 'draw', size: 's', opacity: 1, color: 'black' },
+  marker: { label: '마커', tool: 'draw', size: 'm', opacity: 0.8 },
+  brush: { label: '브러시', tool: 'draw', size: 'l', opacity: 0.9 },
+  highlighter: { label: '형광펜', tool: 'draw', size: 'xl', opacity: 0.4, color: 'yellow' },
+  eraser: { label: '지우개', tool: 'eraser', size: 'l', opacity: 1 },
 };
 
 const SHORTCUT_HELP_SEEN_STORAGE_KEY = 'paintshare.draw.shortcut-help.seen.v1';
@@ -94,6 +97,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const [recentColors, setRecentColors] = useState<TLDefaultColorStyle[]>(['black']);
   const [previousColor, setPreviousColor] = useState<TLDefaultColorStyle>('black');
   const [activeSize, setActiveSize] = useState<TLDefaultSizeStyle>('m');
+  const [activeOpacity, setActiveOpacity] = useState(1);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [preparedDataUrl, setPreparedDataUrl] = useState<string | null>(null);
   const [compatibilityHint, setCompatibilityHint] = useState<string | null>(null);
@@ -161,6 +165,21 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     [editor]
   );
 
+  const applyOpacity = useCallback(
+    (opacity: number) => {
+      const normalizedOpacity = Math.max(0.1, Math.min(1, Number(opacity.toFixed(2))));
+      setActiveOpacity(normalizedOpacity);
+      if (!editor) return;
+
+      editor.run(() => {
+        editor.setOpacityForNextShapes(normalizedOpacity);
+        if (editor.getSelectedShapeIds().length > 0) {
+          editor.setOpacityForSelectedShapes(normalizedOpacity);
+        }
+      });
+    },
+    [editor]
+  );
 
   const pushRecentColor = useCallback((color: TLDefaultColorStyle) => {
     setRecentColors((prev) => {
@@ -198,6 +217,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const activePresetLabel = PRESET_CONFIG[activePreset].label;
   const activeColorLabel = findColorOption(activeColor)?.label ?? activeColor;
   const activeSizeLevel = SIZE_STEPS.findIndex((size) => size.id === activeSize) + 1;
+  const activeOpacityPercent = Math.round(activeOpacity * 100);
 
   const applyPreset = useCallback(
     (preset: DrawingPreset) => {
@@ -208,11 +228,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       setActivePreset(preset);
       applyTool(config.tool);
       applySize(config.size);
+      applyOpacity(config.opacity);
       if (config.color) {
         applyColorWithRecent(config.color);
       }
     },
-    [applyColorWithRecent, applySize, applyTool]
+    [applyColorWithRecent, applyOpacity, applySize, applyTool]
   );
 
   const toggleEraserPreset = useCallback(() => {
@@ -228,7 +249,8 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     setLastDrawPreset('pencil');
     setPreviousColor('black');
     applyPreset('pencil');
-  }, [applyPreset]);
+    applyOpacity(1);
+  }, [applyOpacity, applyPreset]);
 
   const handleSizeDelta = useCallback(
     (direction: -1 | 1) => {
@@ -406,6 +428,18 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         return;
       }
 
+      if (key === ';' || key === ',') {
+        event.preventDefault();
+        applyOpacity(activeOpacity - 0.1);
+        return;
+      }
+
+      if (key === '\'' || key === '.') {
+        event.preventDefault();
+        applyOpacity(activeOpacity + 0.1);
+        return;
+      }
+
       if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
         event.preventDefault();
         openShortcutHelp();
@@ -414,7 +448,16 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [applyPreset, editor, handleSizeDelta, openShortcutHelp, swapToPreviousColor, toggleEraserPreset]);
+  }, [
+    activeOpacity,
+    applyOpacity,
+    applyPreset,
+    editor,
+    handleSizeDelta,
+    openShortcutHelp,
+    swapToPreviousColor,
+    toggleEraserPreset,
+  ]);
 
   useEffect(() => {
     if (!isShortcutHelpOpen) return;
@@ -448,6 +491,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     mountedEditor.setCurrentTool('draw');
     mountedEditor.setStyleForNextShapes(DefaultColorStyle, 'black');
     mountedEditor.setStyleForNextShapes(DefaultSizeStyle, 's');
+    mountedEditor.setOpacityForNextShapes(1);
 
     const persistedSnapshot = loadTldrawDraftSnapshot();
 
@@ -513,6 +557,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             <ul className="list-disc space-y-1 pl-4">
               <li>1~5 키로 연필·마커·브러시·형광펜·지우개를 즉시 전환할 수 있어요.</li>
               <li>D 키는 연필, E 키는 지우개로 바로 이동합니다.</li>
+              <li>투명도 슬라이더로 형광펜·마커 필기 느낌을 빠르게 조절할 수 있어요.</li>
               <li>저장/내보내기는 PNG 파이프라인과 호환됩니다.</li>
             </ul>
           </InfoDisclosure>
@@ -579,6 +624,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               <li>5 / E: 지우개 (한 번 더 누르면 직전 펜으로 복귀)</li>
               <li>X: 이전 색상으로 전환</li>
               <li>[ / ] 또는 - / + : 브러시 굵기 조절</li>
+              <li>; / &apos; 또는 , / . : 투명도 조절</li>
               <li>Ctrl/Cmd + Z: 실행취소</li>
               <li>Shift + Ctrl/Cmd + Z, Y: 다시실행</li>
             </ul>
@@ -681,6 +727,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           <span className="rounded-full bg-white px-2 py-1 font-semibold text-gray-900">현재 도구: {activePresetLabel}</span>
           <span className="rounded-full bg-white px-2 py-1">색상: {activeColorLabel}</span>
           <span className="rounded-full bg-white px-2 py-1">굵기 레벨: {activeSizeLevel}</span>
+          <span className="rounded-full bg-white px-2 py-1">투명도: {activeOpacityPercent}%</span>
           <button
             type="button"
             onClick={resetToDefaultPreset}
@@ -812,6 +859,50 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold text-gray-600">투명도</h2>
+            <span className="text-xs font-semibold text-gray-900">{activeOpacityPercent}%</span>
+          </div>
+
+          <input
+            type="range"
+            min={10}
+            max={100}
+            step={5}
+            value={activeOpacityPercent}
+            onChange={(event) => applyOpacity(Number(event.target.value) / 100)}
+            aria-label="브러시 투명도"
+            disabled={activePreset === 'eraser'}
+            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-purple-600 disabled:cursor-not-allowed disabled:opacity-60"
+          />
+
+          <div className="flex flex-wrap gap-2">
+            {[25, 40, 60, 80, 100].map((opacityPreset) => (
+              <button
+                key={opacityPreset}
+                type="button"
+                aria-label={`투명도 ${opacityPreset}%`}
+                aria-pressed={activeOpacityPercent === opacityPreset}
+                onClick={() => applyOpacity(opacityPreset / 100)}
+                disabled={activePreset === 'eraser'}
+                className={cn(
+                  'rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                  activeOpacityPercent === opacityPreset
+                    ? 'border-purple-600 bg-purple-600 text-white'
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                )}
+              >
+                {opacityPreset}%
+              </button>
+            ))}
+          </div>
+
+          {activePreset === 'eraser' && (
+            <p className="text-[11px] text-gray-500">지우개는 항상 100% 강도로 동작합니다.</p>
+          )}
         </div>
       </section>
 

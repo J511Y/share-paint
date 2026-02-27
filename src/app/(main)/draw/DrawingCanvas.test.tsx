@@ -6,6 +6,8 @@ import { DrawingCanvas } from './DrawingCanvas';
 const mockSetCurrentTool = vi.fn();
 const mockSetStyleForNextShapes = vi.fn();
 const mockSetStyleForSelectedShapes = vi.fn();
+const mockSetOpacityForNextShapes = vi.fn();
+const mockSetOpacityForSelectedShapes = vi.fn();
 const mockUndo = vi.fn();
 const mockRedo = vi.fn();
 const mockDeleteShapes = vi.fn();
@@ -83,6 +85,8 @@ vi.mock('@/components/tldraw', async () => {
           setCurrentTool: mockSetCurrentTool,
           setStyleForNextShapes: mockSetStyleForNextShapes,
           setStyleForSelectedShapes: mockSetStyleForSelectedShapes,
+          setOpacityForNextShapes: mockSetOpacityForNextShapes,
+          setOpacityForSelectedShapes: mockSetOpacityForSelectedShapes,
           getSelectedShapeIds: () => [],
           getCurrentPageShapeIds: () => mockShapeIds,
           toImageDataUrl: mockToImageDataUrl,
@@ -134,6 +138,7 @@ describe('DrawingCanvas (tldraw shell)', () => {
     await waitFor(() => {
       expect(mockSetCurrentTool).toHaveBeenCalledWith('draw');
     });
+    expect(mockSetOpacityForNextShapes).toHaveBeenCalledWith(1);
     expect(mockAttachTldrawDraftPersistence).toHaveBeenCalledTimes(1);
   });
 
@@ -266,6 +271,32 @@ describe('DrawingCanvas (tldraw shell)', () => {
 
     await user.click(screen.getByRole('button', { name: '굵기 레벨 3' }));
     expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'size' }, 'l');
+  });
+
+  it('프리셋 전환 시 도구별 기본 투명도를 적용한다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: '형광펜' }));
+    expect(mockSetOpacityForNextShapes).toHaveBeenCalledWith(0.4);
+
+    await user.click(screen.getByRole('button', { name: '마커' }));
+    expect(mockSetOpacityForNextShapes).toHaveBeenCalledWith(0.8);
+  });
+
+  it('투명도 UI와 단축키로 필기 강도를 조절한다', () => {
+    render(<DrawingCanvas />);
+
+    fireEvent.change(screen.getByRole('slider', { name: '브러시 투명도' }), {
+      target: { value: '60' },
+    });
+    expect(mockSetOpacityForNextShapes).toHaveBeenCalledWith(0.6);
+
+    fireEvent.keyDown(window, { key: '.' });
+    expect(mockSetOpacityForNextShapes).toHaveBeenCalledWith(0.7);
+
+    fireEvent.keyDown(window, { key: ',' });
+    expect(mockSetOpacityForNextShapes).toHaveBeenCalledWith(0.6);
   });
 
   it('최근 사용 색상 버튼으로 색상을 재적용한다', async () => {
