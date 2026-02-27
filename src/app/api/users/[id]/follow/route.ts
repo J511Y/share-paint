@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { apiErrorResponse } from '@/lib/api-error';
 import type { Database } from '@/types/database';
 import { resolveApiActor } from '@/lib/api-actor';
 import { consumeRateLimit } from '@/lib/security/action-rate-limit';
@@ -10,21 +11,22 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   const resolvedParams = await params;
   const targetUserId = getUuidParam(resolvedParams, 'id');
   if (!targetUserId) {
-    return NextResponse.json({ error: '잘못된 사용자 id입니다.' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', '잘못된 사용자 id입니다.', requestId);
   }
 
   const supabase = await createClient();
   const actor = await resolveApiActor(request, supabase);
 
   if (!actor) {
-    return NextResponse.json({ error: 'Guest identity is required.' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', 'Guest identity is required.', requestId);
   }
 
   if (actor.userId === targetUserId) {
-    return NextResponse.json({ error: '자신을 팔로우할 수 없습니다.' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', '자신을 팔로우할 수 없습니다.', requestId);
   }
 
   const rateLimit = consumeRateLimit(`user:follow:${actor.actorId}`, 20, 60 * 1000);
@@ -44,7 +46,7 @@ export async function POST(
     if (error.code === '23505') {
       return NextResponse.json({ message: '이미 팔로우 중입니다.' }, { status: 200 });
     }
-    return NextResponse.json({ error: '팔로우에 실패했습니다.' }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '팔로우에 실패했습니다.', requestId);
   }
 
   return NextResponse.json({ success: true });
@@ -54,17 +56,18 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   const resolvedParams = await params;
   const targetUserId = getUuidParam(resolvedParams, 'id');
   if (!targetUserId) {
-    return NextResponse.json({ error: '잘못된 사용자 id입니다.' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', '잘못된 사용자 id입니다.', requestId);
   }
 
   const supabase = await createClient();
   const actor = await resolveApiActor(request, supabase);
 
   if (!actor) {
-    return NextResponse.json({ error: 'Guest identity is required.' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', 'Guest identity is required.', requestId);
   }
 
   let query = supabase.from('follows').delete().eq('following_id', targetUserId);
@@ -78,7 +81,7 @@ export async function DELETE(
   const { error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: '언팔로우에 실패했습니다.' }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '언팔로우에 실패했습니다.', requestId);
   }
 
   return NextResponse.json({ success: true });
