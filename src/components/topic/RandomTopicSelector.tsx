@@ -93,9 +93,10 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
             disabled={isLoading || isLocked}
             className="flex-1"
             size="sm"
+            title={isLocked ? '주제가 고정되어 있어 새 주제를 뽑을 수 없습니다.' : undefined}
             leftIcon={<RefreshCw className={cn("w-3.5 h-3.5", isLoading && "animate-spin")} />}
           >
-            {currentTopic ? '다른 주제 뽑기' : '주제 뽑기'}
+            {isLocked ? '주제 고정됨' : currentTopic ? '다른 주제 뽑기' : '주제 뽑기'}
           </Button>
 
           {currentTopic && (

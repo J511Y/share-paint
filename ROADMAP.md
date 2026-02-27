@@ -140,6 +140,8 @@
 - [ ] 공통 에러/로딩 상태 컴포넌트 정비 (`src/components/ui`)
   - [x] PAI-79 1차: `RandomTopicSelector` 랜덤 주제 실패 시 인라인 오류 메시지 노출(서버 message 우선) + 컴포넌트 단위 테스트 추가
   - [x] PAI-79 2차: `RandomTopicSelector` 주제 잠금 상태 안내 문구 추가(왜 새 주제가 안 뽑히는지 명확화) + 컴포넌트 테스트 보강
+  - [x] PAI-79 3차: `RandomTopicSelector` 잠금 중 CTA 상태 문구를 `주제 고정됨`으로 명시하고 tooltip 제공 + 상태 테스트 보강
+  - [x] PAI-79 4차: `RandomTopicSelector` 잠금 안내와 CTA 상태를 일관성 있게 연결(잠금 시 버튼 disabled+명시적 라벨)하고 회귀 테스트 추가
 - [ ] 캔버스 상호작용 접근성/터치 개선 (`src/components/canvas`)
 
 ### Backend/API

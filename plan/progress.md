@@ -3,6 +3,8 @@
 # 진행 상황 추적
 
 ## 최근 업데이트
+- **2026-02-28**: PAI-79 4차 - `RandomTopicSelector` 잠금 상태 CTA 라벨/disabled 동작 정교화 + 회귀 테스트 추가
+- **2026-02-28**: PAI-79 3차 - `RandomTopicSelector` 잠금 중 CTA 문구/툴팁 개선(`주제 고정됨`) + 상태 테스트 보강
 - **2026-02-28**: PAI-79 2차 - `RandomTopicSelector` 주제 잠금 상태 안내 문구 추가 + 컴포넌트 테스트 보강
 - **2026-02-28**: PAI-79 1차 - `RandomTopicSelector` 실패 인라인 오류 메시지 UX 추가 + 컴포넌트 테스트 추가
 - **2026-02-28**: PAI-78 7차 - `/api/paintings` GET/POST 에러 응답 표준화(apiErrorResponse), paintings API 라우트 테스트 추가
