@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { apiErrorResponse } from '@/lib/api-error';
 import {
   ApiPaintingArraySchema,
   ApiPaintingSchema,
@@ -15,12 +16,13 @@ import {
 import { rateLimitJson } from '@/lib/security/rate-limit-response';
 
 export async function POST(request: NextRequest) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   const supabase = await createClient();
 
   try {
     const actor = await resolveApiActor(request, supabase);
     if (!actor) {
-      return NextResponse.json({ error: 'Guest identity is required.' }, { status: 400 });
+      return apiErrorResponse(400, 'BAD_REQUEST', 'Guest identity is required.', requestId);
     }
 
     const rateLimit = consumeRateLimit(`painting:create:${actor.actorId}`, 8, 10 * 60 * 1000);
@@ -32,7 +34,7 @@ export async function POST(request: NextRequest) {
     const parsedBody = PaintingCreatePayloadSchema.safeParse(rawBody);
 
     if (!parsedBody.success) {
-      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+      return apiErrorResponse(400, 'VALIDATION_ERROR', 'Invalid request body.', requestId, parsedBody.error.issues);
     }
 
     const duplicateGuard = consumeDuplicateContentGuard(
@@ -67,21 +69,22 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiErrorResponse(500, 'INTERNAL_ERROR', '그림 저장에 실패했습니다.', requestId);
     }
 
     const parsedPainting = ApiPaintingSchema.safeParse(data);
     if (!parsedPainting.success) {
-      return NextResponse.json({ error: 'Invalid painting response payload.' }, { status: 500 });
+      return apiErrorResponse(500, 'INTERNAL_ERROR', '그림 응답 데이터 형식이 유효하지 않습니다.', requestId, parsedPainting.error.issues);
     }
 
     return NextResponse.json(parsedPainting.data);
   } catch {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', 'Invalid request', requestId);
   }
 }
 
 export async function GET(request: NextRequest) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   const supabase = await createClient();
   const searchParams = request.nextUrl.searchParams;
   const userId = searchParams.get('userId');
@@ -99,14 +102,14 @@ export async function GET(request: NextRequest) {
   if (userId) {
     const parsedUserId = z.string().uuid().safeParse(userId);
     if (!parsedUserId.success) {
-      return NextResponse.json({ error: 'Invalid userId.' }, { status: 400 });
+      return apiErrorResponse(400, 'BAD_REQUEST', 'Invalid userId.', requestId);
     }
   }
 
   if (battleId) {
     const parsedBattleId = z.string().uuid().safeParse(battleId);
     if (!parsedBattleId.success) {
-      return NextResponse.json({ error: 'Invalid battleId.' }, { status: 400 });
+      return apiErrorResponse(400, 'BAD_REQUEST', 'Invalid battleId.', requestId);
     }
   }
 
@@ -132,12 +135,12 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '그림 목록 조회에 실패했습니다.', requestId);
   }
 
   const parsedPaintings = ApiPaintingArraySchema.safeParse(data ?? []);
   if (!parsedPaintings.success) {
-    return NextResponse.json({ error: 'Invalid paintings response payload.' }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '그림 목록 응답 데이터 형식이 유효하지 않습니다.', requestId, parsedPaintings.error.issues);
   }
 
   return NextResponse.json(parsedPaintings.data);
