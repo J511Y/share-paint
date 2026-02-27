@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { apiErrorResponse } from '@/lib/api-error';
 import type { Database } from '@/types/database';
 import {
   ApiCommentArraySchema,
@@ -18,10 +19,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   const resolvedParams = await params;
   const paintingId = getUuidParam(resolvedParams, 'id');
   if (!paintingId) {
-    return NextResponse.json({ error: 'Invalid painting id.' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', 'Invalid painting id.', requestId);
   }
 
   const supabase = await createClient();
@@ -37,12 +39,12 @@ export async function GET(
     .order('created_at', { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '댓글 목록 조회 중 오류가 발생했습니다.', requestId);
   }
 
   const parsedComments = ApiCommentArraySchema.safeParse(comments ?? []);
   if (!parsedComments.success) {
-    return NextResponse.json({ error: 'Invalid comments response payload.' }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '댓글 응답 데이터 형식이 유효하지 않습니다.', requestId, parsedComments.error.issues);
   }
 
   return NextResponse.json(parsedComments.data);
@@ -52,10 +54,11 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   const resolvedParams = await params;
   const paintingId = getUuidParam(resolvedParams, 'id');
   if (!paintingId) {
-    return NextResponse.json({ error: 'Invalid painting id.' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', 'Invalid painting id.', requestId);
   }
 
   const supabase = await createClient();
@@ -63,12 +66,12 @@ export async function POST(
   try {
     const actor = await resolveApiActor(request, supabase);
     if (!actor) {
-      return NextResponse.json({ error: 'Guest identity is required.' }, { status: 400 });
+      return apiErrorResponse(400, 'BAD_REQUEST', 'Guest identity is required.', requestId);
     }
 
     const parsedBody = CommentCreatePayloadSchema.safeParse(await request.json());
     if (!parsedBody.success) {
-      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+      return apiErrorResponse(400, 'VALIDATION_ERROR', 'Invalid request body.', requestId, parsedBody.error.issues);
     }
 
     const rateLimit = consumeRateLimit(`painting:comment:${actor.actorId}`, 12, 60 * 1000);
@@ -109,16 +112,16 @@ export async function POST(
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return apiErrorResponse(500, 'INTERNAL_ERROR', '댓글 작성 중 오류가 발생했습니다.', requestId);
     }
 
     const parsedComment = ApiCommentSchema.safeParse(comment);
     if (!parsedComment.success) {
-      return NextResponse.json({ error: 'Invalid comment response payload.' }, { status: 500 });
+      return apiErrorResponse(500, 'INTERNAL_ERROR', '댓글 응답 데이터 형식이 유효하지 않습니다.', requestId, parsedComment.error.issues);
     }
 
     return NextResponse.json(parsedComment.data);
   } catch {
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', 'Invalid request', requestId);
   }
 }
