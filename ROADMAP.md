@@ -139,6 +139,7 @@
 - [ ] draw/feed/battle 페이지 모바일 UX 정리 (`src/app/(main)/draw`, `src/app/(main)/feed`, `src/app/(main)/battle`)
 - [ ] 공통 에러/로딩 상태 컴포넌트 정비 (`src/components/ui`)
   - [x] PAI-79 1차: `RandomTopicSelector` 랜덤 주제 실패 시 인라인 오류 메시지 노출(서버 message 우선) + 컴포넌트 단위 테스트 추가
+  - [x] PAI-79 2차: `RandomTopicSelector` 주제 잠금 상태 안내 문구 추가(왜 새 주제가 안 뽑히는지 명확화) + 컴포넌트 테스트 보강
 - [ ] 캔버스 상호작용 접근성/터치 개선 (`src/components/canvas`)
 
 ### Backend/API

@@ -3,6 +3,7 @@
 # 진행 상황 추적
 
 ## 최근 업데이트
+- **2026-02-28**: PAI-79 2차 - `RandomTopicSelector` 주제 잠금 상태 안내 문구 추가 + 컴포넌트 테스트 보강
 - **2026-02-28**: PAI-79 1차 - `RandomTopicSelector` 실패 인라인 오류 메시지 UX 추가 + 컴포넌트 테스트 추가
 - **2026-02-28**: PAI-78 7차 - `/api/paintings` GET/POST 에러 응답 표준화(apiErrorResponse), paintings API 라우트 테스트 추가
 - **2026-02-28**: PAI-78 6차 - `/api/users/[id]/follow` POST/DELETE 에러 응답 표준화(apiErrorResponse), 팔로우 API 라우트 테스트 추가

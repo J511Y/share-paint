@@ -116,6 +116,12 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
             {errorMessage}
           </p>
         )}
+
+        {isLocked && currentTopic && (
+          <p className="text-xs text-gray-500" role="status" aria-live="polite">
+            주제가 고정되어 있어요. 잠금 해제 후 새 주제를 뽑을 수 있습니다.
+          </p>
+        )}
       </div>
     </div>
   );
