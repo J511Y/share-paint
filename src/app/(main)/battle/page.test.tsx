@@ -14,6 +14,7 @@ describe('BattleLobbyPage', () => {
     render(<BattleLobbyPage />);
 
     expect(screen.getByRole('button', { name: '대결방 안내 보기' })).toBeInTheDocument();
+    expect(screen.queryByText('실시간 그림 대결에 빠르게 참가해보세요.')).not.toBeInTheDocument();
     expect(screen.getByText('연결 상태: 정상')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '방 만들기' })).toBeInTheDocument();
     expect(screen.getByTestId('battle-list')).toBeInTheDocument();

@@ -561,7 +561,6 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             <h1 className={cn('font-bold text-gray-900', isMobile ? 'text-xl' : 'text-2xl')}>
               그림 그리기
             </h1>
-            <p className="text-sm text-gray-600">빠른 도구 전환으로 바로 스케치해보세요.</p>
           </div>
 
           <InfoDisclosure

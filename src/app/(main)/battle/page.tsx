@@ -15,10 +15,10 @@ export default function BattleLobbyPage() {
         <div className="flex items-start gap-3">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">대결방</h1>
-            <p className="text-gray-600 mt-2">실시간 그림 대결에 빠르게 참가해보세요.</p>
           </div>
           <InfoDisclosure className="shrink-0 self-start" label="대결방 안내 보기" title="대결방 이용 안내">
             <ul className="list-disc space-y-1 pl-4">
+              <li>실시간 그림 대결에 바로 참가할 수 있습니다.</li>
               <li>게스트도 즉시 방 생성/참가가 가능합니다.</li>
               <li>요청이 과도하면 잠시 제한될 수 있습니다.</li>
               <li>접속 문제가 있으면 게스트 ID 재발급 후 다시 시도하세요.</li>
