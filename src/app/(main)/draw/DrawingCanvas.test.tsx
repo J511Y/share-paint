@@ -378,6 +378,19 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(screen.queryByRole('button', { name: '마커 (커스텀)' })).not.toBeInTheDocument();
   });
 
+  it('현재 펜 초기화 버튼은 커스텀 상태에서만 활성화된다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    const resetCurrentPenButton = screen.getByRole('button', { name: '현재 펜 초기화' });
+    expect(resetCurrentPenButton).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: '마커' }));
+    await user.click(screen.getByRole('button', { name: '굵기 레벨 4' }));
+
+    expect(screen.getByRole('button', { name: '현재 펜 초기화' })).toBeEnabled();
+  });
+
   it('최근 사용 색상 버튼으로 색상을 재적용한다', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);

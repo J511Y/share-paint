@@ -893,7 +893,8 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             type="button"
             onClick={resetCurrentPresetSettings}
             aria-label="현재 펜 초기화"
-            className="rounded-full border border-gray-200 bg-white px-2 py-1 font-semibold text-gray-700 hover:bg-gray-100"
+            disabled={!isActivePresetCustomized}
+            className="rounded-full border border-gray-200 bg-white px-2 py-1 font-semibold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             현재 펜 초기화
           </button>
