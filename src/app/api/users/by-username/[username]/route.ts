@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { apiErrorResponse } from '@/lib/api-error';
 import { ApiProfileSchema, ProfileWithCountsSchema } from '@/lib/validation/schemas';
 import { getStringParam } from '@/lib/validation/params';
 import { resolveApiActor } from '@/lib/api-actor';
@@ -8,10 +9,11 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
+  const requestId = request.headers.get('x-request-id') ?? crypto.randomUUID();
   const resolvedParams = await params;
   const username = getStringParam(resolvedParams, 'username');
   if (!username) {
-    return NextResponse.json({ error: '사용자명 형식이 유효하지 않습니다.' }, { status: 400 });
+    return apiErrorResponse(400, 'BAD_REQUEST', '사용자명 형식이 유효하지 않습니다.', requestId);
   }
 
   const supabase = await createClient();
@@ -23,12 +25,12 @@ export async function GET(
     .single();
 
   if (error || !data) {
-    return NextResponse.json({ error: '사용자 정보를 조회할 수 없습니다.' }, { status: 404 });
+    return apiErrorResponse(404, 'NOT_FOUND', '사용자 정보를 조회할 수 없습니다.', requestId);
   }
 
   const parsedProfile = ApiProfileSchema.safeParse(data);
   if (!parsedProfile.success) {
-    return NextResponse.json({ error: '사용자 데이터가 유효하지 않습니다.' }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '사용자 데이터가 유효하지 않습니다.', requestId, parsedProfile.error.issues);
   }
 
   const { count: followersCount } = await supabase
@@ -72,7 +74,7 @@ export async function GET(
   });
 
   if (!responsePayload.success) {
-    return NextResponse.json({ error: '사용자 응답 데이터 형식이 유효하지 않습니다.' }, { status: 500 });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '사용자 응답 데이터 형식이 유효하지 않습니다.', requestId, responsePayload.error.issues);
   }
 
   return NextResponse.json(responsePayload.data);
