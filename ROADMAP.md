@@ -70,6 +70,7 @@
   - [ ] 방장 이탈, 네트워크 단절, 동시 이벤트 경합 시나리오 대응
 - [ ] **API 에러 처리 표준화** (`src/app/api/**`, `src/lib/api-handler.ts`)
   - [ ] 에러 응답 포맷 통일(code/message/details)
+    - [x] PAI-78 1차: `/api/topics/random` 에러 응답을 `apiErrorResponse` 스키마(code/message/details/traceId)로 통일 + 기본 조회(null query) 400 오탐 수정 + 라우트 단위 테스트 추가
   - [ ] 클라이언트 훅(`src/hooks/useLike.ts`, `src/hooks/useFollow.ts` 등) 사용자 메시지 정책 통일
 
 ## 3. Phase B - 품질 보증 (1주)
