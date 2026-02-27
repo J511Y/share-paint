@@ -314,6 +314,22 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(mockSetOpacityForNextShapes).toHaveBeenCalledWith(0.6);
   });
 
+  it('펜별로 조정한 굵기/투명도를 기억하고 다시 적용한다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: '마커' }));
+    await user.click(screen.getByRole('button', { name: '굵기 레벨 4' }));
+    await user.click(screen.getByRole('button', { name: '투명도 60%' }));
+
+    await user.click(screen.getByRole('button', { name: '브러시' }));
+    await user.click(screen.getByRole('button', { name: '마커' }));
+
+    expect(screen.getByText('현재 도구: 마커')).toBeInTheDocument();
+    expect(screen.getByText('굵기 레벨: 4')).toBeInTheDocument();
+    expect(screen.getByText('투명도: 60%')).toBeInTheDocument();
+  });
+
   it('최근 사용 색상 버튼으로 색상을 재적용한다', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);

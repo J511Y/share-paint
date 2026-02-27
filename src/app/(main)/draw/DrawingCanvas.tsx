@@ -44,6 +44,7 @@ interface DrawingCanvasProps {
 }
 
 type DrawingPreset = 'pencil' | 'marker' | 'brush' | 'highlighter' | 'eraser';
+type DrawOnlyPreset = Exclude<DrawingPreset, 'eraser'>;
 
 interface ColorOption {
   id: TLDefaultColorStyle;
@@ -92,8 +93,11 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const { actor } = useActor();
   const [editor, setEditor] = useState<Editor | null>(null);
   const [activePreset, setActivePreset] = useState<DrawingPreset>('pencil');
-  const [lastDrawPreset, setLastDrawPreset] = useState<Exclude<DrawingPreset, 'eraser'>>('pencil');
-  const [previousDrawPreset, setPreviousDrawPreset] = useState<Exclude<DrawingPreset, 'eraser'>>('marker');
+  const [lastDrawPreset, setLastDrawPreset] = useState<DrawOnlyPreset>('pencil');
+  const [previousDrawPreset, setPreviousDrawPreset] = useState<DrawOnlyPreset>('marker');
+  const [presetOverrides, setPresetOverrides] = useState<
+    Partial<Record<DrawOnlyPreset, { size?: TLDefaultSizeStyle; opacity?: number; color?: TLDefaultColorStyle }>>
+  >({});
   const [activeColor, setActiveColor] = useState<TLDefaultColorStyle>('black');
   const [recentColors, setRecentColors] = useState<TLDefaultColorStyle[]>(['black']);
   const [previousColor, setPreviousColor] = useState<TLDefaultColorStyle>('black');
@@ -136,6 +140,20 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     [editor]
   );
 
+  const rememberPresetSetting = useCallback(
+    (setting: Partial<{ size: TLDefaultSizeStyle; opacity: number; color: TLDefaultColorStyle }>) => {
+      if (activePreset === 'eraser') return;
+      setPresetOverrides((prev) => ({
+        ...prev,
+        [activePreset]: {
+          ...prev[activePreset],
+          ...setting,
+        },
+      }));
+    },
+    [activePreset]
+  );
+
   const applyColor = useCallback(
     (color: TLDefaultColorStyle) => {
       setActiveColor(color);
@@ -152,8 +170,11 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   );
 
   const applySize = useCallback(
-    (size: TLDefaultSizeStyle) => {
+    (size: TLDefaultSizeStyle, options?: { remember?: boolean }) => {
       setActiveSize(size);
+      if (options?.remember !== false) {
+        rememberPresetSetting({ size });
+      }
       if (!editor) return;
 
       editor.run(() => {
@@ -163,13 +184,16 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         }
       });
     },
-    [editor]
+    [editor, rememberPresetSetting]
   );
 
   const applyOpacity = useCallback(
-    (opacity: number) => {
+    (opacity: number, options?: { remember?: boolean }) => {
       const normalizedOpacity = Math.max(0.1, Math.min(1, Number(opacity.toFixed(2))));
       setActiveOpacity(normalizedOpacity);
+      if (options?.remember !== false) {
+        rememberPresetSetting({ opacity: normalizedOpacity });
+      }
       if (!editor) return;
 
       editor.run(() => {
@@ -179,7 +203,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         }
       });
     },
-    [editor]
+    [editor, rememberPresetSetting]
   );
 
   const pushRecentColor = useCallback((color: TLDefaultColorStyle) => {
@@ -190,12 +214,15 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   }, []);
 
   const applyColorWithRecent = useCallback(
-    (color: TLDefaultColorStyle) => {
+    (color: TLDefaultColorStyle, options?: { remember?: boolean }) => {
       setPreviousColor((prev) => (color === activeColor ? prev : activeColor));
+      if (options?.remember !== false) {
+        rememberPresetSetting({ color });
+      }
       applyColor(color);
       pushRecentColor(color);
     },
-    [activeColor, applyColor, pushRecentColor]
+    [activeColor, applyColor, pushRecentColor, rememberPresetSetting]
   );
 
   const recentColorOptions = useMemo(
@@ -231,19 +258,21 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const applyPreset = useCallback(
     (preset: DrawingPreset) => {
       const config = PRESET_CONFIG[preset];
+      const override = preset === 'eraser' ? undefined : presetOverrides[preset];
       if (preset !== 'eraser') {
         setPreviousDrawPreset((prev) => (preset === lastDrawPreset ? prev : lastDrawPreset));
         setLastDrawPreset(preset);
       }
       setActivePreset(preset);
       applyTool(config.tool);
-      applySize(config.size);
-      applyOpacity(config.opacity);
-      if (config.color) {
-        applyColorWithRecent(config.color);
+      applySize(override?.size ?? config.size, { remember: false });
+      applyOpacity(override?.opacity ?? config.opacity, { remember: false });
+      const nextColor = override?.color ?? config.color;
+      if (nextColor) {
+        applyColorWithRecent(nextColor, { remember: false });
       }
     },
-    [applyColorWithRecent, applyOpacity, applySize, applyTool, lastDrawPreset]
+    [applyColorWithRecent, applyOpacity, applySize, applyTool, lastDrawPreset, presetOverrides]
   );
 
   const toggleEraserPreset = useCallback(() => {
@@ -265,6 +294,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   }, [activePreset, applyPreset, lastDrawPreset, previousDrawPreset]);
 
   const resetToDefaultPreset = useCallback(() => {
+    setPresetOverrides({});
     setLastDrawPreset('pencil');
     setPreviousDrawPreset('marker');
     setPreviousColor('black');
