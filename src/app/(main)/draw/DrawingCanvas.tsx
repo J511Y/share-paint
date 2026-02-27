@@ -309,6 +309,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     const override = presetOverrides[preset];
     return Boolean(override && (override.size || override.opacity || override.color));
   };
+  const hasAnyPresetOverride = DRAW_ONLY_PRESETS.some((preset) => hasPresetOverride(preset));
   const isActivePresetCustomized = activePreset !== 'eraser' && hasPresetOverride(activePreset);
 
   const applyPreset = useCallback(
@@ -360,6 +361,21 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       delete next[activePreset];
       return next;
     });
+
+    const config = PRESET_CONFIG[activePreset];
+    applySize(config.size, { remember: false });
+    applyOpacity(config.opacity, { remember: false });
+    if (config.color) {
+      applyColorWithRecent(config.color, { remember: false });
+    }
+  }, [activePreset, applyColorWithRecent, applyOpacity, applyPreset, applySize]);
+
+  const resetAllCustomizedPens = useCallback(() => {
+    setPresetOverrides({});
+    if (activePreset === 'eraser') {
+      applyPreset('eraser');
+      return;
+    }
 
     const config = PRESET_CONFIG[activePreset];
     applySize(config.size, { remember: false });
@@ -897,6 +913,15 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             className="rounded-full border border-gray-200 bg-white px-2 py-1 font-semibold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
             현재 펜 초기화
+          </button>
+          <button
+            type="button"
+            onClick={resetAllCustomizedPens}
+            aria-label="모든 펜 커스텀 초기화"
+            disabled={!hasAnyPresetOverride}
+            className="rounded-full border border-gray-200 bg-white px-2 py-1 font-semibold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            모든 펜 초기화
           </button>
           <button
             type="button"

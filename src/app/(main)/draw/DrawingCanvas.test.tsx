@@ -391,6 +391,28 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(screen.getByRole('button', { name: '현재 펜 초기화' })).toBeEnabled();
   });
 
+  it('모든 펜 초기화 버튼은 전체 커스텀 상태를 초기화한다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    const resetAllPensButton = screen.getByRole('button', { name: '모든 펜 커스텀 초기화' });
+    expect(resetAllPensButton).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: '마커' }));
+    await user.click(screen.getByRole('button', { name: '굵기 레벨 4' }));
+    await user.click(screen.getByRole('button', { name: '브러시' }));
+    await user.click(screen.getByRole('button', { name: '투명도 60%' }));
+
+    expect(screen.getByRole('button', { name: '모든 펜 커스텀 초기화' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: '마커 (커스텀)' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '브러시 (커스텀)' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '모든 펜 커스텀 초기화' }));
+
+    expect(screen.queryByRole('button', { name: '마커 (커스텀)' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '브러시 (커스텀)' })).not.toBeInTheDocument();
+  });
+
   it('최근 사용 색상 버튼으로 색상을 재적용한다', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);
