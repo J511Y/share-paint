@@ -16,20 +16,30 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
   const [currentTopic, setCurrentTopic] = useState<ApiTopic | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchRandomTopic = async () => {
     if (isLocked) return;
-    
-      setIsLoading(true);
-      try {
-        const res = await fetch('/api/topics/random');
-        if (res.ok) {
-          const topic = await parseJsonResponse(res, ApiTopicSchema);
-          setCurrentTopic(topic);
-          onTopicSelect(topic.content);
-        }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch('/api/topics/random');
+
+      if (!res.ok) {
+        const fallbackMessage = '주제를 불러오지 못했어요. 잠시 후 다시 시도해주세요.';
+        const body = (await res.json().catch(() => null)) as { message?: string; error?: string } | null;
+        setErrorMessage(body?.message ?? body?.error ?? fallbackMessage);
+        return;
+      }
+
+      const topic = await parseJsonResponse(res, ApiTopicSchema);
+      setCurrentTopic(topic);
+      onTopicSelect(topic.content);
     } catch (error) {
       console.error('Failed to fetch random topic', error);
+      setErrorMessage('네트워크 오류로 주제를 불러오지 못했어요.');
     } finally {
       setIsLoading(false);
     }
@@ -78,8 +88,8 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
         </div>
 
         <div className="flex gap-2">
-          <Button 
-            onClick={fetchRandomTopic} 
+          <Button
+            onClick={fetchRandomTopic}
             disabled={isLoading || isLocked}
             className="flex-1"
             size="sm"
@@ -87,7 +97,7 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
           >
             {currentTopic ? '다른 주제 뽑기' : '주제 뽑기'}
           </Button>
-          
+
           {currentTopic && (
             <Button
               variant="outline"
@@ -100,6 +110,12 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
             </Button>
           )}
         </div>
+
+        {errorMessage && (
+          <p className="text-xs text-red-600" role="status" aria-live="polite">
+            {errorMessage}
+          </p>
+        )}
       </div>
     </div>
   );
