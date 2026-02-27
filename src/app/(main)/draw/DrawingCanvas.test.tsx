@@ -406,11 +406,13 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(screen.getByRole('button', { name: '모든 펜 커스텀 초기화' })).toBeEnabled();
     expect(screen.getByRole('button', { name: '마커 (커스텀)' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '브러시 (커스텀)' })).toBeInTheDocument();
+    expect(screen.getByText('모든 펜 초기화 (2)')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '모든 펜 커스텀 초기화' }));
 
     expect(screen.queryByRole('button', { name: '마커 (커스텀)' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: '브러시 (커스텀)' })).not.toBeInTheDocument();
+    expect(screen.getByText(/^모든 펜 초기화\s*$/)).toBeInTheDocument();
   });
 
   it('최근 사용 색상 버튼으로 색상을 재적용한다', async () => {

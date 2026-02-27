@@ -309,7 +309,8 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     const override = presetOverrides[preset];
     return Boolean(override && (override.size || override.opacity || override.color));
   };
-  const hasAnyPresetOverride = DRAW_ONLY_PRESETS.some((preset) => hasPresetOverride(preset));
+  const customizedPresetCount = DRAW_ONLY_PRESETS.filter((preset) => hasPresetOverride(preset)).length;
+  const hasAnyPresetOverride = customizedPresetCount > 0;
   const isActivePresetCustomized = activePreset !== 'eraser' && hasPresetOverride(activePreset);
 
   const applyPreset = useCallback(
@@ -921,7 +922,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             disabled={!hasAnyPresetOverride}
             className="rounded-full border border-gray-200 bg-white px-2 py-1 font-semibold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            모든 펜 초기화
+            모든 펜 초기화 {hasAnyPresetOverride ? `(${customizedPresetCount})` : ''}
           </button>
           <button
             type="button"
@@ -935,7 +936,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
 
         {isActivePresetCustomized && (
           <p className="text-[11px] text-purple-700" role="status" aria-live="polite">
-            현재 펜 설정이 커스텀 상태입니다. 필요하면 &quot;현재 펜 초기화&quot;로 기본값으로 되돌릴 수 있어요.
+            현재 펜 설정이 커스텀 상태입니다. {customizedPresetCount}개 펜이 커스텀되어 있어요. 필요하면 &quot;현재 펜 초기화&quot; 또는 &quot;모든 펜 초기화&quot;로 기본값으로 되돌릴 수 있어요.
           </p>
         )}
 
