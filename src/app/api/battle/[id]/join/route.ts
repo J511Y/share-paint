@@ -108,20 +108,6 @@ export const POST = apiHandler(async ({ req, params, requestId }) => {
     }
   }
 
-  const { count, error: countError } = await writeClient
-    .from('battle_participants')
-    .select('*', { count: 'exact', head: true })
-    .eq('battle_id', battleId);
-
-  if (countError) {
-    logger.error('Failed to count participants', countError, { requestId, battleId });
-    return apiErrorResponse(500, 'INTERNAL_ERROR', '참가자 수 검증 중 오류가 발생했습니다.', requestId, toErrorDetails(countError));
-  }
-
-  if (count !== null && count >= battle.max_participants) {
-    return apiErrorResponse(409, 'ROOM_FULL', '대결방 인원이 가득 찼습니다.', requestId);
-  }
-
   let existingQuery = writeClient
     .from('battle_participants')
     .select('*')
@@ -138,6 +124,20 @@ export const POST = apiHandler(async ({ req, params, requestId }) => {
 
   if (existingParticipants && existingParticipants.length > 0) {
     return NextResponse.json({ success: true, alreadyJoined: true }, { status: 200 });
+  }
+
+  const { count, error: countError } = await writeClient
+    .from('battle_participants')
+    .select('*', { count: 'exact', head: true })
+    .eq('battle_id', battleId);
+
+  if (countError) {
+    logger.error('Failed to count participants', countError, { requestId, battleId });
+    return apiErrorResponse(500, 'INTERNAL_ERROR', '참가자 수 검증 중 오류가 발생했습니다.', requestId, toErrorDetails(countError));
+  }
+
+  if (count !== null && count >= battle.max_participants) {
+    return apiErrorResponse(409, 'ROOM_FULL', '대결방 인원이 가득 찼습니다.', requestId);
   }
 
   const participantInsert = {

@@ -238,7 +238,16 @@ export function useBattle(battleId: string) {
         );
 
         if (!joinResponse.ok) {
-          throw new Error('대결방 참가에 실패했습니다.');
+          let message = '대결방 참가에 실패했습니다.';
+          try {
+            const errorBody = (await joinResponse.json()) as { message?: string };
+            if (typeof errorBody?.message === 'string' && errorBody.message.length > 0) {
+              message = errorBody.message;
+            }
+          } catch {
+            // ignore JSON parse errors and keep default message
+          }
+          throw new Error(message);
         }
 
         if (isDisposed) return;
