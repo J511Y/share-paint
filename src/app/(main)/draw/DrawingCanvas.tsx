@@ -254,6 +254,11 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const activeColorLabel = findColorOption(activeColor)?.label ?? activeColor;
   const activeSizeLevel = SIZE_STEPS.findIndex((size) => size.id === activeSize) + 1;
   const activeOpacityPercent = Math.round(activeOpacity * 100);
+  const hasPresetOverride = (preset: DrawOnlyPreset) => {
+    const override = presetOverrides[preset];
+    return Boolean(override && (override.size || override.opacity || override.color));
+  };
+  const isActivePresetCustomized = activePreset !== 'eraser' && hasPresetOverride(activePreset);
 
   const applyPreset = useCallback(
     (preset: DrawingPreset) => {
@@ -719,12 +724,13 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         {(['pencil', 'marker', 'brush', 'highlighter', 'eraser'] as DrawingPreset[]).map((preset) => {
           const presetConfig = PRESET_CONFIG[preset];
           const isActive = activePreset === preset;
+          const isCustomized = preset !== 'eraser' && hasPresetOverride(preset);
 
           return (
             <button
               key={preset}
               type="button"
-              aria-label={presetConfig.label}
+              aria-label={isCustomized ? `${presetConfig.label} (커스텀)` : presetConfig.label}
               aria-pressed={isActive}
               onClick={() => (preset === 'eraser' ? toggleEraserPreset() : applyPreset(preset))}
               className={cn(
@@ -736,6 +742,16 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             >
               {preset === 'eraser' ? <Eraser className="h-4 w-4" /> : <PenLine className="h-4 w-4" />}
               {presetConfig.label}
+              {isCustomized && (
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+                    isActive ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-700'
+                  )}
+                >
+                  커스텀
+                </span>
+              )}
             </button>
           );
         })}
@@ -839,6 +855,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             기본값으로
           </button>
         </div>
+
+        {isActivePresetCustomized && (
+          <p className="text-[11px] text-purple-700" role="status" aria-live="polite">
+            현재 펜 설정이 커스텀 상태입니다. 필요하면 &quot;현재 펜 초기화&quot;로 기본값으로 되돌릴 수 있어요.
+          </p>
+        )}
 
         {!hasDrawableShapes && (
           <p className="text-[11px] text-gray-600" role="status" aria-live="polite">
