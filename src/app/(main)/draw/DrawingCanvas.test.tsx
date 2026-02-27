@@ -324,6 +324,23 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'color' }, 'blue');
   });
 
+  it('C 단축키와 순환 버튼으로 팔레트 색상을 이동한다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    fireEvent.keyDown(window, { key: 'c' });
+    expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'color' }, 'grey');
+
+    fireEvent.keyDown(window, { key: 'c', shiftKey: true });
+    expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'color' }, 'black');
+
+    await user.click(screen.getByRole('button', { name: '다음 팔레트 색상' }));
+    expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'color' }, 'grey');
+
+    await user.click(screen.getByRole('button', { name: '이전 팔레트 색상' }));
+    expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'color' }, 'black');
+  });
+
 
   it('supports undo and redo actions', async () => {
     mockCanRedo = true;

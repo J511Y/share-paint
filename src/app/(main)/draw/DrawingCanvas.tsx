@@ -202,7 +202,15 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     [recentColors]
   );
 
-
+  const cycleColor = useCallback(
+    (direction: 1 | -1) => {
+      const currentIndex = COLOR_OPTIONS.findIndex((option) => option.id === activeColor);
+      const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+      const nextIndex = (safeIndex + direction + COLOR_OPTIONS.length) % COLOR_OPTIONS.length;
+      applyColorWithRecent(COLOR_OPTIONS[nextIndex]?.id ?? 'black');
+    },
+    [activeColor, applyColorWithRecent]
+  );
 
   const previousColorLabel = findColorOption(previousColor)?.label ?? previousColor;
 
@@ -416,6 +424,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         return;
       }
 
+      if (key === 'c') {
+        event.preventDefault();
+        cycleColor(event.shiftKey ? -1 : 1);
+        return;
+      }
+
       if (key === '[' || key === '-' || key === '_') {
         event.preventDefault();
         handleSizeDelta(-1);
@@ -454,6 +468,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     applyPreset,
     editor,
     handleSizeDelta,
+    cycleColor,
     openShortcutHelp,
     swapToPreviousColor,
     toggleEraserPreset,
@@ -623,6 +638,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               <li>4: 형광펜</li>
               <li>5 / E: 지우개 (한 번 더 누르면 직전 펜으로 복귀)</li>
               <li>X: 이전 색상으로 전환</li>
+              <li>C / Shift + C: 팔레트 색상 순환</li>
               <li>[ / ] 또는 - / + : 브러시 굵기 조절</li>
               <li>; / &apos; 또는 , / . : 투명도 조절</li>
               <li>Ctrl/Cmd + Z: 실행취소</li>
@@ -766,6 +782,26 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               />
             ))}
 
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => cycleColor(-1)}
+              aria-label="이전 팔레트 색상"
+              className="inline-flex min-h-[32px] items-center rounded-lg border border-gray-200 bg-white px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              이전 색상
+            </button>
+            <button
+              type="button"
+              onClick={() => cycleColor(1)}
+              aria-label="다음 팔레트 색상"
+              className="inline-flex min-h-[32px] items-center rounded-lg border border-gray-200 bg-white px-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              다음 색상
+            </button>
+            <span className="text-[11px] text-gray-500">단축키 C / Shift+C</span>
           </div>
 
           <div className="space-y-2">
