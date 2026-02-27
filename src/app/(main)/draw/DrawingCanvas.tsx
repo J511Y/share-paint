@@ -93,6 +93,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [activePreset, setActivePreset] = useState<DrawingPreset>('pencil');
   const [lastDrawPreset, setLastDrawPreset] = useState<Exclude<DrawingPreset, 'eraser'>>('pencil');
+  const [previousDrawPreset, setPreviousDrawPreset] = useState<Exclude<DrawingPreset, 'eraser'>>('marker');
   const [activeColor, setActiveColor] = useState<TLDefaultColorStyle>('black');
   const [recentColors, setRecentColors] = useState<TLDefaultColorStyle[]>(['black']);
   const [previousColor, setPreviousColor] = useState<TLDefaultColorStyle>('black');
@@ -231,6 +232,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     (preset: DrawingPreset) => {
       const config = PRESET_CONFIG[preset];
       if (preset !== 'eraser') {
+        setPreviousDrawPreset((prev) => (preset === lastDrawPreset ? prev : lastDrawPreset));
         setLastDrawPreset(preset);
       }
       setActivePreset(preset);
@@ -241,7 +243,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         applyColorWithRecent(config.color);
       }
     },
-    [applyColorWithRecent, applyOpacity, applySize, applyTool]
+    [applyColorWithRecent, applyOpacity, applySize, applyTool, lastDrawPreset]
   );
 
   const toggleEraserPreset = useCallback(() => {
@@ -253,8 +255,18 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     applyPreset('eraser');
   }, [activePreset, applyPreset, lastDrawPreset]);
 
+  const swapToPreviousDrawPreset = useCallback(() => {
+    if (activePreset === 'eraser') {
+      applyPreset(lastDrawPreset);
+      return;
+    }
+
+    applyPreset(previousDrawPreset);
+  }, [activePreset, applyPreset, lastDrawPreset, previousDrawPreset]);
+
   const resetToDefaultPreset = useCallback(() => {
     setLastDrawPreset('pencil');
+    setPreviousDrawPreset('marker');
     setPreviousColor('black');
     applyPreset('pencil');
     applyOpacity(1);
@@ -418,6 +430,12 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
         return;
       }
 
+      if (key === 'r') {
+        event.preventDefault();
+        swapToPreviousDrawPreset();
+        return;
+      }
+
       if (key === 'x') {
         event.preventDefault();
         swapToPreviousColor();
@@ -471,6 +489,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     cycleColor,
     openShortcutHelp,
     swapToPreviousColor,
+    swapToPreviousDrawPreset,
     toggleEraserPreset,
   ]);
 
@@ -636,6 +655,7 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
               <li>3: 브러시</li>
               <li>4: 형광펜</li>
               <li>5 / E: 지우개 (한 번 더 누르면 직전 펜으로 복귀)</li>
+              <li>R: 직전 펜으로 빠르게 전환</li>
               <li>X: 이전 색상으로 전환</li>
               <li>C / Shift + C: 팔레트 색상 순환</li>
               <li>[ / ] 또는 - / + : 브러시 굵기 조절</li>
@@ -669,6 +689,15 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
             </button>
           );
         })}
+
+        <button
+          type="button"
+          onClick={swapToPreviousDrawPreset}
+          aria-label={`직전 펜 (${PRESET_CONFIG[previousDrawPreset].label})`}
+          className="inline-flex min-h-[42px] items-center rounded-lg border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+        >
+          직전 펜
+        </button>
 
         <div className="mx-1 h-6 w-px bg-gray-200" aria-hidden="true" />
 

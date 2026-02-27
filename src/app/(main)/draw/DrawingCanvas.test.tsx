@@ -251,6 +251,21 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(mockSetStyleForNextShapes).toHaveBeenCalledWith({ id: 'size' }, 'm');
   });
 
+  it('R 단축키와 직전 펜 버튼으로 이전 펜 프리셋을 전환한다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    fireEvent.keyDown(window, { key: '2' });
+    fireEvent.keyDown(window, { key: '3' });
+    expect(screen.getByText('현재 도구: 브러시')).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { key: 'r' });
+    expect(screen.getByText('현재 도구: 마커')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /직전 펜/i }));
+    expect(screen.getByText('현재 도구: 브러시')).toBeInTheDocument();
+  });
+
 
   it('브러시 크기 단축키([, ])로 굵기를 빠르게 조절한다', () => {
     render(<DrawingCanvas />);
