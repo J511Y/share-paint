@@ -153,6 +153,24 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(mockLoadDrawingCompatDraft).not.toHaveBeenCalled();
   });
 
+  it('localStorage의 펜 커스텀 설정을 복원해 프리셋에 반영한다', async () => {
+    localStorage.setItem(
+      'paintshare.draw.preset-overrides.v1',
+      JSON.stringify({ marker: { size: 'xl', opacity: 0.6 } })
+    );
+
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    expect(screen.getByRole('button', { name: '마커 (커스텀)' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '마커 (커스텀)' }));
+
+    expect(screen.getByText('현재 도구: 마커')).toBeInTheDocument();
+    expect(screen.getByText('굵기 레벨: 4')).toBeInTheDocument();
+    expect(screen.getByText('투명도: 60%')).toBeInTheDocument();
+  });
+
   it('falls back to compatibility snapshot when persisted draft is unavailable', async () => {
     mockLoadDrawingCompatDraft.mockReturnValue({
       engine: 'tldraw',

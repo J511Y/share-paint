@@ -45,6 +45,9 @@ interface DrawingCanvasProps {
 
 type DrawingPreset = 'pencil' | 'marker' | 'brush' | 'highlighter' | 'eraser';
 type DrawOnlyPreset = Exclude<DrawingPreset, 'eraser'>;
+type PresetOverrides = Partial<
+  Record<DrawOnlyPreset, { size?: TLDefaultSizeStyle; opacity?: number; color?: TLDefaultColorStyle }>
+>;
 
 interface ColorOption {
   id: TLDefaultColorStyle;
@@ -82,12 +85,50 @@ const PRESET_CONFIG: Record<
 };
 
 const SHORTCUT_HELP_SEEN_STORAGE_KEY = 'paintshare.draw.shortcut-help.seen.v1';
-
+const PRESET_OVERRIDES_STORAGE_KEY = 'paintshare.draw.preset-overrides.v1';
 
 const RECENT_COLOR_LIMIT = 5;
 
 const findColorOption = (id: TLDefaultColorStyle) =>
   COLOR_OPTIONS.find((option) => option.id === id);
+
+const DRAW_ONLY_PRESETS: DrawOnlyPreset[] = ['pencil', 'marker', 'brush', 'highlighter'];
+
+const loadPresetOverridesFromStorage = (): PresetOverrides => {
+  if (typeof window === 'undefined') return {};
+
+  try {
+    const raw = localStorage.getItem(PRESET_OVERRIDES_STORAGE_KEY);
+    if (!raw) return {};
+
+    const parsed = JSON.parse(raw) as Record<string, { size?: string; opacity?: number; color?: string }>;
+    const next: PresetOverrides = {};
+
+    for (const preset of DRAW_ONLY_PRESETS) {
+      const candidate = parsed?.[preset];
+      if (!candidate) continue;
+
+      const size = SIZE_STEPS.some((item) => item.id === candidate.size)
+        ? (candidate.size as TLDefaultSizeStyle)
+        : undefined;
+      const opacity =
+        typeof candidate.opacity === 'number' && candidate.opacity >= 0.1 && candidate.opacity <= 1
+          ? Number(candidate.opacity.toFixed(2))
+          : undefined;
+      const color = COLOR_OPTIONS.some((item) => item.id === candidate.color)
+        ? (candidate.color as TLDefaultColorStyle)
+        : undefined;
+
+      if (size || opacity || color) {
+        next[preset] = { size, opacity, color };
+      }
+    }
+
+    return next;
+  } catch {
+    return {};
+  }
+};
 
 export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const { actor } = useActor();
@@ -95,9 +136,9 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
   const [activePreset, setActivePreset] = useState<DrawingPreset>('pencil');
   const [lastDrawPreset, setLastDrawPreset] = useState<DrawOnlyPreset>('pencil');
   const [previousDrawPreset, setPreviousDrawPreset] = useState<DrawOnlyPreset>('marker');
-  const [presetOverrides, setPresetOverrides] = useState<
-    Partial<Record<DrawOnlyPreset, { size?: TLDefaultSizeStyle; opacity?: number; color?: TLDefaultColorStyle }>>
-  >({});
+  const [presetOverrides, setPresetOverrides] = useState<PresetOverrides>(() =>
+    loadPresetOverridesFromStorage()
+  );
   const [activeColor, setActiveColor] = useState<TLDefaultColorStyle>('black');
   const [recentColors, setRecentColors] = useState<TLDefaultColorStyle[]>(['black']);
   const [previousColor, setPreviousColor] = useState<TLDefaultColorStyle>('black');
@@ -131,6 +172,16 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
       detachHistorySyncRef.current?.();
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      localStorage.setItem(PRESET_OVERRIDES_STORAGE_KEY, JSON.stringify(presetOverrides));
+    } catch {
+      // 저장 실패 시 런타임 동작은 계속 유지
+    }
+  }, [presetOverrides]);
 
   const applyTool = useCallback(
     (tool: 'draw' | 'eraser') => {
