@@ -3,6 +3,7 @@
 # 진행 상황 추적
 
 ## 최근 업데이트
+- **2026-02-28**: PAI-78 4차 - `/api/paintings/[id]/like` POST/DELETE 에러 응답 표준화(apiErrorResponse), UUID 파라미터 검증 및 라우트 테스트 추가
 - **2026-02-28**: PAI-78 3차 - `/api/users/by-username/[username]` GET 에러 응답 표준화(apiErrorResponse), 사용자 조회 API 라우트 테스트 추가
 - **2026-02-28**: PAI-78 2차 - `/api/topics` POST 에러 응답 표준화(apiErrorResponse), 주제 생성 API 라우트 테스트 추가
 - **2026-02-28**: PAI-78 1차 - `/api/topics/random` 에러 응답 표준화(apiErrorResponse), null query 파싱 버그 수정, 라우트 테스트 추가
