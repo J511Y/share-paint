@@ -293,6 +293,26 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
     applyPreset(previousDrawPreset);
   }, [activePreset, applyPreset, lastDrawPreset, previousDrawPreset]);
 
+  const resetCurrentPresetSettings = useCallback(() => {
+    if (activePreset === 'eraser') {
+      applyPreset('eraser');
+      return;
+    }
+
+    setPresetOverrides((prev) => {
+      const next = { ...prev };
+      delete next[activePreset];
+      return next;
+    });
+
+    const config = PRESET_CONFIG[activePreset];
+    applySize(config.size, { remember: false });
+    applyOpacity(config.opacity, { remember: false });
+    if (config.color) {
+      applyColorWithRecent(config.color, { remember: false });
+    }
+  }, [activePreset, applyColorWithRecent, applyOpacity, applyPreset, applySize]);
+
   const resetToDefaultPreset = useCallback(() => {
     setPresetOverrides({});
     setLastDrawPreset('pencil');
@@ -802,6 +822,14 @@ export function DrawingCanvas({ className }: DrawingCanvasProps) {
           <span className="rounded-full bg-white px-2 py-1">색상: {activeColorLabel}</span>
           <span className="rounded-full bg-white px-2 py-1">굵기 레벨: {activeSizeLevel}</span>
           <span className="rounded-full bg-white px-2 py-1">투명도: {activeOpacityPercent}%</span>
+          <button
+            type="button"
+            onClick={resetCurrentPresetSettings}
+            aria-label="현재 펜 초기화"
+            className="rounded-full border border-gray-200 bg-white px-2 py-1 font-semibold text-gray-700 hover:bg-gray-100"
+          >
+            현재 펜 초기화
+          </button>
           <button
             type="button"
             onClick={resetToDefaultPreset}

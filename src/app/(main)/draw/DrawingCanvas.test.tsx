@@ -330,6 +330,21 @@ describe('DrawingCanvas (tldraw shell)', () => {
     expect(screen.getByText('투명도: 60%')).toBeInTheDocument();
   });
 
+  it('현재 펜 초기화 버튼이 활성 펜 설정을 기본값으로 되돌린다', async () => {
+    const user = userEvent.setup();
+    render(<DrawingCanvas />);
+
+    await user.click(screen.getByRole('button', { name: '마커' }));
+    await user.click(screen.getByRole('button', { name: '굵기 레벨 4' }));
+    await user.click(screen.getByRole('button', { name: '투명도 60%' }));
+
+    await user.click(screen.getByRole('button', { name: '현재 펜 초기화' }));
+
+    expect(screen.getByText('현재 도구: 마커')).toBeInTheDocument();
+    expect(screen.getByText('굵기 레벨: 2')).toBeInTheDocument();
+    expect(screen.getByText('투명도: 80%')).toBeInTheDocument();
+  });
+
   it('최근 사용 색상 버튼으로 색상을 재적용한다', async () => {
     const user = userEvent.setup();
     render(<DrawingCanvas />);
