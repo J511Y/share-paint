@@ -121,7 +121,7 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
             </p>
             {!isLocked && (
               <Button variant="outline" size="sm" onClick={fetchRandomTopic} disabled={isLoading}>
-                다시 시도
+                {isLoading ? '재시도 중...' : '다시 시도'}
               </Button>
             )}
           </div>
