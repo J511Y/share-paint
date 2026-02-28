@@ -169,4 +169,43 @@ describe('RandomTopicSelector', () => {
       expect(screen.getByLabelText('주제 고정')).toHaveAttribute('aria-pressed', 'false');
     });
   });
+
+  it('disables lock button while loading a new topic', async () => {
+    vi.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: '11111111-1111-4111-8111-111111111111',
+          content: '첫 번째 주제',
+          category: 'general',
+          difficulty: 'easy',
+          created_at: '2026-02-28T00:00:00.000Z',
+        }),
+      } as Response)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => {
+              resolve({
+                ok: true,
+                json: async () => ({
+                  id: '22222222-2222-4222-8222-222222222222',
+                  content: '두 번째 주제',
+                  category: 'general',
+                  difficulty: 'normal',
+                  created_at: '2026-02-28T00:00:00.000Z',
+                }),
+              } as Response);
+            }, 30);
+          })
+      );
+
+    render(<RandomTopicSelector onTopicSelect={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '주제 뽑기' }));
+    await waitFor(() => expect(screen.getByLabelText('주제 고정')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: '다른 주제 뽑기' }));
+    expect(screen.getByLabelText('주제 고정')).toBeDisabled();
+  });
 });
