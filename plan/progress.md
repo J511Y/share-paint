@@ -3,6 +3,7 @@
 # 진행 상황 추적
 
 ## 최근 업데이트
+- **2026-02-28**: PAI-79 8차 - `RandomTopicSelector` 잠금 토글 접근성 `aria-pressed` 상태 추가 + 접근성 검증 테스트 보강
 - **2026-02-28**: PAI-79 7차 - `RandomTopicSelector` 재시도 버튼 로딩 라벨(`재시도 중...`) 추가로 오류 복구 피드백 강화
 - **2026-02-28**: PAI-79 6차 - `RandomTopicSelector` 잠금 토글 시 오류 상태 정리 + 잠금/해제 접근성 라벨(aria-label) 보강 + 상태 테스트 추가
 - **2026-02-28**: PAI-79 5차 - `RandomTopicSelector` 오류 상태 `다시 시도` 액션 추가(잠금 시 숨김) + 재시도 테스트 보강

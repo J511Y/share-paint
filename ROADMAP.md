@@ -145,6 +145,7 @@
   - [x] PAI-79 5차: `RandomTopicSelector` 오류 상태에서 `다시 시도` 액션 제공(잠금 시 숨김) + 재시도 동작 테스트 추가
   - [x] PAI-79 6차: `RandomTopicSelector` 잠금 토글 시 잔여 오류 상태 정리 + 잠금/해제 접근성 라벨(aria-label) 명시 + 상태 테스트 보강
   - [x] PAI-79 7차: `RandomTopicSelector` 오류 UI에 재시도 진행 상태(`재시도 중...`) 노출로 피드백 강화
+  - [x] PAI-79 8차: `RandomTopicSelector` 잠금 토글 버튼 접근성에 `aria-pressed` 상태를 명시해 보조기기 피드백 강화
 - [ ] 캔버스 상호작용 접근성/터치 개선 (`src/components/canvas`)
 
 ### Backend/API
