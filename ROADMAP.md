@@ -153,6 +153,7 @@
   - [x] PAI-79 13차: `RandomTopicSelector` 로딩 중 중복 요청 가드(isLoading early-return) 추가로 중복 fetch 경쟁상태 완화 + 회귀 테스트 추가
   - [x] PAI-79 14차: `RandomTopicSelector` 주제 카드 영역에 `aria-busy` 상태를 연결해 로딩 중 보조기기 피드백 강화
   - [x] PAI-79 15차: `RandomTopicSelector` 빈 상태 문구를 로딩 시 `주제를 불러오는 중...`으로 전환해 시각/보조기기 피드백 동기화
+  - [x] PAI-79 16차: `RandomTopicSelector` 새 주제 로드 시 잠금 상태를 자동 해제해 이전 고정 상태 잔존으로 인한 UX 혼선 제거 + 회귀 테스트 추가
 - [ ] 캔버스 상호작용 접근성/터치 개선 (`src/components/canvas`)
 
 ### Backend/API

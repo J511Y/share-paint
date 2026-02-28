@@ -48,6 +48,7 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
 
       const topic = await parseJsonResponse(res, ApiTopicSchema);
       setCurrentTopic(topic);
+      setIsLocked(false);
       onTopicSelect(topic.content);
     } catch (error) {
       console.error('Failed to fetch random topic', error);

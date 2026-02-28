@@ -129,4 +129,44 @@ describe('RandomTopicSelector', () => {
       expect(container.querySelector('[aria-busy="false"]')).toBeInTheDocument();
     });
   });
+
+  it('resets lock state when a new topic is loaded', async () => {
+    vi.spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: '11111111-1111-4111-8111-111111111111',
+          content: '첫 번째 주제',
+          category: 'general',
+          difficulty: 'easy',
+          created_at: '2026-02-28T00:00:00.000Z',
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: '22222222-2222-4222-8222-222222222222',
+          content: '두 번째 주제',
+          category: 'general',
+          difficulty: 'normal',
+          created_at: '2026-02-28T00:00:00.000Z',
+        }),
+      } as Response);
+
+    render(<RandomTopicSelector onTopicSelect={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '주제 뽑기' }));
+    await waitFor(() => expect(screen.getByLabelText('주제 고정')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByLabelText('주제 고정'));
+    expect(screen.getByRole('button', { name: '주제 고정됨' })).toBeDisabled();
+
+    fireEvent.click(screen.getByLabelText('주제 잠금 해제'));
+    fireEvent.click(screen.getByRole('button', { name: '다른 주제 뽑기' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('두 번째 주제')).toBeInTheDocument();
+      expect(screen.getByLabelText('주제 고정')).toHaveAttribute('aria-pressed', 'false');
+    });
+  });
 });
