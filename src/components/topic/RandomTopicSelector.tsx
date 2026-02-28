@@ -18,6 +18,12 @@ const difficultyLabelMap: Record<ApiTopic['difficulty'], string> = {
   hard: '어려움',
 };
 
+const categoryLabelMap: Record<string, string> = {
+  general: '일반',
+};
+
+const getCategoryLabel = (category: string) => categoryLabelMap[category] ?? category;
+
 export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSelectorProps) {
   const [currentTopic, setCurrentTopic] = useState<ApiTopic | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -75,7 +81,7 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
               </span>
               <div className="flex gap-2 mt-1">
                 <span className="text-xs px-1.5 py-0.5 bg-white rounded text-purple-600 border border-purple-100">
-                  {currentTopic.category}
+                  {getCategoryLabel(currentTopic.category)}
                 </span>
                 <span className={cn(
                   "text-xs px-1.5 py-0.5 bg-white rounded border",
