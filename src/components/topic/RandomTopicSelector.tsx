@@ -70,10 +70,13 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
       </h2>
       
       <div className="flex flex-col gap-3">
-        <div className={cn(
-          "min-h-[60px] flex flex-col items-center justify-center p-3 rounded-md border-2 border-dashed transition-colors text-center",
-          currentTopic ? "border-purple-200 bg-purple-50" : "border-gray-200 bg-gray-50"
-        )}>
+        <div
+          className={cn(
+            "min-h-[60px] flex flex-col items-center justify-center p-3 rounded-md border-2 border-dashed transition-colors text-center",
+            currentTopic ? "border-purple-200 bg-purple-50" : "border-gray-200 bg-gray-50"
+          )}
+          aria-busy={isLoading}
+        >
           {currentTopic ? (
             <>
               <span className="text-sm font-medium text-purple-900 break-keep" role="status" aria-live="polite">

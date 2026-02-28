@@ -115,14 +115,17 @@ describe('RandomTopicSelector', () => {
         })
     );
 
-    render(<RandomTopicSelector onTopicSelect={vi.fn()} />);
+    const { container } = render(<RandomTopicSelector onTopicSelect={vi.fn()} />);
 
     const drawButton = screen.getByRole('button', { name: '주제 뽑기' });
     fireEvent.click(drawButton);
     fireEvent.click(drawButton);
 
+    expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument();
+
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(container.querySelector('[aria-busy="false"]')).toBeInTheDocument();
     });
   });
 });

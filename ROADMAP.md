@@ -151,6 +151,7 @@
   - [x] PAI-79 11차: `RandomTopicSelector` 카테고리/난이도 뱃지에 의미 접두어(`카테고리:`, `난이도:`)를 명시해 초회 사용자 이해도 개선
   - [x] PAI-79 12차: `RandomTopicSelector` 현재 주제를 `aria-live` status로 노출해 새 주제 갱신 시 보조기기 안내 강화
   - [x] PAI-79 13차: `RandomTopicSelector` 로딩 중 중복 요청 가드(isLoading early-return) 추가로 중복 fetch 경쟁상태 완화 + 회귀 테스트 추가
+  - [x] PAI-79 14차: `RandomTopicSelector` 주제 카드 영역에 `aria-busy` 상태를 연결해 로딩 중 보조기기 피드백 강화
 - [ ] 캔버스 상호작용 접근성/터치 개선 (`src/components/canvas`)
 
 ### Backend/API
