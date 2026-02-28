@@ -95,4 +95,34 @@ describe('RandomTopicSelector', () => {
     fireEvent.click(screen.getByLabelText('주제 잠금 해제'));
     expect(screen.getByRole('button', { name: '다른 주제 뽑기' })).toBeEnabled();
   });
+
+  it('prevents duplicate requests while loading', async () => {
+    const fetchMock = vi.spyOn(global, 'fetch').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              ok: true,
+              json: async () => ({
+                id: '11111111-1111-4111-8111-111111111111',
+                content: '고양이 우주 비행사',
+                category: 'general',
+                difficulty: 'easy',
+                created_at: '2026-02-28T00:00:00.000Z',
+              }),
+            } as Response);
+          }, 30);
+        })
+    );
+
+    render(<RandomTopicSelector onTopicSelect={vi.fn()} />);
+
+    const drawButton = screen.getByRole('button', { name: '주제 뽑기' });
+    fireEvent.click(drawButton);
+    fireEvent.click(drawButton);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
 });

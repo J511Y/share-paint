@@ -31,7 +31,7 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchRandomTopic = async () => {
-    if (isLocked) return;
+    if (isLocked || isLoading) return;
 
     setIsLoading(true);
     setErrorMessage(null);
