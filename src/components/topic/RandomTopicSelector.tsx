@@ -46,7 +46,8 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
   };
 
   const toggleLock = () => {
-    setIsLocked(!isLocked);
+    setIsLocked((prev) => !prev);
+    setErrorMessage(null);
   };
 
   return (

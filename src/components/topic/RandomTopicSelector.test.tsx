@@ -68,5 +68,8 @@ describe('RandomTopicSelector', () => {
 
     expect(screen.getByRole('button', { name: '주제 고정됨' })).toBeDisabled();
     expect(screen.getByText('주제가 고정되어 있어요. 잠금 해제 후 새 주제를 뽑을 수 있습니다.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '주제 잠금 해제' }));
+    expect(screen.getByRole('button', { name: '다른 주제 뽑기' })).toBeEnabled();
   });
 });
