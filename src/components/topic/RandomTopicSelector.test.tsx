@@ -60,6 +60,8 @@ describe('RandomTopicSelector', () => {
     await waitFor(() => {
       expect(onTopicSelect).toHaveBeenCalledWith('고양이 우주 비행사');
     });
+
+    expect(screen.getByText('쉬움')).toBeInTheDocument();
   });
 
   it('shows lock guidance when topic is locked', async () => {

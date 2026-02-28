@@ -12,6 +12,12 @@ interface RandomTopicSelectorProps {
   className?: string;
 }
 
+const difficultyLabelMap: Record<ApiTopic['difficulty'], string> = {
+  easy: '쉬움',
+  normal: '보통',
+  hard: '어려움',
+};
+
 export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSelectorProps) {
   const [currentTopic, setCurrentTopic] = useState<ApiTopic | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,7 +83,7 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
                   currentTopic.difficulty === 'hard' ? "text-red-600 border-red-100" :
                   "text-blue-600 border-blue-100"
                 )}>
-                  {currentTopic.difficulty}
+                  {difficultyLabelMap[currentTopic.difficulty]}
                 </span>
               </div>
             </>
