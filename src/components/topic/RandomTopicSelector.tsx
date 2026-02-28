@@ -107,6 +107,7 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
               onClick={toggleLock}
               className={cn("w-10 px-0", isLocked && "bg-gray-100 text-gray-500")}
               title={isLocked ? "주제 잠금 해제" : "주제 고정"}
+              aria-label={isLocked ? '주제 잠금 해제' : '주제 고정'}
             >
               {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
             </Button>

@@ -3,6 +3,7 @@
 # 진행 상황 추적
 
 ## 최근 업데이트
+- **2026-02-28**: PAI-79 6차 - `RandomTopicSelector` 잠금 토글 시 오류 상태 정리 + 잠금/해제 접근성 라벨(aria-label) 보강 + 상태 테스트 추가
 - **2026-02-28**: PAI-79 5차 - `RandomTopicSelector` 오류 상태 `다시 시도` 액션 추가(잠금 시 숨김) + 재시도 테스트 보강
 - **2026-02-28**: PAI-79 4차 - `RandomTopicSelector` 잠금 상태 CTA 라벨/disabled 동작 정교화 + 회귀 테스트 추가
 - **2026-02-28**: PAI-79 3차 - `RandomTopicSelector` 잠금 중 CTA 문구/툴팁 개선(`주제 고정됨`) + 상태 테스트 보강

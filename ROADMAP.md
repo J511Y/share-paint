@@ -143,6 +143,7 @@
   - [x] PAI-79 3차: `RandomTopicSelector` 잠금 중 CTA 상태 문구를 `주제 고정됨`으로 명시하고 tooltip 제공 + 상태 테스트 보강
   - [x] PAI-79 4차: `RandomTopicSelector` 잠금 안내와 CTA 상태를 일관성 있게 연결(잠금 시 버튼 disabled+명시적 라벨)하고 회귀 테스트 추가
   - [x] PAI-79 5차: `RandomTopicSelector` 오류 상태에서 `다시 시도` 액션 제공(잠금 시 숨김) + 재시도 동작 테스트 추가
+  - [x] PAI-79 6차: `RandomTopicSelector` 잠금 토글 시 잔여 오류 상태 정리 + 잠금/해제 접근성 라벨(aria-label) 명시 + 상태 테스트 보강
 - [ ] 캔버스 상호작용 접근성/터치 개선 (`src/components/canvas`)
 
 ### Backend/API
