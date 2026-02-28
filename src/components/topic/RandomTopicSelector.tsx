@@ -97,8 +97,8 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
               </div>
             </>
           ) : (
-            <span className="text-sm text-gray-400">
-              무엇을 그릴지 고민되시나요?
+            <span className="text-sm text-gray-400" role="status" aria-live="polite">
+              {isLoading ? '주제를 불러오는 중...' : '무엇을 그릴지 고민되시나요?'}
             </span>
           )}
         </div>

@@ -121,6 +121,7 @@ describe('RandomTopicSelector', () => {
     fireEvent.click(drawButton);
     fireEvent.click(drawButton);
 
+    expect(screen.getByText('주제를 불러오는 중...')).toBeInTheDocument();
     expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument();
 
     await waitFor(() => {

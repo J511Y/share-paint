@@ -3,6 +3,7 @@
 # 진행 상황 추적
 
 ## 최근 업데이트
+- **2026-02-28**: PAI-79 15차 - `RandomTopicSelector` 빈 상태 문구를 로딩 상태와 동기화(`주제를 불러오는 중...`)하고 로딩 피드백 테스트 보강
 - **2026-02-28**: PAI-79 14차 - `RandomTopicSelector` 주제 카드 `aria-busy` 상태 연동으로 로딩 접근성 피드백 강화
 - **2026-02-28**: PAI-79 13차 - `RandomTopicSelector` 로딩 중 중복 요청 방지 가드 추가 + 중복 클릭 회귀 테스트 추가
 - **2026-02-28**: PAI-79 12차 - `RandomTopicSelector` 현재 주제 텍스트를 `aria-live` status로 노출해 접근성 안내 강화
