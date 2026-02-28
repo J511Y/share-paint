@@ -61,6 +61,7 @@ describe('RandomTopicSelector', () => {
       expect(onTopicSelect).toHaveBeenCalledWith('고양이 우주 비행사');
     });
 
+    expect(screen.getByText('고양이 우주 비행사')).toHaveAttribute('role', 'status');
     expect(screen.getByText('카테고리: 일반')).toBeInTheDocument();
     expect(screen.getByText('난이도: 쉬움')).toBeInTheDocument();
   });

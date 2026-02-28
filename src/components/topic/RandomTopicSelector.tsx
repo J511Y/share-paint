@@ -76,7 +76,7 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
         )}>
           {currentTopic ? (
             <>
-              <span className="text-sm font-medium text-purple-900 break-keep">
+              <span className="text-sm font-medium text-purple-900 break-keep" role="status" aria-live="polite">
                 {currentTopic.content}
               </span>
               <div className="flex gap-2 mt-1">

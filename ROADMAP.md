@@ -149,6 +149,7 @@
   - [x] PAI-79 9차: `RandomTopicSelector` 난이도 뱃지를 한국어 라벨(쉬움/보통/어려움)로 표준화해 가독성 개선
   - [x] PAI-79 10차: `RandomTopicSelector` 카테고리 뱃지 기본값(`general`)을 한국어(`일반`)로 매핑해 정보 가독성 일관성 확보
   - [x] PAI-79 11차: `RandomTopicSelector` 카테고리/난이도 뱃지에 의미 접두어(`카테고리:`, `난이도:`)를 명시해 초회 사용자 이해도 개선
+  - [x] PAI-79 12차: `RandomTopicSelector` 현재 주제를 `aria-live` status로 노출해 새 주제 갱신 시 보조기기 안내 강화
 - [ ] 캔버스 상호작용 접근성/터치 개선 (`src/components/canvas`)
 
 ### Backend/API
