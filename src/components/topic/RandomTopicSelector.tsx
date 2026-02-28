@@ -81,7 +81,7 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
               </span>
               <div className="flex gap-2 mt-1">
                 <span className="text-xs px-1.5 py-0.5 bg-white rounded text-purple-600 border border-purple-100">
-                  {getCategoryLabel(currentTopic.category)}
+                  카테고리: {getCategoryLabel(currentTopic.category)}
                 </span>
                 <span className={cn(
                   "text-xs px-1.5 py-0.5 bg-white rounded border",
@@ -89,7 +89,7 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
                   currentTopic.difficulty === 'hard' ? "text-red-600 border-red-100" :
                   "text-blue-600 border-blue-100"
                 )}>
-                  {difficultyLabelMap[currentTopic.difficulty]}
+                  난이도: {difficultyLabelMap[currentTopic.difficulty]}
                 </span>
               </div>
             </>

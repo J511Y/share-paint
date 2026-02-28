@@ -3,6 +3,7 @@
 # 진행 상황 추적
 
 ## 최근 업데이트
+- **2026-02-28**: PAI-79 11차 - `RandomTopicSelector` 메타 뱃지 접두어(`카테고리:`, `난이도:`) 추가로 의미 명확화
 - **2026-02-28**: PAI-79 10차 - `RandomTopicSelector` 카테고리 표시 `general → 일반` 한국어 매핑 적용 + 표시 테스트 보강
 - **2026-02-28**: PAI-79 9차 - `RandomTopicSelector` 난이도 표시를 한국어 라벨(쉬움/보통/어려움)로 통일 + 표시 테스트 보강
 - **2026-02-28**: PAI-79 8차 - `RandomTopicSelector` 잠금 토글 접근성 `aria-pressed` 상태 추가 + 접근성 검증 테스트 보강

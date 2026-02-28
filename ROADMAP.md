@@ -148,6 +148,7 @@
   - [x] PAI-79 8차: `RandomTopicSelector` 잠금 토글 버튼 접근성에 `aria-pressed` 상태를 명시해 보조기기 피드백 강화
   - [x] PAI-79 9차: `RandomTopicSelector` 난이도 뱃지를 한국어 라벨(쉬움/보통/어려움)로 표준화해 가독성 개선
   - [x] PAI-79 10차: `RandomTopicSelector` 카테고리 뱃지 기본값(`general`)을 한국어(`일반`)로 매핑해 정보 가독성 일관성 확보
+  - [x] PAI-79 11차: `RandomTopicSelector` 카테고리/난이도 뱃지에 의미 접두어(`카테고리:`, `난이도:`)를 명시해 초회 사용자 이해도 개선
 - [ ] 캔버스 상호작용 접근성/터치 개선 (`src/components/canvas`)
 
 ### Backend/API

@@ -61,8 +61,8 @@ describe('RandomTopicSelector', () => {
       expect(onTopicSelect).toHaveBeenCalledWith('고양이 우주 비행사');
     });
 
-    expect(screen.getByText('일반')).toBeInTheDocument();
-    expect(screen.getByText('쉬움')).toBeInTheDocument();
+    expect(screen.getByText('카테고리: 일반')).toBeInTheDocument();
+    expect(screen.getByText('난이도: 쉬움')).toBeInTheDocument();
   });
 
   it('shows lock guidance when topic is locked', async () => {
