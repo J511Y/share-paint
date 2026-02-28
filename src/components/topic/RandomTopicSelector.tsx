@@ -114,9 +114,16 @@ export function RandomTopicSelector({ onTopicSelect, className }: RandomTopicSel
         </div>
 
         {errorMessage && (
-          <p className="text-xs text-red-600" role="status" aria-live="polite">
-            {errorMessage}
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-xs text-red-600" role="status" aria-live="polite">
+              {errorMessage}
+            </p>
+            {!isLocked && (
+              <Button variant="outline" size="sm" onClick={fetchRandomTopic} disabled={isLoading}>
+                다시 시도
+              </Button>
+            )}
+          </div>
         )}
 
         {isLocked && currentTopic && (

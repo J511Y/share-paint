@@ -8,10 +8,22 @@ describe('RandomTopicSelector', () => {
   });
 
   it('shows API error message when random topic request fails', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
-      ok: false,
-      json: async () => ({ message: '등록된 주제가 없습니다.' }),
-    } as Response);
+    const fetchMock = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ message: '등록된 주제가 없습니다.' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: '11111111-1111-4111-8111-111111111111',
+          content: '고양이 우주 비행사',
+          category: 'general',
+          difficulty: 'easy',
+          created_at: '2026-02-28T00:00:00.000Z',
+        }),
+      } as Response);
 
     render(<RandomTopicSelector onTopicSelect={vi.fn()} />);
 
@@ -19,6 +31,12 @@ describe('RandomTopicSelector', () => {
 
     await waitFor(() => {
       expect(screen.getByText('등록된 주제가 없습니다.')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     });
   });
 

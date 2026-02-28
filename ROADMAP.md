@@ -142,6 +142,7 @@
   - [x] PAI-79 2차: `RandomTopicSelector` 주제 잠금 상태 안내 문구 추가(왜 새 주제가 안 뽑히는지 명확화) + 컴포넌트 테스트 보강
   - [x] PAI-79 3차: `RandomTopicSelector` 잠금 중 CTA 상태 문구를 `주제 고정됨`으로 명시하고 tooltip 제공 + 상태 테스트 보강
   - [x] PAI-79 4차: `RandomTopicSelector` 잠금 안내와 CTA 상태를 일관성 있게 연결(잠금 시 버튼 disabled+명시적 라벨)하고 회귀 테스트 추가
+  - [x] PAI-79 5차: `RandomTopicSelector` 오류 상태에서 `다시 시도` 액션 제공(잠금 시 숨김) + 재시도 동작 테스트 추가
 - [ ] 캔버스 상호작용 접근성/터치 개선 (`src/components/canvas`)
 
 ### Backend/API
